@@ -27,7 +27,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
             <img
-              src="/images/untitled-20design.png"
+              src="/assets/nuggy-baby-boy.png"
               alt="ScribeCat logo"
               className="h-10 w-10 rounded-lg object-cover"
             />
