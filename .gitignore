@@ -1,27 +1,46 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
 
-# dependencies
-/node_modules
+# Next.js (temporary - will be removed when converting to Electron)
+.next/
+out/
 
-# next.js
-/.next/
-/out/
+# Electron
+dist/
+release/
+*.dmg
+*.exe
+*.AppImage
+*.snap
 
-# production
-/build
+# Build outputs
+build/
+*.tsbuildinfo
 
-# debug
+# Environment
+.env
+.env.*
+!.env.example
+
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
-# env files
-.env*
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+.DS_Store
 
-# vercel
+# Testing
+coverage/
+
+# Misc
+*.local
 .vercel
-
-# typescript
-*.tsbuildinfo
 next-env.d.ts
