@@ -1,21 +1,29 @@
 {
   "name": "scribecat-v3",
-  "version": "0.1.1",
+  "version": "0.2.0",
+  "description": "ADHD-friendly lecture companion - Record, transcribe, and study smarter",
   "private": true,
+  "main": "dist/main/main.js",
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
-    "start": "next start",
+    "dev": "concurrently -k \"pnpm dev:vite\" \"pnpm dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && electron .",
+    "build": "pnpm build:vite && pnpm build:main && pnpm build:preload",
+    "build:vite": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:preload": "tsc -p tsconfig.preload.json",
+    "package": "pnpm build && electron-builder",
+    "compile": "tsc --noEmit",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy",
     "lint": "biome check .",
     "lint:fix": "biome check --apply .",
     "format": "biome format --write .",
+    "clean": "rm -rf dist release",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "biome check --apply",
-      "biome format --write"
-    ]
+    "*.{ts,tsx,js,jsx}": ["biome check --apply", "biome format --write"]
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -49,12 +57,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
+    "convex": "^1.31.2",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "16.0.10",
-    "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",
@@ -73,11 +80,17 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
+    "electron": "39",
+    "electron-builder": "^26.0.12",
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^7.3.0",
+    "wait-on": "^9.0.3"
   }
 }

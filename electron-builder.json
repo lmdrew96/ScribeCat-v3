@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.scribecat.app",
+  "productName": "ScribeCat",
+  "directories": {
+    "buildResources": "assets",
+    "output": "release"
+  },
+  "files": ["dist/**/*", "public/**/*"],
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.education",
+    "icon": "public/icon.icns"
+  },
+  "win": {
+    "target": ["nsis", "portable"],
+    "icon": "public/icon.ico"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Education",
+    "icon": "public"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}
