@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ScribeCat - ADHDesigns Brand Theme */
+/* Dusty purple + deep teal + warm amber palette */
+:root {
+  /* Updated to ADHDesigns brand colors */
+  /* Background primary: #88739E (dusty purple) - swapped with accent */
+  --background: #88739e;
+  --foreground: #dbd5e2; /* Text primary: light lavender */
+
+  /* Card surfaces - derived from dusty purple (darker) */
+  --card: #6b5a7d;
+  --card-foreground: #dbd5e2;
+
+  --popover: #6b5a7d;
+  --popover-foreground: #dbd5e2;
+
+  /* Primary - CTA amber #DEA549 */
+  --primary: #dea549;
+  --primary-foreground: #1a3338;
+
+  /* Secondary - muted purple for less prominent elements */
+  --secondary: #7a6590;
+  --secondary-foreground: #dbd5e2;
+
+  /* Muted - subtle backgrounds (darker purple) */
+  --muted: #6b5a7d;
+  --muted-foreground: #8cbdb9; /* Text secondary: soft teal */
+
+  /* Accent - deep teal #244952 for interactive elements - swapped with background */
+  --accent: #244952;
+  --accent-foreground: #dbd5e2;
+
+  /* Destructive - for errors */
+  --destructive: #c45c5c;
+  --destructive-foreground: #dbd5e2;
+
+  /* Success states: #96D080 (soft green) */
+  --success: #96d080;
+  --success-foreground: #1a3338;
+
+  /* Borders - derived from purple */
+  --border: #5d4d6e;
+  --input: #7a6590;
+  --ring: #244952;
+
+  /* Custom ScribeCat colors */
+  /* CTA buttons use warm amber */
+  --record: #dea549;
+  --record-glow: rgba(222, 165, 73, 0.4);
+  --waveform: #8cbdb9;
+  /* Transcript bg - darker purple */
+  --transcript-bg: #6b5a7d;
+
+  --radius: 0.75rem;
+
+  /* Sidebar uses darker purple */
+  --sidebar: #6b5a7d;
+  --sidebar-foreground: #dbd5e2;
+  --sidebar-primary: #dea549;
+  --sidebar-primary-foreground: #1a3338;
+  --sidebar-accent: #7a6590;
+  --sidebar-accent-foreground: #dbd5e2;
+  --sidebar-border: #5d4d6e;
+  --sidebar-ring: #244952;
+}
+
+@theme inline {
+  --font-sans: "Instrument Sans", "Geist", "Geist Fallback", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom animations for ScribeCat */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px var(--record-glow), 0 0 40px var(--record-glow);
+  }
+  50% {
+    box-shadow: 0 0 30px var(--record-glow), 0 0 60px var(--record-glow);
+  }
+}
+
+@keyframes waveform {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.recording-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.waveform-bar {
+  animation: waveform 0.5s ease-in-out infinite;
+}
