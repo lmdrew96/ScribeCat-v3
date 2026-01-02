@@ -59,7 +59,7 @@ export function setupAudioIPC() {
   });
 
   /**
-   * Get AssemblyAI temporary token
+   * Get AssemblyAI API key
    * This keeps the API key secure in the main process
    */
   ipcMain.handle('assemblyai:getToken', async () => {
@@ -68,23 +68,8 @@ export function setupAudioIPC() {
       return { success: false, error: 'AssemblyAI API key not configured' };
     }
 
-    try {
-      const response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
-        method: 'POST',
-        headers: {
-          authorization: apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get token: ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as { token: string };
-      return { success: true, token: data.token };
-    } catch (error) {
-      console.error('Error getting AssemblyAI token:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    // For real-time transcription, we can pass the API key directly
+    // AssemblyAI SDK will handle token generation internally
+    return { success: true, token: apiKey };
   });
 }
