@@ -38,6 +38,9 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
             <span className="text-xs text-red-500">Recording</span>
           </span>
         )}
+        {!isRecording && segments.length > 0 && (
+          <span className="ml-2 text-xs text-muted-foreground">— Recording stopped</span>
+        )}
       </h3>
       <ScrollArea className="flex-1" ref={scrollRef}>
         <div className="space-y-2 pr-2">

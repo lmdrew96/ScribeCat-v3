@@ -95,6 +95,9 @@ export function RecordingPanel() {
 
       setCurrentSessionId(sessionId);
 
+      // Clear previous transcription when starting a new recording
+      resetTranscription();
+
       // Start audio recording
       await startRecording();
 
@@ -139,9 +142,8 @@ export function RecordingPanel() {
       mediaStreamRef.current = null;
     }
 
-    // Reset state
+    // Reset recorder but keep transcription visible
     resetRecorder();
-    resetTranscription();
     setCurrentSessionId(null);
   };
 
