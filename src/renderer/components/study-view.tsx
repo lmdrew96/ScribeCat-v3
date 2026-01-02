@@ -36,6 +36,14 @@ export function StudyView() {
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Helper function to format duration
+  const formatDuration = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Convert Convex sessions to Recording format
   const recordings: Recording[] = sessions.map((session) => ({
     id: session._id,
@@ -51,13 +59,6 @@ export function StudyView() {
     audioFilePath: session.audioFilePath,
     transcriptSegments: session.transcriptSegments,
   }));
-
-  const formatDuration = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="flex h-full">
