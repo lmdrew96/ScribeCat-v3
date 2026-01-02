@@ -41,7 +41,7 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
       </h3>
       <ScrollArea className="flex-1" ref={scrollRef}>
         <div className="space-y-2 pr-2">
-          {segments.map((segment) => (
+          {segments.map((segment, index) => (
             <div
               key={`${segment.timestamp}-${segment.text.substring(0, 20)}`}
               className={`text-xs leading-relaxed ${
@@ -49,7 +49,7 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
               }`}
             >
               {segment.text}
-              {!segment.isFinal && i === segments.length - 1 && (
+              {!segment.isFinal && index === segments.length - 1 && (
                 <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-primary" />
               )}
             </div>
