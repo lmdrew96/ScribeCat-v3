@@ -36,12 +36,13 @@ export function useTranscription(options?: UseTranscriptionOptions) {
           throw new Error(tokenResponse?.error || 'Failed to get AssemblyAI token');
         }
 
-        const apiKey = tokenResponse.token;
+        const token = tokenResponse.token;
 
-        // Build WebSocket URL for v3 API
+        // Build WebSocket URL for v3 API with token as query parameter
         const params = new URLSearchParams({
           sample_rate: '16000',
           format_turns: 'true',
+          token: token,
         });
         const wsUrl = `wss://streaming.assemblyai.com/v3/ws?${params.toString()}`;
 
@@ -54,15 +55,6 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         // Set up WebSocket event handlers
         ws.onopen = () => {
           console.log('AssemblyAI v3 connection opened');
-
-          // Send authorization message
-          ws.send(
-            JSON.stringify({
-              type: 'Authorize',
-              apiKey: apiKey,
-            }),
-          );
-
           setIsConnected(true);
           setError(null);
         };

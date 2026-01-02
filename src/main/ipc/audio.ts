@@ -59,7 +59,7 @@ export function setupAudioIPC() {
   });
 
   /**
-   * Get AssemblyAI temporary token using the SDK
+   * Get AssemblyAI temporary token for v3 streaming API
    * This keeps the API key secure in the main process
    */
   ipcMain.handle('assemblyai:getToken', async () => {
@@ -68,8 +68,28 @@ export function setupAudioIPC() {
       return { success: false, error: 'AssemblyAI API key not configured' };
     }
 
-    // For v3 streaming API, return the API key directly
-    // It will be sent in an Authorize message after WebSocket connection
-    return { success: true, token: apiKey };
+    try {
+      // Generate temporary token using v3 API
+      const response = await fetch(
+        'https://streaming.assemblyai.com/v3/token?expires_in_seconds=480',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: apiKey,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to get token: ${response.statusText} - ${errorText}`);
+      }
+
+      const data = (await response.json()) as { token: string };
+      return { success: true, token: data.token };
+    } catch (error) {
+      console.error('Error getting AssemblyAI token:', error);
+      return { success: false, error: (error as Error).message };
+    }
   });
 }
