@@ -1,3 +1,4 @@
+import { type Theme, useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -30,25 +31,29 @@ const categories = [
 ];
 
 const themes = [
-  { id: 'default', name: 'Default', colors: ['#88739E', '#6b5a82', '#244952', '#DEA549'] },
-  { id: 'soft-focus', name: 'Soft Focus', colors: ['#4a5568', '#2d3748', '#68d391', '#f6e05e'] },
-  { id: 'blackout', name: 'Blackout', colors: ['#1a1a1a', '#0d0d0d', '#3b82f6', '#f472b6'] },
-  { id: 'chaos-cat', name: 'Chaos Cat', colors: ['#7c3aed', '#ec4899', '#10b981', '#f59e0b'] },
+  { id: 'default', name: "Nugg's Favorite", colors: ['#244952', '#1A3338', '#88739E', '#DEA549'] },
+  {
+    id: 'soft-focus',
+    name: 'Purring Pastels',
+    colors: ['#F8F4FF', '#E7D1FF', '#E4FFDE', '#D4A5D2'],
+  },
+  { id: 'blackout', name: 'Void Kitty', colors: ['#000000', '#0D1A14', '#B580FF', '#00F2FF'] },
+  { id: 'chaos-cat', name: 'Chaos Cat', colors: ['#1A0A1F', '#2D1235', '#FF5EE0', '#1FE1FD'] },
   {
     id: 'high-contrast-dark',
     name: 'HC Dark',
-    colors: ['#000000', '#171717', '#ffffff', '#fbbf24'],
+    colors: ['#000000', '#1A1A1A', '#FFFF00', '#00FFFF'],
   },
   {
     id: 'high-contrast-light',
     name: 'HC Light',
-    colors: ['#ffffff', '#f5f5f5', '#000000', '#2563eb'],
+    colors: ['#FFFFFF', '#F0F0F0', '#0000CC', '#006600'],
   },
 ];
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('appearance');
-  const [selectedTheme, setSelectedTheme] = useState('default');
+  const { theme, setTheme } = useTheme();
   const [showWaveform, setShowWaveform] = useState(true);
   const [breakReminders, setBreakReminders] = useState(true);
   const [breakInterval, setBreakInterval] = useState('25');
@@ -111,25 +116,25 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-foreground">Theme</h3>
                   <div className="grid grid-cols-3 gap-3">
-                    {themes.map((theme) => (
+                    {themes.map((themeOption) => (
                       <button
                         type="button"
-                        key={theme.id}
-                        onClick={() => setSelectedTheme(theme.id)}
+                        key={themeOption.id}
+                        onClick={() => setTheme(themeOption.id as Theme)}
                         className={cn(
                           'relative flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
-                          selectedTheme === theme.id
+                          theme === themeOption.id
                             ? 'border-accent bg-accent/10 ring-1 ring-accent'
                             : 'border-border bg-background hover:border-muted-foreground/50',
                         )}
                       >
-                        {selectedTheme === theme.id && (
+                        {theme === themeOption.id && (
                           <div className="absolute right-2 top-2">
                             <Check className="h-3.5 w-3.5 text-accent" />
                           </div>
                         )}
                         <div className="flex gap-1">
-                          {theme.colors.map((color, i) => (
+                          {themeOption.colors.map((color, i) => (
                             <div
                               key={i}
                               className="rounded-sm w-4 h-4 border border-card-foreground"
@@ -137,7 +142,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-foreground">{theme.name}</span>
+                        <span className="text-xs text-foreground">{themeOption.name}</span>
                       </button>
                     ))}
                   </div>
@@ -300,7 +305,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   />
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">ScribeCat</h3>
-                    <p className="text-sm text-muted-foreground">v3.0.0</p>
+                    <p className="text-sm text-muted-foreground">v0.3.0</p>
                   </div>
                 </div>
 

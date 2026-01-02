@@ -1,6 +1,6 @@
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 
-type Theme =
+export type Theme =
   | 'default'
   | 'soft-focus'
   | 'blackout'
