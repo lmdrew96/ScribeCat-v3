@@ -551,12 +551,13 @@ function process(data: unknown) {
 - Utils: `camelCase.ts`
 - Convex functions: `camelCase`
 
-### Before Every Commit
-Husky will automatically run, but you can manually check:
-```bash
-npm run lint        # Check for issues
-npm run lint:fix    # Auto-fix what's fixable
-```
+### Before **Every** Commit
+- Update the version number in package.json applying semantic versioning
+- Husky will automatically run, but you can manually check:
+  ```bash
+  npm run lint        # Check for issues
+  npm run lint:fix    # Auto-fix what's fixable
+  ```
 
 ---
 

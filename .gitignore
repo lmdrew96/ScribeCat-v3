@@ -44,3 +44,7 @@ coverage/
 *.local
 .vercel
 next-env.d.ts
+
+# Agent Instructions
+CLAUDE.md
+copilot-instructions.md
