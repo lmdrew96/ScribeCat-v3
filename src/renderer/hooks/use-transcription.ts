@@ -1,4 +1,3 @@
-import { RealtimeTranscriber } from 'assemblyai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface TranscriptSegment {
@@ -18,7 +17,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const [error, setError] = useState<string | null>(null);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
 
-  const transcriberRef = useRef<RealtimeTranscriber | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -30,62 +29,91 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const start = useCallback(
     async (stream: MediaStream) => {
       try {
-        // Get AssemblyAI token from main process
+        // Get AssemblyAI API key from main process
         const tokenResponse = await window.electronAPI?.getAssemblyAIToken();
 
         if (!tokenResponse?.success || !tokenResponse.token) {
           throw new Error(tokenResponse?.error || 'Failed to get AssemblyAI token');
         }
 
-        // Create real-time transcriber
-        const transcriber = new RealtimeTranscriber({
-          token: tokenResponse.token,
-          sampleRate: 16000,
-        });
+        const apiKey = tokenResponse.token;
 
-        transcriberRef.current = transcriber;
+        // Build WebSocket URL for v3 API
+        const params = new URLSearchParams({
+          sample_rate: '16000',
+          format_turns: 'true',
+        });
+        const wsUrl = `wss://streaming.assemblyai.com/v3/ws?${params.toString()}`;
+
+        // Create WebSocket connection
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
         mediaStreamRef.current = stream;
         startTimeRef.current = Date.now();
 
-        // Set up event handlers
-        transcriber.on('open', () => {
-          console.log('AssemblyAI connection opened');
+        // Set up WebSocket event handlers
+        ws.onopen = () => {
+          console.log('AssemblyAI v3 connection opened');
+
+          // Send authorization message
+          ws.send(
+            JSON.stringify({
+              type: 'Authorize',
+              apiKey: apiKey,
+            }),
+          );
+
           setIsConnected(true);
           setError(null);
-        });
+        };
 
-        transcriber.on('error', (error: Error) => {
-          console.error('AssemblyAI error:', error);
-          setError(error.message);
-          options?.onError?.(error);
-        });
+        ws.onerror = (event) => {
+          console.error('AssemblyAI WebSocket error:', event);
+          const errorMessage = 'WebSocket connection error';
+          setError(errorMessage);
+          options?.onError?.(new Error(errorMessage));
+        };
 
-        transcriber.on('close', () => {
-          console.log('AssemblyAI connection closed');
+        ws.onclose = (event) => {
+          console.log('AssemblyAI connection closed:', event.code, event.reason);
           setIsConnected(false);
-        });
+        };
 
-        transcriber.on('transcript', (transcript: { text: string }) => {
-          const segment: TranscriptSegment = {
-            text: transcript.text,
-            timestamp: Date.now() - startTimeRef.current,
-            isFinal: transcript.message_type === 'FinalTranscript',
-          };
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
 
-          setSegments((prev) => {
-            // If it's a final transcript, replace the last partial one
-            if (segment.isFinal && prev.length > 0 && !prev[prev.length - 1].isFinal) {
-              return [...prev.slice(0, -1), segment];
+            // Handle different message types
+            if (message.type === 'Begin') {
+              console.log('Session started:', message.id);
+            } else if (message.type === 'Turn') {
+              const segment: TranscriptSegment = {
+                text: message.transcript || '',
+                timestamp: Date.now() - startTimeRef.current,
+                isFinal: message.turn_is_formatted || false,
+              };
+
+              setSegments((prev) => {
+                // If it's a final transcript, replace the last partial one
+                if (segment.isFinal && prev.length > 0 && !prev[prev.length - 1].isFinal) {
+                  return [...prev.slice(0, -1), segment];
+                }
+                // Otherwise, append (partial) or add new final
+                return [...prev, segment];
+              });
+
+              options?.onSegment?.(segment);
+            } else if (message.type === 'Termination') {
+              console.log('Session terminated:', message);
+            } else if (message.type === 'Error') {
+              console.error('AssemblyAI error:', message.error);
+              setError(message.error);
+              options?.onError?.(new Error(message.error));
             }
-            // Otherwise, append (partial) or add new final
-            return [...prev, segment];
-          });
-
-          options?.onSegment?.(segment);
-        });
-
-        // Connect to AssemblyAI
-        await transcriber.connect();
+          } catch (err) {
+            console.error('Error parsing message:', err);
+          }
+        };
 
         // Set up audio processing
         const audioContext = new AudioContext({ sampleRate: 16000 });
@@ -105,9 +133,9 @@ export function useTranscription(options?: UseTranscriptionOptions) {
             int16Data[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
           }
 
-          // Send audio data to AssemblyAI
-          if (transcriberRef.current) {
-            transcriberRef.current.sendAudio(int16Data.buffer);
+          // Send audio data to AssemblyAI via WebSocket
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(int16Data.buffer);
           }
         };
 
@@ -138,10 +166,10 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         audioContextRef.current = null;
       }
 
-      // Close transcriber
-      if (transcriberRef.current) {
-        await transcriberRef.current.close();
-        transcriberRef.current = null;
+      // Close WebSocket
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
 
       setIsConnected(false);
