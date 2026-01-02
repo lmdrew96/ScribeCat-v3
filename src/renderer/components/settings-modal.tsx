@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { BookOpen, Bug, Check, ExternalLink, Github, Info, Mic, Palette, User } from 'lucide-react';
 import { useState } from 'react';
+import packageJson from '../../../package.json';
 
 interface SettingsModalProps {
   open: boolean;
@@ -305,7 +306,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   />
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">ScribeCat</h3>
-                    <p className="text-sm text-muted-foreground">v0.3.0</p>
+                    <p className="text-sm text-muted-foreground">v{packageJson.version}</p>
                   </div>
                 </div>
 
