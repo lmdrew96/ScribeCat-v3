@@ -1,6 +1,10 @@
 import path from 'node:path';
+import { config } from 'dotenv';
 import { BrowserWindow, app, ipcMain, screen } from 'electron';
 import { setupAudioIPC } from './ipc/audio';
+
+// Load environment variables from .env file
+config({ path: path.join(__dirname, '../../.env') });
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 // This is only needed for Windows Squirrel installer
