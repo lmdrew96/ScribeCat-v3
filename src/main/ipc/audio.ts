@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { AssemblyAI } from 'assemblyai';
 import { ipcMain } from 'electron';
 import { app } from 'electron';
 
@@ -69,13 +68,8 @@ export function setupAudioIPC() {
       return { success: false, error: 'AssemblyAI API key not configured' };
     }
 
-    try {
-      const client = new AssemblyAI({ apiKey });
-      const tokenResponse = await client.realtime.createTemporaryToken({ expires_in: 480 });
-      return { success: true, token: tokenResponse };
-    } catch (error) {
-      console.error('Error getting AssemblyAI token:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    // For v3 streaming API, return the API key directly
+    // It will be sent in an Authorize message after WebSocket connection
+    return { success: true, token: apiKey };
   });
 }
