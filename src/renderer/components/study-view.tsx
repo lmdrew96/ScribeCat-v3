@@ -2,8 +2,15 @@ import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools';
 import { Button } from '@/components/ui/button';
+import { useSessions } from '@/hooks/use-sessions';
 import { PanelLeft } from 'lucide-react';
 import { useState } from 'react';
+
+export interface TranscriptSegment {
+  text: string;
+  timestamp: number;
+  isFinal: boolean;
+}
 
 export interface Recording {
   id: string;
@@ -12,44 +19,45 @@ export interface Recording {
   duration: string;
   transcript: string;
   notes: string;
+  audioFilePath?: string;
+  transcriptSegments?: TranscriptSegment[];
 }
 
-const sampleRecordings: Recording[] = [
-  {
-    id: '1',
-    title: 'Machine Learning Basics',
-    date: 'Dec 28, 2025',
-    duration: '45:23',
-    transcript:
-      'Today we covered the fundamentals of machine learning, including supervised and unsupervised learning approaches. We discussed how neural networks process information through layers of neurons...',
-    notes:
-      'Key concepts:\n• Supervised vs Unsupervised learning\n• Neural network architecture\n• Training and inference phases\n• Loss functions and optimization',
-  },
-  {
-    id: '2',
-    title: 'Data Structures Review',
-    date: 'Dec 26, 2025',
-    duration: '38:15',
-    transcript:
-      'In this lecture, we reviewed essential data structures including arrays, linked lists, trees, and graphs. Understanding these fundamentals is crucial for algorithm design...',
-    notes:
-      'Data structures covered:\n• Arrays and dynamic arrays\n• Linked lists (singly, doubly)\n• Binary trees and BSTs\n• Hash tables\n• Graphs (adjacency list/matrix)',
-  },
-  {
-    id: '3',
-    title: 'Psychology 101 - Memory',
-    date: 'Dec 24, 2025',
-    duration: '52:08',
-    transcript:
-      'Memory is a fascinating cognitive process. We have short-term memory, which holds information temporarily, and long-term memory, which can store information indefinitely...',
-    notes:
-      'Memory types:\n• Sensory memory\n• Short-term/working memory\n• Long-term memory (explicit vs implicit)\n• Encoding strategies for better retention',
-  },
-];
+const formatDuration = (ms: number) => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
 export function StudyView() {
+  const userId = 'anonymous-user'; // TODO: Get from authenticated user
+  const { sessions } = useSessions(userId);
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Convert Convex sessions to Recording format
+  const recordings: Recording[] = sessions.map((session) => ({
+    id: session._id,
+    title: session.title,
+    date: new Date(session.createdAt).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    duration: formatDuration(session.duration),
+    transcript: session.transcript || '',
+    notes: session.notes || '',
+    audioFilePath: session.audioFilePath,
+    transcriptSegments: session.transcriptSegments,
+  }));
+
+  const formatDuration = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="flex h-full">
@@ -57,7 +65,7 @@ export function StudyView() {
       {sidebarOpen && (
         <div className="w-56 border-r border-border shrink-0">
           <RecordingsSidebar
-            recordings={sampleRecordings}
+            recordings={recordings}
             selectedId={selectedRecording?.id}
             onSelect={setSelectedRecording}
             onCollapse={() => setSidebarOpen(false)}

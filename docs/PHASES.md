@@ -1,6 +1,6 @@
 # ScribeCat v3 — Phase Implementation Guide
 
-> **Current Phase: 1 — Capture**
+> **Current Phase: 2 — Process**
 > 
 > Last updated: January 2026
 
@@ -10,64 +10,67 @@
 
 | Phase | Name | Goal | Status |
 |-------|------|------|--------|
-| 1 | **Capture** | Recording + live transcription | 🟡 In Progress |
-| 2 | **Process** | Notes editor + AI generation | ⬜ Not Started |
+| 1 | **Capture** | Recording + live transcription | ✅ Complete |
+| 2 | **Process** | Notes editor + AI generation | 🟡 In Progress |
 | 3 | **Learn** | Study tools + StudyQuest | ⬜ Not Started |
 | 4 | **Connect** | Social + Study Rooms + Games | ⬜ Not Started |
 
 ---
 
-## Phase 1: Capture
+## Phase 1: Capture ✅ COMPLETE
 
 **Goal:** Record lectures with live transcription. Build a rock-solid foundation.
 
 ### Features
 
-- [ ] **Audio Recording**
-  - [ ] Device selection dropdown
-  - [ ] Start/stop/pause/resume controls
-  - [ ] Recording timer
-  - [ ] Real-time waveform visualization
+- [x] **Audio Recording**
+  - [x] Device selection dropdown
+  - [x] Start/stop/pause/resume controls
+  - [x] Recording timer
+  - [x] Real-time waveform visualization
 
-- [ ] **Transcription**
-  - [ ] AssemblyAI real-time integration
-  - [ ] Live transcript display (scrolling)
-  - [ ] Partial + final transcript handling
-  - [ ] Timestamp tracking per segment
+- [x] **Transcription**
+  - [x] AssemblyAI real-time integration
+  - [x] Live transcript display (scrolling)
+  - [x] Partial + final transcript handling
+  - [x] Timestamp tracking per segment
 
-- [ ] **Session Management**
-  - [ ] Create new session
-  - [ ] Auto-save during recording
-  - [ ] List sessions (Study Mode sidebar)
-  - [ ] Delete session (move to trash)
-  - [ ] Trash system (30-day retention)
+- [x] **Session Management**
+  - [x] Create new session
+  - [x] Auto-save during recording
+  - [x] List sessions (Study Mode sidebar)
+  - [x] Delete session (move to trash)
+  - [x] Trash system (30-day retention)
 
-- [ ] **Playback**
-  - [ ] Play recorded audio
-  - [ ] Sync playback position with transcript
-  - [ ] Seek by clicking transcript segments
+- [x] **Playback**
+  - [x] Play recorded audio
+  - [x] Sync playback position with transcript
+  - [x] Seek by clicking transcript segments
 
-- [ ] **Infrastructure**
-  - [ ] Convex backend setup
-  - [ ] Authentication (Convex Auth)
-  - [ ] Theme system (6 themes via CSS vars)
-  - [ ] Resizable panels (Notes ↔ Recording)
+- [x] **Infrastructure**
+  - [x] Convex backend setup
+  - [x] Authentication (Convex Auth)
+  - [x] Theme system (6 themes via CSS vars)
+  - [x] Resizable panels (Notes ↔ Recording)
 
 ### Acceptance Criteria
 
-- [ ] Can record a 50+ minute lecture without crashes or audio issues
-- [ ] Live transcription appears within 1-2 seconds of speech
-- [ ] Can pause and resume recording with correct timestamps
-- [ ] Sessions persist after app restart
-- [ ] Playback syncs correctly with transcript
-- [ ] All 6 themes apply correctly
-- [ ] Panels resize smoothly with drag handle
+- [ ] Can record a 50+ minute lecture without crashes or audio issues _(needs real-world test)_
+- [x] Live transcription appears within 1-2 seconds of speech
+- [x] Can pause and resume recording with correct timestamps
+- [x] Sessions persist after app restart
+- [x] Playback syncs correctly with transcript
+- [x] All 6 themes apply correctly
+- [x] Panels resize smoothly with drag handle
 
 ### Technical Notes
 
-**Audio capture:** Web Audio API in renderer process
-**Transcription:** AssemblyAI WebSocket (API key in main process, token passed to renderer)
+**Audio capture:** Web Audio API in renderer process  
+**Transcription:** AssemblyAI WebSocket (API key in main process, token passed to renderer)  
 **Storage:** Audio files in Electron user data directory, metadata in Convex
+
+**Date Completed:** January 1, 2026  
+**See:** [Implementation Summary](IMPLEMENTATION_SUMMARY.md) for full details
 
 ---
 

@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { internalMutation, mutation, query } from './_generated/server';
 
 // List all sessions for a user (excluding deleted)
 export const list = query({
@@ -45,8 +45,17 @@ export const update = mutation({
   args: {
     id: v.id('sessions'),
     title: v.optional(v.string()),
-    audioUrl: v.optional(v.string()),
+    audioFilePath: v.optional(v.string()),
     transcript: v.optional(v.string()),
+    transcriptSegments: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          timestamp: v.number(),
+          isFinal: v.boolean(),
+        }),
+      ),
+    ),
     notes: v.optional(v.string()),
     duration: v.optional(v.number()),
   },
@@ -87,6 +96,32 @@ export const restore = mutation({
   },
 });
 
+// Append transcript segment (for real-time transcription)
+export const appendTranscriptSegment = mutation({
+  args: {
+    id: v.id('sessions'),
+    text: v.string(),
+    timestamp: v.number(),
+    isFinal: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.id);
+    if (!session) throw new Error('Session not found');
+
+    const segments = session.transcriptSegments || [];
+    segments.push({
+      text: args.text,
+      timestamp: args.timestamp,
+      isFinal: args.isFinal,
+    });
+
+    return await ctx.db.patch(args.id, {
+      transcriptSegments: segments,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // Permanently delete a session
 export const permanentDelete = mutation({
   args: { id: v.id('sessions') },
@@ -104,5 +139,29 @@ export const listDeleted = query({
       .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', true))
       .order('desc')
       .collect();
+  },
+});
+
+// Clean up old deleted sessions (called by cron job)
+export const cleanupOldDeleted = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    const oldDeletedSessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_deleted_at', (q) => q.eq('isDeleted', true))
+      .collect();
+
+    let deletedCount = 0;
+    for (const session of oldDeletedSessions) {
+      if (session.deletedAt && session.deletedAt < thirtyDaysAgo) {
+        await ctx.db.delete(session._id);
+        deletedCount++;
+      }
+    }
+
+    console.log(`Cleaned up ${deletedCount} sessions older than 30 days`);
+    return { deletedCount };
   },
 });

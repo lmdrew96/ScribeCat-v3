@@ -1,30 +1,133 @@
-# ADHD friendly app
+# ScribeCat v3 🐱
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+**ADHD-friendly lecture companion** — Record, transcribe, and study smarter
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/adhdesigns/v0-adhd-friendly-app)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/qW3ybGsnPfC)
+> An Electron-based desktop app for recording lectures with real-time transcription, AI-powered note-taking, and gamified study tools.
 
-## Overview
+[![Built with Electron](https://img.shields.io/badge/Electron-39-blue?style=for-the-badge&logo=electron)](https://www.electronjs.org/)
+[![Powered by Convex](https://img.shields.io/badge/Convex-Backend-orange?style=for-the-badge)](https://convex.dev)
+[![AssemblyAI](https://img.shields.io/badge/AssemblyAI-Transcription-green?style=for-the-badge)](https://www.assemblyai.com/)
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+---
 
-## Deployment
+## 🎯 Current Phase: 1 — Capture ✅
 
-Your project is live at:
+**Status:** Complete
 
-**[https://vercel.com/adhdesigns/v0-adhd-friendly-app](https://vercel.com/adhdesigns/v0-adhd-friendly-app)**
+### ✨ Features
 
-## Build your app
+- ✅ Audio recording with device selection
+- ✅ Real-time transcription (AssemblyAI)
+- ✅ Live waveform visualization
+- ✅ Session management with Convex
+- ✅ Audio playback with transcript sync
+- ✅ Click-to-seek in transcript
+- ✅ Trash system with 30-day auto-cleanup
+- ✅ Pause/resume recording
 
-Continue building your app on:
+---
 
-**[https://v0.app/chat/qW3ybGsnPfC](https://v0.app/chat/qW3ybGsnPfC)**
+## 🚀 Quick Start
 
-## How It Works
+See **[Setup Guide](docs/SETUP.md)** for detailed instructions.
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+```bash
+# Install dependencies
+pnpm install
+
+# Start Convex (Terminal 1)
+pnpm convex:dev
+
+# Start Electron app (Terminal 2)
+pnpm dev
+```
+
+**Requirements:**
+- Node.js 18+
+- Convex account ([convex.dev](https://convex.dev))
+- AssemblyAI API key ([assemblyai.com](https://www.assemblyai.com))
+
+---
+
+## 📖 Documentation
+
+- **[Setup Guide](docs/SETUP.md)** — Installation and configuration
+- **[Phase Implementation Guide](docs/PHASES.md)** — Feature roadmap
+
+---
+
+## 🗺️ Roadmap
+
+| Phase | Name | Status |
+|-------|------|--------|
+| **1** | **Capture** — Recording + Live Transcription | ✅ Complete |
+| **2** | **Process** — Notes Editor + AI Generation | ⬜ Planned |
+| **3** | **Learn** — Study Tools + StudyQuest | ⬜ Planned |
+| **4** | **Connect** — Social + Study Rooms + Games | ⬜ Planned |
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React 19 + TypeScript
+- **Desktop:** Electron 39
+- **Backend:** Convex (real-time database)
+- **Transcription:** AssemblyAI Real-time API
+- **Audio:** Web Audio API
+- **Styling:** Tailwind CSS 4 + shadcn/ui
+- **Build:** Vite + electron-builder
+
+---
+
+## 📂 Project Structure
+
+```
+ScribeCat-v3/
+├── convex/              # Backend (Convex)
+│   ├── auth.ts         # Authentication
+│   ├── schema.ts       # Database schema
+│   ├── sessions.ts     # CRUD operations
+│   └── crons.ts        # Scheduled jobs
+├── src/
+│   ├── main/           # Electron main process
+│   ├── preload/        # Electron preload
+│   └── renderer/       # React app
+│       ├── components/
+│       ├── hooks/
+│       └── types/
+└── docs/
+    ├── PHASES.md       # Implementation guide
+    └── SETUP.md        # Setup instructions
+```
+
+---
+
+## 🧪 Development
+
+```bash
+# Run development servers
+pnpm dev              # Electron + Vite (requires convex:dev running)
+
+# Build for production
+pnpm build            # Compile TypeScript + Vite
+pnpm package          # Create distributable
+
+# Code quality
+pnpm lint             # Check with Biome
+pnpm lint:fix         # Auto-fix issues
+pnpm format           # Format code
+```
+
+---
+
+## 📝 License
+
+MIT
+
+---
+
+## 🙏 Acknowledgments
+
+- **AssemblyAI** for real-time transcription
+- **Convex** for the backend platform
+- **shadcn/ui** for UI components

@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { BrowserWindow, app, ipcMain, screen } from 'electron';
+import { setupAudioIPC } from './ipc/audio';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 // This is only needed for Windows Squirrel installer
@@ -71,6 +72,7 @@ ipcMain.handle('window:isMaximized', () => {
 
 // App lifecycle
 app.whenReady().then(() => {
+  setupAudioIPC(); // Initialize audio IPC handlers
   createWindow();
 
   app.on('activate', () => {

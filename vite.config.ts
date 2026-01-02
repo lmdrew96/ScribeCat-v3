@@ -7,6 +7,7 @@ export default defineConfig({
   root: 'src/renderer',
   base: './',
   publicDir: '../../public',
+  envDir: '../../', // Load .env files from project root
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
