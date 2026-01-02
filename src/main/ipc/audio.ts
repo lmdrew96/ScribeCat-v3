@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { AssemblyAI } from 'assemblyai';
 import { ipcMain } from 'electron';
 import { app } from 'electron';
 
@@ -59,7 +60,7 @@ export function setupAudioIPC() {
   });
 
   /**
-   * Get AssemblyAI temporary token
+   * Get AssemblyAI temporary token using the SDK
    * This keeps the API key secure in the main process
    */
   ipcMain.handle('assemblyai:getToken', async () => {
@@ -69,20 +70,9 @@ export function setupAudioIPC() {
     }
 
     try {
-      const response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
-        method: 'POST',
-        headers: {
-          Authorization: apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to get token: ${response.statusText} - ${errorText}`);
-      }
-
-      const data = (await response.json()) as { token: string };
-      return { success: true, token: data.token };
+      const client = new AssemblyAI({ apiKey });
+      const tokenResponse = await client.realtime.createTemporaryToken({ expires_in: 480 });
+      return { success: true, token: tokenResponse };
     } catch (error) {
       console.error('Error getting AssemblyAI token:', error);
       return { success: false, error: (error as Error).message };
