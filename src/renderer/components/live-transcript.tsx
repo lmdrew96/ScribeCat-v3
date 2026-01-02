@@ -8,12 +8,14 @@ interface LiveTranscriptProps {
 }
 
 export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const prevSegmentsLengthRef = useRef(0);
 
   // Auto-scroll to bottom when new segments arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (viewportRef.current && segments.length !== prevSegmentsLengthRef.current) {
+      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+      prevSegmentsLengthRef.current = segments.length;
     }
   });
 
@@ -42,8 +44,8 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
           <span className="ml-2 text-xs text-muted-foreground">— Recording stopped</span>
         )}
       </h3>
-      <ScrollArea className="flex-1" ref={scrollRef}>
-        <div className="space-y-2 pr-2">
+      <div className="flex-1 min-h-0">
+        <div ref={viewportRef} className="h-full overflow-y-auto pr-2 space-y-2">
           {segments.map((segment, index) => (
             <div
               key={`${segment.timestamp}-${segment.text.substring(0, 20)}`}
@@ -58,7 +60,7 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
