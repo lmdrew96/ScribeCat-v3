@@ -9,15 +9,14 @@ interface LiveTranscriptProps {
 
 export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const prevSegmentsLengthRef = useRef(0);
 
   // Auto-scroll to bottom when new segments arrive
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Need to scroll when segments changes
   useEffect(() => {
-    if (viewportRef.current && segments.length !== prevSegmentsLengthRef.current) {
+    if (viewportRef.current) {
       viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-      prevSegmentsLengthRef.current = segments.length;
     }
-  });
+  }, [segments]);
 
   if (!isRecording && segments.length === 0) {
     return (
