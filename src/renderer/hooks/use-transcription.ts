@@ -82,16 +82,18 @@ export function useTranscription(options?: UseTranscriptionOptions) {
               const segment: TranscriptSegment = {
                 text: message.transcript || '',
                 timestamp: Date.now() - startTimeRef.current,
-                isFinal: message.turn_is_formatted || false,
+                isFinal: message.turn_is_formatted === true,
               };
 
               setSegments((prev) => {
-                // If it's a final transcript, replace the last partial one
-                if (segment.isFinal && prev.length > 0 && !prev[prev.length - 1].isFinal) {
-                  return [...prev.slice(0, -1), segment];
+                if (segment.isFinal) {
+                  // Final transcript: remove all partial transcripts and add the final one
+                  const finalSegments = prev.filter((s) => s.isFinal);
+                  return [...finalSegments, segment];
                 }
-                // Otherwise, append (partial) or add new final
-                return [...prev, segment];
+                // Partial transcript: replace the last partial if exists, otherwise append
+                const finalSegments = prev.filter((s) => s.isFinal);
+                return [...finalSegments, segment];
               });
 
               options?.onSegment?.(segment);
