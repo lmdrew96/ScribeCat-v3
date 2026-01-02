@@ -1,7 +1,7 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { WindowControls } from '@/components/window-controls';
-import { BookOpen, Home, Moon, Settings, Sun } from 'lucide-react';
+import { BookOpen, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 interface TopBarProps {
@@ -10,14 +10,13 @@ interface TopBarProps {
 }
 
 export function TopBar({ currentView, onViewChange }: TopBarProps) {
-  const [isDark, setIsDark] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const isMac = window.electronAPI?.platform === 'darwin';
 
   return (
     <>
       <header
-        className="relative flex h-14 items-center justify-between border-b border-border bg-card px-4"
+        className="relative flex h-16 items-center justify-between border-b border-border bg-card px-4"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         {/* Left side - Logo (with macOS traffic light offset) */}
@@ -27,7 +26,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
             <img
-              src="/assets/nuggy-baby-boy.png"
+              src="/nuggy-baby-boy.png"
               alt="ScribeCat logo"
               className="h-10 w-10 rounded-lg object-cover"
             />
@@ -65,15 +64,6 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
           className="flex items-center gap-2"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsDark(!isDark)}
-            className="h-8 w-8"
-          >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
           <Button
             variant="ghost"
             size="icon"

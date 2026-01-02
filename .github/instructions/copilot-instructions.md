@@ -454,9 +454,9 @@ function setTheme(themeName: string) {
 ```
 
 ### Available Themes
-1. **Study Roast** (default) — dark, warm browns/ambers
-2. **Soft Focus** — light, muted pastels
-3. **Blackout** — true dark, high contrast
+1. **Nugg's Favorite** (default) — #88739E, #DEA549, #8CBDB9, #DBD5E2, #244952, #96D080
+2. **Purring Pastels** — light, muted pastels
+3. **Void Kitty** — true dark, high contrast
 4. **Chaos Cat** — fun wildcard
 5. **High Contrast Dark** — accessibility
 6. **High Contrast Light** — accessibility
