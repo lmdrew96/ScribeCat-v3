@@ -13,6 +13,9 @@ import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
 import type * as generateNotes from "../generateNotes.js";
 import type * as http from "../http.js";
+import type * as lectureContext from "../lectureContext.js";
+import type * as nuggetChat from "../nuggetChat.js";
+import type * as nuggetNotes from "../nuggetNotes.js";
 import type * as sessions from "../sessions.js";
 import type * as uploadImage from "../uploadImage.js";
 
@@ -28,6 +31,9 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   generateNotes: typeof generateNotes;
   http: typeof http;
+  lectureContext: typeof lectureContext;
+  nuggetChat: typeof nuggetChat;
+  nuggetNotes: typeof nuggetNotes;
   sessions: typeof sessions;
   uploadImage: typeof uploadImage;
 }>;

@@ -135,9 +135,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           </div>
                         )}
                         <div className="flex gap-1">
-                          {themeOption.colors.map((color, i) => (
+                          {themeOption.colors.map((color) => (
                             <div
-                              key={i}
+                              key={color}
                               className="rounded-sm w-4 h-4 border border-card-foreground"
                               style={{ backgroundColor: color }}
                             />
@@ -182,7 +182,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     <div className="flex h-6 flex-1 items-center gap-0.5 rounded bg-background px-2">
                       {Array.from({ length: 20 }).map((_, i) => (
                         <div
-                          key={i}
+                          key={`mic-level-${i}`}
                           className={cn(
                             'h-3 w-1 rounded-sm transition-all',
                             i < micLevel / 5 ? 'bg-success' : 'bg-border',
@@ -300,7 +300,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <div className="space-y-5">
                 <div className="flex items-center gap-4">
                   <img
-                    src="/images/untitled-20design.png"
+                    src="/nuggy-baby-boy.png"
                     alt="ScribeCat logo"
                     className="h-16 w-16 rounded-xl object-cover"
                   />

@@ -23,7 +23,7 @@ import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useAction } from 'convex/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -31,7 +31,15 @@ interface NotesPanelProps {
   sessionId?: Id<'sessions'> | null;
 }
 
-export function NotesPanel({ sessionId }: NotesPanelProps) {
+// Ref type for external access
+export interface NotesPanelRef {
+  insertNote: (noteText: string) => void;
+}
+
+export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function NotesPanel(
+  { sessionId },
+  ref,
+) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -119,6 +127,28 @@ export function NotesPanel({ sessionId }: NotesPanelProps) {
       debouncedSave(json, plainText);
     },
   });
+
+  // Expose insertNote method via ref for Nugget Notes integration
+  const insertNote = useCallback(
+    (noteText: string) => {
+      if (!editor) return;
+
+      // Insert as a bullet point at the end of the document
+      editor.chain().focus('end').insertContent(`<p>• ${noteText}</p>`).run();
+
+      console.log('📝 Inserted note from Nugget:', noteText.substring(0, 50));
+    },
+    [editor],
+  );
+
+  // Expose methods via ref
+  useImperativeHandle(
+    ref,
+    () => ({
+      insertNote,
+    }),
+    [insertNote],
+  );
 
   const handleManualSave = useCallback(() => {
     if (editor) {
@@ -259,4 +289,4 @@ export function NotesPanel({ sessionId }: NotesPanelProps) {
       </div>
     </div>
   );
-}
+});

@@ -3,13 +3,19 @@ import type React from 'react';
 import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
 import { GripVertical } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
+
+// Type for NotesPanel ref
+export interface NotesPanelRef {
+  insertNote: (noteText: string) => void;
+}
 
 export function HomeView() {
   const [leftWidth, setLeftWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
+  const notesPanelRef = useRef<NotesPanelRef>(null);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -30,6 +36,13 @@ export function HomeView() {
     [isDragging],
   );
 
+  // Handle inserting a note from Nugget Notes panel into TipTap editor
+  const handleInsertNote = useCallback((noteText: string) => {
+    if (notesPanelRef.current) {
+      notesPanelRef.current.insertNote(noteText);
+    }
+  }, []);
+
   return (
     <div
       className="flex h-full select-none"
@@ -38,7 +51,7 @@ export function HomeView() {
       onMouseLeave={handleMouseUp}
     >
       <div style={{ width: `${leftWidth}%` }} className="min-w-0">
-        <NotesPanel sessionId={currentSessionId} />
+        <NotesPanel sessionId={currentSessionId} ref={notesPanelRef} />
       </div>
 
       {/* Drag handle */}
@@ -50,7 +63,7 @@ export function HomeView() {
       </div>
 
       <div style={{ width: `${100 - leftWidth}%` }} className="min-w-0">
-        <RecordingPanel onSessionChange={setCurrentSessionId} />
+        <RecordingPanel onSessionChange={setCurrentSessionId} onInsertNote={handleInsertNote} />
       </div>
     </div>
   );

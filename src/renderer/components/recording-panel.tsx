@@ -1,5 +1,6 @@
 import { AudioWaveform } from '@/components/audio-waveform';
 import { LiveTranscript } from '@/components/live-transcript';
+import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -9,25 +10,56 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
+import { useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
 import { Mic, Pause, Play, Square } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 interface RecordingPanelProps {
   onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
+  onInsertNote?: (noteText: string) => void;
 }
 
-export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
+export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanelProps) {
   const userId = 'anonymous-user'; // TODO: Get from authenticated user
   const { createSession, updateSession } = useSessions(userId);
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
+
+  // Nugget Notes hook for real-time AI note generation
+  const nuggetNotes = useNuggetNotes();
+
+  // Handle inserting a note into the editor
+  const handleInsertNote = useCallback(
+    (noteText: string) => {
+      if (onInsertNote) {
+        onInsertNote(noteText);
+      }
+    },
+    [onInsertNote],
+  );
 
   // Notify parent when session changes
   useEffect(() => {
     onSessionChange?.(currentSessionId);
   }, [currentSessionId, onSessionChange]);
+
+  // Track if component is mounted for async operations
+  const isMountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      // Clear refs to help garbage collection
+      lastSavedTranscriptRef.current = '';
+      lastNuggetProcessRef.current = '';
+      console.log('🧹 RecordingPanel unmount cleanup');
+    };
+  }, []);
 
   const {
     isRecording,
@@ -41,6 +73,7 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
     togglePause,
     setSelectedDeviceId,
     reset: resetRecorder,
+    getStream,
   } = useAudioRecorder({
     onDataAvailable: async (audioBlob) => {
       // Save audio file when recording stops
@@ -63,7 +96,6 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
   });
 
   const {
-    isConnected: isTranscribing,
     error: transcriptionError,
     segments,
     start: startTranscription,
@@ -74,6 +106,7 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
 
   // Track the last saved transcript to avoid duplicate saves
   const lastSavedTranscriptRef = useRef<string>('');
+  const lastNuggetProcessRef = useRef<string>('');
 
   // Save transcript when we get new final segments (debounced by checking if content changed)
   useEffect(() => {
@@ -103,7 +136,39 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
     saveTranscript();
   }, [segments, currentSessionId, updateSession]);
 
-  const mediaStreamRef = useRef<MediaStream | null>(null);
+  // Process transcript chunks for Nugget Notes
+  // Use a ref to track if the effect is still active
+  const nuggetEffectActiveRef = useRef(true);
+
+  useEffect(() => {
+    nuggetEffectActiveRef.current = true;
+
+    const processForNugget = async () => {
+      if (!nuggetEffectActiveRef.current) return;
+      if (!nuggetNotes.isRecording || !nuggetNotes.isEnabled) return;
+
+      const finalSegments = segments.filter((s) => s.isFinal);
+      if (finalSegments.length === 0) return;
+
+      const fullTranscript = finalSegments.map((s) => s.text).join(' ');
+
+      // Only process if we have new content
+      if (fullTranscript === lastNuggetProcessRef.current) return;
+      lastNuggetProcessRef.current = fullTranscript;
+
+      // Check again if still active before async operation
+      if (!nuggetEffectActiveRef.current) return;
+
+      // Process the transcript chunk
+      await nuggetNotes.processTranscriptChunk(fullTranscript, recordingTime);
+    };
+
+    processForNugget();
+
+    return () => {
+      nuggetEffectActiveRef.current = false;
+    };
+  }, [segments, recordingTime, nuggetNotes]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -124,19 +189,24 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
       // Clear previous transcription when starting a new recording
       resetTranscription();
 
-      // Start audio recording
+      // Clear and start Nugget Notes
+      nuggetNotes.clearNotes();
+      nuggetNotes.startRecording();
+      lastNuggetProcessRef.current = '';
+
+      // Start audio recording first (this creates the media stream)
       await startRecording();
 
-      // Get the media stream for transcription
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: selectedDeviceId === 'default' ? undefined : { exact: selectedDeviceId },
-        },
-      });
+      // Get the media stream from the audio recorder (avoid duplicate getUserMedia)
+      // Small delay to ensure the stream is ready
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const stream = getStream();
 
-      mediaStreamRef.current = stream;
+      if (!stream) {
+        throw new Error('Failed to get media stream from audio recorder');
+      }
 
-      // Start transcription
+      // Start transcription with the shared stream
       await startTranscription(stream);
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -144,11 +214,15 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
   };
 
   const handleStop = async () => {
-    // Stop recording
+    // Stop recording (this also stops the media stream tracks)
     stopRecording();
 
     // Stop transcription
     await stopTranscription();
+
+    // Stop Nugget Notes (process final chunk)
+    const finalTranscript = getFullTranscript();
+    await nuggetNotes.stopRecording(finalTranscript);
 
     // Update final session data
     if (currentSessionId) {
@@ -160,13 +234,9 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
       });
     }
 
-    // Clean up
-    if (mediaStreamRef.current) {
-      for (const track of mediaStreamRef.current.getTracks()) {
-        track.stop();
-      }
-      mediaStreamRef.current = null;
-    }
+    // Clear refs to help garbage collection
+    lastSavedTranscriptRef.current = '';
+    lastNuggetProcessRef.current = '';
 
     // Reset recorder but keep transcription visible
     resetRecorder();
@@ -179,10 +249,19 @@ export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
 
   return (
     <div className="flex h-full flex-col p-2 gap-2">
-      {/* Live transcript - takes most space (~60%) */}
+      {/* Live transcript - takes most space */}
       <div className="flex-[3] min-h-0 overflow-hidden">
         <LiveTranscript isRecording={isRecording} segments={segments} />
       </div>
+
+      {/* Nugget's Notes panel */}
+      <NuggetNotesPanel
+        notes={nuggetNotes.notes}
+        isRecording={isRecording}
+        isEnabled={nuggetNotes.isEnabled}
+        onInsertNote={handleInsertNote}
+        onToggleEnabled={nuggetNotes.setEnabled}
+      />
 
       {/* Waveform visualizer - compact */}
       <AudioWaveform isActive={isRecording && !isPaused} audioLevel={audioLevel} />

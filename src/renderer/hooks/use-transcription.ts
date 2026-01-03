@@ -22,6 +22,10 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const startTimeRef = useRef<number>(0);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  // Track connection state with ref to avoid stale closure in cleanup
+  const isConnectedRef = useRef(false);
 
   /**
    * Start transcription
@@ -55,6 +59,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         // Set up WebSocket event handlers
         ws.onopen = () => {
           console.log('AssemblyAI v3 connection opened');
+          isConnectedRef.current = true;
           setIsConnected(true);
           setError(null);
         };
@@ -68,6 +73,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
 
         ws.onclose = (event) => {
           console.log('AssemblyAI connection closed:', event.code, event.reason);
+          isConnectedRef.current = false;
           setIsConnected(false);
         };
 
@@ -114,6 +120,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         audioContextRef.current = audioContext;
 
         const source = audioContext.createMediaStreamSource(stream);
+        sourceNodeRef.current = source;
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
 
@@ -149,24 +156,59 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   const stop = useCallback(async () => {
     try {
+      // Mark as disconnected immediately
+      isConnectedRef.current = false;
+
+      // Disconnect source node first
+      if (sourceNodeRef.current) {
+        try {
+          sourceNodeRef.current.disconnect();
+        } catch (e) {
+          // Ignore - may already be disconnected
+        }
+        sourceNodeRef.current = null;
+      }
+
       // Clean up audio processing
       if (processorRef.current) {
-        processorRef.current.disconnect();
+        try {
+          processorRef.current.disconnect();
+        } catch (e) {
+          // Ignore - may already be disconnected
+        }
         processorRef.current = null;
       }
 
       if (audioContextRef.current) {
-        await audioContextRef.current.close();
+        try {
+          await audioContextRef.current.close();
+        } catch (e) {
+          // Ignore - may already be closed
+        }
         audioContextRef.current = null;
+      }
+
+      // Stop media stream tracks
+      if (mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop();
+        }
+        mediaStreamRef.current = null;
       }
 
       // Close WebSocket
       if (wsRef.current) {
-        wsRef.current.close();
+        if (
+          wsRef.current.readyState === WebSocket.OPEN ||
+          wsRef.current.readyState === WebSocket.CONNECTING
+        ) {
+          wsRef.current.close();
+        }
         wsRef.current = null;
       }
 
       setIsConnected(false);
+      console.log('🧹 Transcription cleanup complete');
     } catch (error) {
       console.error('Error stopping transcription:', error);
     }
@@ -195,11 +237,57 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   useEffect(() => {
     return () => {
-      if (isConnected) {
-        stop();
+      // Use ref to check connection state to avoid stale closure
+      if (isConnectedRef.current || wsRef.current || audioContextRef.current) {
+        // Inline cleanup to avoid calling stop() with stale closure
+        isConnectedRef.current = false;
+
+        if (sourceNodeRef.current) {
+          try {
+            sourceNodeRef.current.disconnect();
+          } catch (e) {
+            /* ignore */
+          }
+          sourceNodeRef.current = null;
+        }
+
+        if (processorRef.current) {
+          try {
+            processorRef.current.disconnect();
+          } catch (e) {
+            /* ignore */
+          }
+          processorRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+          audioContextRef.current.close().catch(() => {
+            /* ignore */
+          });
+          audioContextRef.current = null;
+        }
+
+        if (mediaStreamRef.current) {
+          for (const track of mediaStreamRef.current.getTracks()) {
+            track.stop();
+          }
+          mediaStreamRef.current = null;
+        }
+
+        if (wsRef.current) {
+          if (
+            wsRef.current.readyState === WebSocket.OPEN ||
+            wsRef.current.readyState === WebSocket.CONNECTING
+          ) {
+            wsRef.current.close();
+          }
+          wsRef.current = null;
+        }
+
+        console.log('🧹 Transcription unmount cleanup complete');
       }
     };
-  }, [isConnected, stop]);
+  }, []);
 
   return {
     isConnected,

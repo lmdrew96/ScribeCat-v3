@@ -1,3 +1,4 @@
+import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools';
@@ -106,6 +107,9 @@ export function StudyView() {
           </div>
         )}
       </div>
+
+      {/* Nugget Chat - floating button + drawer */}
+      <NuggetChat transcript={selectedRecording?.transcript} notes={selectedRecording?.notes} />
     </div>
   );
 }

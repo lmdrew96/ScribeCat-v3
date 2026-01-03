@@ -1,6 +1,6 @@
 # ScribeCat v3 — Phase Implementation Guide
 
-> **Current Phase: 2 — Process**
+> **Current Phase: 3 — Learn**
 > 
 > Last updated: January 2026
 
@@ -11,7 +11,7 @@
 | Phase | Name | Goal | Status |
 |-------|------|------|--------|
 | 1 | **Capture** | Recording + live transcription | ✅ Complete |
-| 2 | **Process** | Notes editor + AI generation | 🟡 In Progress |
+| 2 | **Process** | Notes editor + AI generation | ✅ Complete |
 | 3 | **Learn** | Study tools + StudyQuest | ⬜ Not Started |
 | 4 | **Connect** | Social + Study Rooms + Games | ⬜ Not Started |
 
@@ -73,50 +73,63 @@
 
 ---
 
-## Phase 2: Process
+## Phase 2: Process ✅ COMPLETE
 
 **Goal:** AI-powered note-taking with a rich editor
 
 ### Features
 
-- [ ] **TipTap Rich Text Editor**
-  - [ ] Basic formatting (bold, italic, underline, strikethrough)
-  - [ ] Headings (H1-H3), lists, blockquotes
-  - [ ] Superscript, subscript, hyperlink
-  - [ ] Alignment (left, center, justify, right)
-  - [ ] Highlighter (theme-dependent preset colors)
-  - [ ] Font size dropdown (px)
-  - [ ] Tables (insert, edit, resize)
-  - [ ] Code blocks
-  - [ ] Undo/redo
-  - [ ] Smart auto-save
+- [x] **TipTap Rich Text Editor**
+  - [x] Basic formatting (bold, italic, underline, strikethrough)
+  - [x] Headings (H1-H3), lists, blockquotes
+  - [x] Superscript, subscript, hyperlink
+  - [x] Alignment (left, center, justify, right)
+  - [x] Highlighter (theme-dependent preset colors)
+  - [x] Font size dropdown (px)
+  - [x] Tables (insert, edit, resize)
+  - [x] Code blocks
+  - [x] Undo/redo
+  - [x] Smart auto-save (750ms debounce + Cmd+S manual)
 
-- [ ] **Excalidraw Diagrams**
-  - [ ] "Add Diagram" button in toolbar
-  - [ ] Inline Excalidraw canvas
-  - [ ] Diagrams stored as JSON
-  - [ ] Resize/reposition diagram blocks
-  - [ ] Double-click to edit
+- [x] **Excalidraw Diagrams**
+  - [x] "Add Diagram" button in toolbar
+  - [x] Inline Excalidraw canvas (lazy-loaded)
+  - [x] Diagrams stored as JSON
+  - [x] Resize/reposition diagram blocks
+  - [x] Double-click to edit, view-only by default
 
-- [ ] **Drag/Resize Objects** (interact.js)
-  - [ ] Images: insert, resize, drag
-  - [ ] Textboxes: insert, resize, drag
-  - [ ] Diagram blocks: resize, drag
+- [x] **Drag/Resize Objects** (interact.js)
+  - [x] Images: insert, resize, drag
+  - [x] Textboxes: insert, resize, drag
+  - [x] Diagram blocks: resize, drag
+  - [x] Alt+drag for unconstrained resize
 
-- [ ] **Live AI Note Generation**
-  - [ ] "Generate Notes" button → toggle
-  - [ ] Takes transcript → structured notes
-  - [ ] Inserts into editor
-  - [ ] Loading state + error handling
+- [x] **Live AI Note Generation**
+  - [x] "Generate Notes" button in toolbar
+  - [x] Takes transcript → structured markdown notes
+  - [x] Markdown-to-TipTap converter
+  - [x] Appends to existing notes
+  - [x] Loading state + error handling
+  - [x] Uses Claude via Convex action
 
 ### Acceptance Criteria
 
-- [ ] Can type rich notes with all formatting options
-- [ ] Tables work correctly (add rows/cols, resize)
-- [ ] Can create and edit inline diagrams
-- [ ] Can drag/resize images, textboxes, diagrams
-- [ ] AI generates coherent notes from transcript
-- [ ] Notes auto-save without data loss
+- [x] Can type rich notes with all formatting options
+- [x] Tables work correctly (add rows/cols, resize)
+- [x] Can create and edit inline diagrams
+- [x] Can drag/resize images, textboxes, diagrams
+- [x] AI generates coherent notes from transcript
+- [x] Notes auto-save without data loss
+
+### Technical Notes
+
+**Editor:** TipTap v3.14.0 with 15+ extensions  
+**Diagrams:** Excalidraw 0.18.0 with React.lazy code-splitting  
+**Drag/Resize:** interact.js 1.10.27 with aspect ratio constraints  
+**AI:** Claude claude-sonnet-4-5-20250929 via Convex action  
+**Storage:** Notes as TipTap JSON + plain text for search indexing
+
+**Date Completed:** January 2, 2026
 
 ---
 
