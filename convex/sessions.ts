@@ -57,6 +57,7 @@ export const update = mutation({
       ),
     ),
     notes: v.optional(v.string()),
+    notesPlainText: v.optional(v.string()),
     duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

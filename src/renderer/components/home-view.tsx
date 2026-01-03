@@ -4,10 +4,12 @@ import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
 import { GripVertical } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 export function HomeView() {
   const [leftWidth, setLeftWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -36,7 +38,7 @@ export function HomeView() {
       onMouseLeave={handleMouseUp}
     >
       <div style={{ width: `${leftWidth}%` }} className="min-w-0">
-        <NotesPanel />
+        <NotesPanel sessionId={currentSessionId} />
       </div>
 
       {/* Drag handle */}
@@ -48,7 +50,7 @@ export function HomeView() {
       </div>
 
       <div style={{ width: `${100 - leftWidth}%` }} className="min-w-0">
-        <RecordingPanel />
+        <RecordingPanel onSessionChange={setCurrentSessionId} />
       </div>
     </div>
   );

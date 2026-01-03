@@ -1,68 +1,257 @@
-import { Button } from '@/components/ui/button';
-import { Bold, Heading1, Italic, List, Sparkles, Strikethrough, Underline } from 'lucide-react';
-import type React from 'react';
-import { useState } from 'react';
+import { EditorToolbar } from '@/components/editor-toolbar';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import { useSession, useSessions } from '@/hooks/use-sessions';
+import { DraggableImage } from '@/lib/draggable-image-extension';
+import { ExcalidrawNode } from '@/lib/excalidraw-extension';
+import { FontSize } from '@/lib/font-size-extension';
+import { markdownToTipTap } from '@/lib/markdown-to-tiptap';
+import { TextBox } from '@/lib/textbox-extension';
+import CodeBlock from '@tiptap/extension-code-block';
+import Color from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
+import Highlight from '@tiptap/extension-highlight';
+import Link from '@tiptap/extension-link';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import { Table } from '@tiptap/extension-table';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableRow } from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Underline from '@tiptap/extension-underline';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useAction } from 'convex/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
-export function NotesPanel() {
-  const [notes, setNotes] = useState('');
-  const [hasContent, setHasContent] = useState(false);
+interface NotesPanelProps {
+  sessionId?: Id<'sessions'> | null;
+}
 
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value);
-    setHasContent(e.target.value.length > 0);
+export function NotesPanel({ sessionId }: NotesPanelProps) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  const userId = 'anonymous-user'; // TODO: Get from authenticated user
+  const { updateSession } = useSessions(userId);
+  const session = useSession(sessionId || null);
+  const generateNotesAction = useAction(api.ai.generateNotesFromTranscript);
+
+  const saveToConvex = useCallback(
+    async (json: string, plainText: string) => {
+      if (!sessionId) return;
+
+      try {
+        setSaveState('saving');
+        await updateSession({
+          id: sessionId,
+          notes: json,
+          notesPlainText: plainText,
+        });
+        setSaveState('saved');
+        setTimeout(() => setSaveState('idle'), 2000);
+      } catch (error) {
+        console.error('Error saving notes:', error);
+        setSaveState('error');
+        setTimeout(() => setSaveState('idle'), 3000);
+      }
+    },
+    [sessionId, updateSession],
+  );
+
+  const debouncedSave = useDebouncedCallback(saveToConvex, 750);
+
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+        codeBlock: false, // Disable default, we'll add our own
+      }),
+      Underline,
+      Superscript,
+      Subscript,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline cursor-pointer',
+        },
+      }),
+      CodeBlock,
+      Color,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      DraggableImage,
+      TextBox,
+      ExcalidrawNode,
+    ],
+    [],
+  );
+
+  const editor = useEditor({
+    extensions,
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none h-full p-3 text-foreground',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      const json = JSON.stringify(editor.getJSON());
+      const plainText = editor.getText();
+      debouncedSave(json, plainText);
+    },
+  });
+
+  const handleManualSave = useCallback(() => {
+    if (editor) {
+      const json = JSON.stringify(editor.getJSON());
+      const plainText = editor.getText();
+      saveToConvex(json, plainText);
+    }
+  }, [editor, saveToConvex]);
+
+  // Keyboard shortcut for manual save (Cmd+S / Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleManualSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleManualSave]);
+
+  // Load initial content from session
+  useEffect(() => {
+    if (editor && session?.notes) {
+      try {
+        const content = JSON.parse(session.notes);
+        editor.commands.setContent(content);
+      } catch (error) {
+        console.error('Error parsing notes:', error);
+      }
+    }
+  }, [editor, session]);
+
+  const handleGenerateNotes = async () => {
+    console.log('=== Generate Notes Clicked ===');
+    console.log('sessionId:', sessionId);
+    console.log('session:', session);
+    console.log('session?.transcript:', session?.transcript);
+    console.log('transcript length:', session?.transcript?.length);
+
+    if (!sessionId) {
+      console.error('No sessionId found');
+      alert('No recording session found. Please start a recording first.');
+      return;
+    }
+
+    if (!session) {
+      console.error('No session object found');
+      alert('Session not loaded yet. Please wait a moment and try again.');
+      return;
+    }
+
+    if (!session.transcript || session.transcript.trim().length === 0) {
+      console.error('Transcript is empty or undefined');
+      alert(
+        'No transcript available yet. Please speak during the recording to generate a transcript, then try again.',
+      );
+      return;
+    }
+
+    console.log('Starting AI generation with transcript:', session.transcript.substring(0, 100));
+    setIsGenerating(true);
+
+    try {
+      console.log('Calling generateNotesAction...');
+      const data = await generateNotesAction({
+        transcript: session.transcript,
+        sessionId: sessionId as string,
+      });
+      console.log('Response data:', data);
+
+      if (data.success && data.notes && editor) {
+        // Convert markdown to TipTap JSON
+        console.log('Raw markdown notes:', data.notes);
+        const tiptapContent = markdownToTipTap(data.notes);
+        console.log('Converted TipTap content:', JSON.stringify(tiptapContent, null, 2));
+
+        // Append to existing content
+        const currentContent = editor.getJSON();
+        console.log('Current editor content:', JSON.stringify(currentContent, null, 2));
+
+        const newContent = {
+          ...currentContent,
+          content: [
+            ...(currentContent.content || []),
+            {
+              type: 'paragraph',
+              content: [{ type: 'hardBreak' }],
+            },
+            ...(tiptapContent.content || []),
+          ],
+        };
+
+        console.log('New content to set:', JSON.stringify(newContent, null, 2));
+
+        editor.commands.setContent(newContent);
+        console.log('Notes generated and inserted successfully');
+
+        // Scroll to the end
+        editor.commands.focus('end');
+      } else {
+        console.warn('Generation succeeded but data was invalid:', data);
+        alert('Received invalid response from AI. Please try again.');
+      }
+    } catch (error) {
+      console.error('Failed to generate notes:', error);
+      alert(
+        `Failed to generate notes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
     <div className="flex h-full flex-col p-2 gap-2">
-      {/* Compact toolbar */}
-      <div className="flex items-center gap-1">
-        <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5">
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Bold className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Italic className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Underline className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Strikethrough className="h-3 w-3" />
-          </Button>
-          <div className="mx-0.5 h-4 w-px bg-border" />
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <Heading1 className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <List className="h-3 w-3" />
-          </Button>
-        </div>
-
-        <div className="flex-1" />
-
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-1.5 h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Sparkles className="h-3 w-3" />
-          Generate
-        </Button>
-      </div>
+      <EditorToolbar
+        editor={editor}
+        onGenerateNotes={handleGenerateNotes}
+        isGenerating={isGenerating}
+        onSave={handleManualSave}
+        saveState={saveState}
+      />
 
       {/* Editor area */}
-      <div className="relative flex-1 rounded-lg bg-card min-h-0">
-        <textarea
-          value={notes}
-          onChange={handleNotesChange}
-          placeholder="Start typing your notes..."
-          className="h-full w-full resize-none rounded-lg bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
-        />
+      <div className="relative flex-1 rounded-lg bg-card min-h-0 overflow-auto">
+        <EditorContent editor={editor} className="h-full" />
 
-        {!hasContent && (
+        {!editor?.getText() && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">Notes will appear here as you type</p>
+              <p className="text-xs text-muted-foreground">Start typing your notes...</p>
               <p className="mt-0.5 text-xs text-muted-foreground/70">or let AI generate them</p>
             </div>
           </div>

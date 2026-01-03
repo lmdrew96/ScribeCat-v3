@@ -13,11 +13,21 @@ import { useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
 import { Mic, Pause, Play, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { Id } from '../../../convex/_generated/dataModel';
 
-export function RecordingPanel() {
+interface RecordingPanelProps {
+  onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
+}
+
+export function RecordingPanel({ onSessionChange }: RecordingPanelProps) {
   const userId = 'anonymous-user'; // TODO: Get from authenticated user
   const { createSession, updateSession } = useSessions(userId);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
+
+  // Notify parent when session changes
+  useEffect(() => {
+    onSessionChange?.(currentSessionId);
+  }, [currentSessionId, onSessionChange]);
 
   const {
     isRecording,
@@ -60,22 +70,38 @@ export function RecordingPanel() {
     stop: stopTranscription,
     reset: resetTranscription,
     getFullTranscript,
-  } = useTranscription({
-    onSegment: async (segment) => {
-      // Auto-save transcript segments to Convex
-      if (currentSessionId && segment.isFinal) {
-        try {
-          await updateSession({
-            id: currentSessionId,
-            transcriptSegments: segments,
-            transcript: getFullTranscript(),
-          });
-        } catch (error) {
-          console.error('Error saving transcript segment:', error);
-        }
+  } = useTranscription();
+
+  // Track the last saved transcript to avoid duplicate saves
+  const lastSavedTranscriptRef = useRef<string>('');
+
+  // Save transcript when we get new final segments (debounced by checking if content changed)
+  useEffect(() => {
+    const saveTranscript = async () => {
+      if (!currentSessionId || segments.length === 0) return;
+
+      const finalSegments = segments.filter((s) => s.isFinal);
+      if (finalSegments.length === 0) return;
+
+      const fullTranscript = finalSegments.map((s) => s.text).join(' ');
+
+      // Only save if transcript actually changed
+      if (fullTranscript === lastSavedTranscriptRef.current) return;
+      lastSavedTranscriptRef.current = fullTranscript;
+
+      try {
+        await updateSession({
+          id: currentSessionId,
+          transcriptSegments: segments,
+          transcript: fullTranscript,
+        });
+        console.log(`Transcript saved: ${fullTranscript.substring(0, 50)}...`);
+      } catch (error) {
+        console.error('Error saving transcript:', error);
       }
-    },
-  });
+    };
+    saveTranscript();
+  }, [segments, currentSessionId, updateSession]);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
 

@@ -69,8 +69,7 @@
 **Transcription:** AssemblyAI WebSocket (API key in main process, token passed to renderer)  
 **Storage:** Audio files in Electron user data directory, metadata in Convex
 
-**Date Completed:** January 1, 2026  
-**See:** [Implementation Summary](IMPLEMENTATION_SUMMARY.md) for full details
+**Date Completed:** January 1, 2026
 
 ---
 
@@ -82,11 +81,15 @@
 
 - [ ] **TipTap Rich Text Editor**
   - [ ] Basic formatting (bold, italic, underline, strikethrough)
-  - [ ] Headings, lists, blockquotes
+  - [ ] Headings (H1-H3), lists, blockquotes
+  - [ ] Superscript, subscript, hyperlink
+  - [ ] Alignment (left, center, justify, right)
+  - [ ] Highlighter (theme-dependent preset colors)
+  - [ ] Font size dropdown (px)
   - [ ] Tables (insert, edit, resize)
   - [ ] Code blocks
   - [ ] Undo/redo
-  - [ ] Auto-save (every 2 seconds while typing)
+  - [ ] Smart auto-save
 
 - [ ] **Excalidraw Diagrams**
   - [ ] "Add Diagram" button in toolbar
@@ -100,8 +103,8 @@
   - [ ] Textboxes: insert, resize, drag
   - [ ] Diagram blocks: resize, drag
 
-- [ ] **AI Note Generation**
-  - [ ] "Generate Notes" button
+- [ ] **Live AI Note Generation**
+  - [ ] "Generate Notes" button → toggle
   - [ ] Takes transcript → structured notes
   - [ ] Inserts into editor
   - [ ] Loading state + error handling
@@ -241,7 +244,7 @@ Before marking a phase complete:
 
 ### From v2 — Reference Only
 
-These v2 patterns can be referenced but NOT copy-pasted:
+These v2 patterns should be referenced but NOT copy-pasted:
 
 | Feature | v2 Location | Notes |
 |---------|-------------|-------|

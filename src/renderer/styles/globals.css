@@ -326,3 +326,137 @@
   --sidebar-border: #000000;
   --sidebar-ring: #0000CC;
 }
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Active toolbar buttons */
+button[data-active="true"] {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* TipTap heading styles */
+.ProseMirror h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-top: 0.67em;
+  margin-bottom: 0.67em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-top: 0.83em;
+  margin-bottom: 0.83em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+/* TipTap list styles */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin: 1em 0;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin: 0.25em 0;
+}
+
+/* TipTap blockquote styles */
+.ProseMirror blockquote {
+  border-left: 4px solid var(--primary);
+  padding-left: 1em;
+  margin: 1em 0;
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+
+/* TipTap code block styles */
+.ProseMirror pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.75rem 1rem;
+  margin: 1em 0;
+}
+
+.ProseMirror code {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  color: var(--foreground);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.2em 0.4em;
+}
+
+/* TipTap table styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 0.5em;
+  position: relative;
+  vertical-align: top;
+}
+
+.ProseMirror th {
+  background-color: var(--muted);
+  font-weight: bold;
+  text-align: left;
+}
+
+.ProseMirror .selectedCell:after {
+  background: var(--primary);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 0.2;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+/* TipTap highlight styles */
+.ProseMirror mark {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.125em 0.25em;
+  border-radius: 0.125rem;
+}

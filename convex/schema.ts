@@ -21,6 +21,7 @@ export default defineSchema({
       ),
     ),
     notes: v.optional(v.string()),
+    notesPlainText: v.optional(v.string()), // Plain text for search
     duration: v.number(), // Duration in milliseconds
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -29,7 +30,11 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_deleted', ['userId', 'isDeleted'])
-    .index('by_deleted_at', ['isDeleted', 'deletedAt']),
+    .index('by_deleted_at', ['isDeleted', 'deletedAt'])
+    .searchIndex('search_notes', {
+      searchField: 'notesPlainText',
+      filterFields: ['userId', 'isDeleted'],
+    }),
 
   // User settings (extended from auth)
   userSettings: defineTable({
