@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { action } from './_generated/server';
+import { AI_MODEL } from './config';
 
 export const generateNotesFromTranscript = action({
   args: {
@@ -34,7 +35,7 @@ ${args.transcript}
 Please generate well-structured markdown notes from this transcript. Include diagram suggestions in HTML comments where visual aids would enhance understanding.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: AI_MODEL,
       max_tokens: 4096,
       messages: [
         {

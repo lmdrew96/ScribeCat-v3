@@ -5,6 +5,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
+import { AI_MODEL } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,10 +62,10 @@ Your personality:
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: AI_MODEL,
       max_tokens: 1024,
       system: systemPrompt,
-      messages: messages.map(m => ({
+      messages: messages.map((m) => ({
         role: m.role,
         content: m.content,
       })),

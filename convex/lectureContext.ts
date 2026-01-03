@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
+import { AI_MODEL } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,7 +41,9 @@ export const extractLectureContext = httpAction(async (ctx, request) => {
 
   const anthropic = new Anthropic({ apiKey });
 
-  const prevContext = previousContext ? JSON.stringify(previousContext) : JSON.stringify(EMPTY_CONTEXT);
+  const prevContext = previousContext
+    ? JSON.stringify(previousContext)
+    : JSON.stringify(EMPTY_CONTEXT);
 
   const prompt = `Analyze this lecture transcript and extract structured context. Be very concise.
 
@@ -55,7 +58,7 @@ Return ONLY valid JSON (no markdown, no explanation):
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: AI_MODEL,
       max_tokens: 300,
       temperature: 0.2,
       messages: [
@@ -67,27 +70,27 @@ Return ONLY valid JSON (no markdown, no explanation):
     });
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
-    
+
     // Parse the JSON response
     let context: LectureContext = EMPTY_CONTEXT;
     try {
       // Try to extract JSON from response (handle potential markdown wrapping)
       let jsonStr = responseText.trim();
-      
+
       // Remove markdown code blocks if present
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (jsonMatch) {
         jsonStr = jsonMatch[1].trim();
       }
-      
+
       // Find JSON object boundaries
       const startIdx = jsonStr.indexOf('{');
       const endIdx = jsonStr.lastIndexOf('}');
-      
+
       if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
         jsonStr = jsonStr.slice(startIdx, endIdx + 1);
         const parsed = JSON.parse(jsonStr);
-        
+
         // Validate structure
         if (
           Array.isArray(parsed.themes) &&

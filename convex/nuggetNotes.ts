@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
+import { AI_MODEL } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,7 +42,7 @@ export const generateNuggetNotes = httpAction(async (ctx, request) => {
   const anthropic = new Anthropic({ apiKey });
 
   // Build context string
-  const contextStr = context?.currentTopic 
+  const contextStr = context?.currentTopic
     ? `Topic: "${context.currentTopic}". Themes: ${context.themes?.join(', ') || 'general'}.`
     : 'Lecture in progress.';
 
@@ -56,7 +57,7 @@ Output ONLY bullet points (no intro, no explanation). Each must start with "- ":
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: AI_MODEL,
       max_tokens: 150,
       temperature: 0.2,
       messages: [
@@ -68,27 +69,27 @@ Output ONLY bullet points (no intro, no explanation). Each must start with "- ":
     });
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
-    
+
     // Parse response into notes
     const lines = responseText
       .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.startsWith('-') || line.startsWith('•'));
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('-') || line.startsWith('•'));
 
     const now = Date.now();
     let noteCounter = 0;
-    
+
     const notes: NuggetNote[] = lines
       .slice(0, 3) // Max 3 notes per generation
-      .map(line => {
+      .map((line) => {
         // Remove bullet point prefix and clean up
         const text = line
           .replace(/^[-•]\s*/, '')
           .replace(/\*\*/g, '') // Remove markdown bold
           .trim();
-        
+
         if (text.length < 5) return null; // Skip very short notes
-        
+
         noteCounter++;
         return {
           id: `note-${now}-${noteCounter}`,

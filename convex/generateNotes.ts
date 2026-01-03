@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
+import { AI_MODEL } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,7 +41,7 @@ Please generate well-structured markdown notes from this transcript. Include dia
 
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: AI_MODEL,
       max_tokens: 4096,
       messages: [
         {
