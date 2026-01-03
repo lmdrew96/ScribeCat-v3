@@ -2,10 +2,10 @@
 name: Brainstorm
 description: Interactive brainstorming and solution exploration with research
 argument-hint: Describe the problem, goal, or idea to explore
-tools: ['search', 'fetch', 'github/github-mcp-server/search_repositories', 'github/github-mcp-server/search_code', 'github/github-mcp-server/get_issue', 'runSubagent', 'problems', 'changes', 'githubRepo']
+tools: ['search', 'web/fetch', 'github/search_code', 'github/get_issue', 'agent', 'read/problems', 'search/changes', 'web/githubRepo']
 handoffs:
   - label: Create Plan
-    agent: plan
+    agent: Plan
     prompt: Create a detailed plan based on this brainstorm session
     showContinueOn: false
     send: true
