@@ -9,7 +9,9 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as audioStorage from "../audioStorage.js";
 import type * as auth from "../auth.js";
+import type * as citations from "../citations.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
 import type * as generateNotes from "../generateNotes.js";
@@ -17,7 +19,9 @@ import type * as http from "../http.js";
 import type * as lectureContext from "../lectureContext.js";
 import type * as nuggetChat from "../nuggetChat.js";
 import type * as nuggetNotes from "../nuggetNotes.js";
+import type * as prompts from "../prompts.js";
 import type * as sessions from "../sessions.js";
+import type * as transcription from "../transcription.js";
 import type * as uploadImage from "../uploadImage.js";
 
 import type {
@@ -28,7 +32,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  audioStorage: typeof audioStorage;
   auth: typeof auth;
+  citations: typeof citations;
   config: typeof config;
   crons: typeof crons;
   generateNotes: typeof generateNotes;
@@ -36,7 +42,9 @@ declare const fullApi: ApiFromModules<{
   lectureContext: typeof lectureContext;
   nuggetChat: typeof nuggetChat;
   nuggetNotes: typeof nuggetNotes;
+  prompts: typeof prompts;
   sessions: typeof sessions;
+  transcription: typeof transcription;
   uploadImage: typeof uploadImage;
 }>;
 
