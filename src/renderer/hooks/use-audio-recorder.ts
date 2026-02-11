@@ -32,6 +32,10 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   // Track recording state with ref to avoid stale closure in cleanup
   const isRecordingRef = useRef(false);
 
+  // Stable ref for options to avoid re-running effects on every render
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   /**
    * Load available audio input devices
    */
@@ -47,9 +51,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       setDevices(audioInputs);
     } catch (error) {
       console.error('Error loading audio devices:', error);
-      options?.onError?.(error as Error);
+      optionsRef.current?.onError?.(error as Error);
     }
-  }, [options]);
+  }, []);
 
   /**
    * Update audio level visualization
@@ -109,13 +113,13 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        options?.onDataAvailable?.(audioBlob);
+        optionsRef.current?.onDataAvailable?.(audioBlob);
         chunksRef.current = [];
       };
 
       mediaRecorder.onerror = (event) => {
         console.error('MediaRecorder error:', event);
-        options?.onError?.(new Error('Recording error'));
+        optionsRef.current?.onError?.(new Error('Recording error'));
       };
 
       mediaRecorderRef.current = mediaRecorder;
@@ -137,9 +141,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       setIsPaused(false);
     } catch (error) {
       console.error('Error starting recording:', error);
-      options?.onError?.(error as Error);
+      optionsRef.current?.onError?.(error as Error);
     }
-  }, [selectedDeviceId, options, updateAudioLevel]);
+  }, [selectedDeviceId, updateAudioLevel]);
 
   /**
    * Stop recording
@@ -242,9 +246,12 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, []);
 
   /**
-   * Request mic permission on mount, then load devices
+   * Request mic permission once on mount, then load devices.
+   * Separate from device-change listener to avoid re-requesting permission.
    */
   useEffect(() => {
+    let cancelled = false;
+
     async function requestPermissionAndLoadDevices() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -255,14 +262,23 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       } catch (error) {
         console.warn('Microphone permission denied:', error);
       }
-      await loadDevices();
+      if (!cancelled) {
+        await loadDevices();
+      }
     }
 
     requestPermissionAndLoadDevices();
 
-    // Listen for device changes
-    navigator.mediaDevices.addEventListener('devicechange', loadDevices);
+    return () => {
+      cancelled = true;
+    };
+  }, [loadDevices]);
 
+  /**
+   * Listen for device changes (e.g. plugging in a new mic)
+   */
+  useEffect(() => {
+    navigator.mediaDevices.addEventListener('devicechange', loadDevices);
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', loadDevices);
     };
