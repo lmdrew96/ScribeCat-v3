@@ -242,10 +242,23 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, []);
 
   /**
-   * Load devices on mount and when permissions change
+   * Request mic permission on mount, then load devices
    */
   useEffect(() => {
-    loadDevices();
+    async function requestPermissionAndLoadDevices() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Stop the stream immediately — we just needed to trigger the permission prompt
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+      } catch (error) {
+        console.warn('Microphone permission denied:', error);
+      }
+      await loadDevices();
+    }
+
+    requestPermissionAndLoadDevices();
 
     // Listen for device changes
     navigator.mediaDevices.addEventListener('devicechange', loadDevices);
