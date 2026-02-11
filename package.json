@@ -1,9 +1,8 @@
 {
   "name": "scribecat-v3",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "ADHD-friendly lecture companion - Record, transcribe, and study smarter",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -18,7 +17,10 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": ["biome check --apply", "biome format --write"]
+    "*.{ts,tsx,js,jsx}": [
+      "biome check --write --no-errors-on-unmatched",
+      "biome format --write --no-errors-on-unmatched"
+    ]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -69,11 +71,13 @@
     "@tiptap/extension-underline": "^3.14.0",
     "@tiptap/react": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
+    "assemblyai": "^4.22.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "convex": "^1.31.2",
     "date-fns": "4.1.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "interactjs": "^1.10.27",

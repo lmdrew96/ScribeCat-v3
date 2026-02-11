@@ -1,17 +1,13 @@
 # Dependencies
 node_modules/
 
-# Next.js (temporary - will be removed when converting to Electron)
+# Build output
+dist/
+
+# Legacy
 .next/
 out/
-
-# Electron
-dist/
 release/
-*.dmg
-*.exe
-*.AppImage
-*.snap
 
 # Build outputs
 build/
