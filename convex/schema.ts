@@ -9,8 +9,10 @@ export default defineSchema({
   sessions: defineTable({
     userId: v.string(),
     title: v.string(),
+    lectureType: v.optional(v.string()), // "stem" | "humanities" | "discussion" | "lab" | "review" | "general"
     audioFilePath: v.optional(v.string()), // Local file path
     transcript: v.optional(v.string()),
+    quickNotes: v.optional(v.string()), // User's manual notes during recording
     transcriptSegments: v.optional(
       v.array(
         v.object({

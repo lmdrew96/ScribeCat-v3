@@ -5,8 +5,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { CitationMark } from '@/lib/citation-mark';
+import CodeBlock from '@tiptap/extension-code-block';
+import Highlight from '@tiptap/extension-highlight';
+import Link from '@tiptap/extension-link';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import { Table } from '@tiptap/extension-table';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableRow } from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Underline from '@tiptap/extension-underline';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 import { FileText, Mic, Pause, Play } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StudyContentProps {
   recording: Recording;
@@ -14,6 +29,7 @@ interface StudyContentProps {
 
 export function StudyContent({ recording }: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
+  const notesContainerRef = useRef<HTMLDivElement>(null);
 
   const { isPlaying, currentTime, duration, audioLevel, load, togglePlay, seek } = useAudioPlayer({
     onTimeUpdate: (time) => {
@@ -27,6 +43,72 @@ export function StudyContent({ recording }: StudyContentProps) {
       }
     },
   });
+
+  // Read-only TipTap editor for rendering notes with citations
+  const readOnlyExtensions = useMemo(
+    () => [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        codeBlock: false,
+      }),
+      Underline,
+      Superscript,
+      Subscript,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Highlight.configure({ multicolor: true }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: { class: 'text-primary underline cursor-pointer' },
+      }),
+      CodeBlock,
+      TextStyle,
+      CitationMark,
+    ],
+    [],
+  );
+
+  const readOnlyEditor = useEditor({
+    extensions: readOnlyExtensions,
+    content: '',
+    editable: false,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none text-foreground text-xs leading-relaxed',
+      },
+    },
+  });
+
+  // Load notes content into read-only editor
+  useEffect(() => {
+    if (readOnlyEditor && recording.notes) {
+      try {
+        const content = JSON.parse(recording.notes);
+        readOnlyEditor.commands.setContent(content);
+      } catch {
+        // Fallback: render as plain text
+        readOnlyEditor.commands.setContent(`<p>${recording.notes}</p>`);
+      }
+    }
+  }, [readOnlyEditor, recording.notes]);
+
+  // Handle citation clicks in the notes tab — seek audio to timestamp
+  const handleNoteCitationClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const citationEl = target.closest('.citation-mark');
+      if (citationEl) {
+        const timestamp = Number.parseInt(citationEl.getAttribute('data-timestamp') || '0', 10);
+        if (timestamp > 0) {
+          seek(timestamp / 1000);
+        }
+      }
+    },
+    [seek],
+  );
 
   // Load audio when recording changes
   useEffect(() => {
@@ -56,6 +138,9 @@ export function StudyContent({ recording }: StudyContentProps) {
         <h1 className="text-base font-semibold text-foreground">{recording.title}</h1>
         <p className="text-xs text-muted-foreground">
           {recording.date} • {recording.duration}
+          {recording.lectureType && recording.lectureType !== 'general' && (
+            <span className="ml-2 capitalize">• {recording.lectureType}</span>
+          )}
         </p>
       </div>
 
@@ -130,9 +215,20 @@ export function StudyContent({ recording }: StudyContentProps) {
 
         <TabsContent value="notes" className="h-[calc(100%-2rem)] mt-0">
           <ScrollArea className="h-full rounded-lg bg-card p-3">
-            <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
-              {recording.notes || 'No notes yet'}
-            </p>
+            {recording.notes ? (
+              <div
+                ref={notesContainerRef}
+                onClick={handleNoteCitationClick}
+                onKeyDown={() => {}}
+                role="presentation"
+              >
+                <EditorContent editor={readOnlyEditor} />
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
+                No notes yet
+              </p>
+            )}
           </ScrollArea>
         </TabsContent>
       </Tabs>

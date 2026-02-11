@@ -3,8 +3,8 @@ import { httpAction } from './_generated/server';
 import { auth } from './auth';
 import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
-import { generateNuggetNotes } from './nuggetNotes';
 import { nuggetChat } from './nuggetChat';
+import { generateNuggetNotes } from './nuggetNotes';
 
 const http = httpRouter();
 

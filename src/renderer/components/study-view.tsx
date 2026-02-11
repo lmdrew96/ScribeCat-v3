@@ -1,3 +1,4 @@
+import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
 import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
@@ -22,6 +23,7 @@ export interface Recording {
   notes: string;
   audioFilePath?: string;
   transcriptSegments?: TranscriptSegment[];
+  lectureType?: string;
 }
 
 const formatDuration = (ms: number) => {
@@ -59,6 +61,7 @@ export function StudyView() {
     notes: session.notes || '',
     audioFilePath: session.audioFilePath,
     transcriptSegments: session.transcriptSegments,
+    lectureType: session.lectureType,
   }));
 
   return (
@@ -100,9 +103,14 @@ export function StudyView() {
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <h3 className="mb-1 text-sm font-medium text-foreground">Select a recording</h3>
-              <p className="text-xs text-muted-foreground">Choose from the sidebar</p>
+            <div className="text-center space-y-4">
+              <div>
+                <h3 className="mb-1 text-sm font-medium text-foreground">Select a recording</h3>
+                <p className="text-xs text-muted-foreground">Choose from the sidebar</p>
+              </div>
+              <div className="max-w-xs mx-auto">
+                <FileUploadTranscribe />
+              </div>
             </div>
           </div>
         )}

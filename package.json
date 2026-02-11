@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "ADHD-friendly lecture companion - Record, transcribe, and study smarter",
   "private": true,
   "main": "dist/main/main.js",
@@ -23,10 +23,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "biome check --apply",
-      "biome format --write"
-    ]
+    "*.{ts,tsx,js,jsx}": ["biome check --apply", "biome format --write"]
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

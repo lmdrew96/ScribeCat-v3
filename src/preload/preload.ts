@@ -16,6 +16,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // AssemblyAI
   getAssemblyAIToken: () => ipcRenderer.invoke('assemblyai:getToken'),
+  transcribeFile: (filePath: string, speakerLabels?: boolean) =>
+    ipcRenderer.invoke('assemblyai:transcribeFile', { filePath, speakerLabels }),
+
+  // File dialog
+  showOpenDialog: (options: { filters: Array<{ name: string; extensions: string[] }> }) =>
+    ipcRenderer.invoke('dialog:showOpen', options),
 
   // Platform detection
   platform: process.platform,

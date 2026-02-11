@@ -1,12 +1,14 @@
 /**
- * LectureContext - Sonnet-powered context extraction
+ * LectureContext - Haiku-powered context extraction
  * Called every ~2 minutes during recording to extract lecture understanding.
  * Returns themes, current topic, definitions, and structure hints.
+ * Now lecture-type-aware for better context extraction.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
 import { AI_MODEL } from './config';
+import { type LectureType, getContextExtractionPrompt } from './prompts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,8 +30,8 @@ const EMPTY_CONTEXT: LectureContext = {
   structureHint: '',
 };
 
-export const extractLectureContext = httpAction(async (ctx, request) => {
-  const { transcript, previousContext } = await request.json();
+export const extractLectureContext = httpAction(async (_ctx, request) => {
+  const { transcript, previousContext, lectureType } = await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -41,20 +43,11 @@ export const extractLectureContext = httpAction(async (ctx, request) => {
 
   const anthropic = new Anthropic({ apiKey });
 
-  const prevContext = previousContext
-    ? JSON.stringify(previousContext)
-    : JSON.stringify(EMPTY_CONTEXT);
-
-  const prompt = `Analyze this lecture transcript and extract structured context. Be very concise.
-
-PREVIOUS CONTEXT:
-${prevContext}
-
-RECENT TRANSCRIPT:
-"${transcript.slice(-1500)}"
-
-Return ONLY valid JSON (no markdown, no explanation):
-{"themes":["theme1","theme2"],"currentTopic":"topic being discussed now","definitions":["term: definition"],"structureHint":"brief note about lecture flow"}`;
+  const prompt = getContextExtractionPrompt(
+    transcript,
+    previousContext,
+    (lectureType || 'general') as LectureType,
+  );
 
   try {
     const message = await anthropic.messages.create({

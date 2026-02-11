@@ -1,9 +1,11 @@
 /**
  * useNuggetNotes - React hook for real-time AI note generation
  * Orchestrates the two-model pipeline (Sonnet for context, Haiku for notes)
+ * Now lecture-type-aware and can incorporate student's quick notes.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { LectureType } from '../components/lecture-type-select';
 
 // Types
 export interface LectureContext {
@@ -56,7 +58,12 @@ export interface UseNuggetNotesReturn {
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
   stopRecording: (finalTranscript?: string) => Promise<void>;
-  processTranscriptChunk: (transcript: string, durationSeconds: number) => Promise<void>;
+  processTranscriptChunk: (
+    transcript: string,
+    durationSeconds: number,
+    lectureType?: LectureType,
+    quickNotes?: string,
+  ) => Promise<void>;
   clearNotes: () => void;
 }
 
@@ -96,9 +103,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     [cfg.convexUrl],
   );
 
-  // Call Sonnet for context extraction
+  // Call Haiku for context extraction
   const updateContext = useCallback(
-    async (transcript: string): Promise<LectureContext> => {
+    async (transcript: string, lectureType?: LectureType): Promise<LectureContext> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return context;
 
@@ -114,6 +121,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
           body: JSON.stringify({
             transcript,
             previousContext: context,
+            lectureType: lectureType || 'general',
           }),
           signal: controller.signal,
         });
@@ -146,6 +154,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       transcript: string,
       currentContext: LectureContext,
       recordingTimeSeconds: number,
+      lectureType?: LectureType,
+      quickNotes?: string,
     ): Promise<NuggetNote[]> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return [];
@@ -163,6 +173,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             transcript,
             context: currentContext,
             recordingTimeSeconds,
+            lectureType: lectureType || 'general',
+            quickNotes: quickNotes || '',
           }),
           signal: controller.signal,
         });
@@ -230,7 +242,12 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
   // Process incoming transcript chunk
   const processTranscriptChunk = useCallback(
-    async (transcript: string, durationSeconds: number): Promise<void> => {
+    async (
+      transcript: string,
+      durationSeconds: number,
+      lectureType?: LectureType,
+      quickNotes?: string,
+    ): Promise<void> => {
       if (!isEnabled || !isRecording) return;
 
       // Calculate new chunk
@@ -251,15 +268,21 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
       let currentContext = context;
 
-      // Check if we should update context (Sonnet - every ~2 min)
+      // Check if we should update context (Haiku - every ~2 min)
       if (shouldUpdateContext(wordCount)) {
-        currentContext = await updateContext(transcript);
+        currentContext = await updateContext(transcript, lectureType);
       }
 
       // Check if we should generate notes (Haiku - every ~45s)
       if (shouldGenerateNotes(wordCount)) {
         const recentTranscript = getRecentTranscript();
-        await generateNotes(recentTranscript, currentContext, durationSeconds);
+        await generateNotes(
+          recentTranscript,
+          currentContext,
+          durationSeconds,
+          lectureType,
+          quickNotes,
+        );
       }
     },
     [

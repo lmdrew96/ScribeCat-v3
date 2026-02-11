@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { config } from 'dotenv';
-import { BrowserWindow, app, ipcMain, screen } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, screen } from 'electron';
 import { setupAudioIPC } from './ipc/audio';
 
 // Load environment variables from .env file
@@ -73,6 +73,18 @@ ipcMain.handle('window:close', () => {
 ipcMain.handle('window:isMaximized', () => {
   return mainWindow?.isMaximized() ?? false;
 });
+
+// File dialog handler
+ipcMain.handle(
+  'dialog:showOpen',
+  async (_, options: { filters: Array<{ name: string; extensions: string[] }> }) => {
+    if (!mainWindow) return { canceled: true, filePaths: [] };
+    return dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: options.filters,
+    });
+  },
+);
 
 // App lifecycle
 app.whenReady().then(() => {

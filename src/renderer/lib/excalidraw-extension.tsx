@@ -18,7 +18,6 @@ interface ExcalidrawComponentProps {
 function ExcalidrawComponent({ node, updateAttributes }: ExcalidrawComponentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  // biome-ignore lint/suspicious/noExplicitAny: Excalidraw API types not available
   const [excalidrawAPI, setExcalidrawAPI] = useState<unknown>(null);
 
   useEffect(() => {

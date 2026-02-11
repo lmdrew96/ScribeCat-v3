@@ -460,3 +460,27 @@ button[data-active="true"] {
   padding: 0.125em 0.25em;
   border-radius: 0.125rem;
 }
+
+/* Citation mark styles */
+.citation-mark {
+  border-bottom: 1px dotted var(--primary);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.citation-mark::after {
+  content: "\23F1"; /* stopwatch emoji */
+  font-size: 0.6em;
+  vertical-align: super;
+  margin-left: 2px;
+  opacity: 0.4;
+}
+
+.citation-mark:hover {
+  background-color: color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.citation-mark:hover::after {
+  opacity: 1;
+}

@@ -1,38 +1,48 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { action } from './_generated/server';
+import { parseCitations } from './citations';
 import { AI_MODEL } from './config';
+import {
+  type LectureType,
+  getNoteGenerationPrompt,
+  getNoteGenerationPromptWithCitations,
+} from './prompts';
 
 export const generateNotesFromTranscript = action({
   args: {
     transcript: v.string(),
+    transcriptSegments: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          timestamp: v.number(),
+          isFinal: v.boolean(),
+        }),
+      ),
+    ),
     sessionId: v.string(),
+    lectureType: v.optional(v.string()),
+    quickNotes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
     const anthropic = new Anthropic({ apiKey });
+    const lectureType = (args.lectureType || 'general') as LectureType;
 
-    const prompt = `You are an expert note-taking assistant. Given the following lecture transcript, create comprehensive, well-structured notes in markdown format.
-
-IMPORTANT GUIDELINES:
-1. Use clear headings (# for main topics, ## for subtopics, ### for details)
-2. Use bullet points for lists
-3. Use **bold** for key terms and concepts
-4. Use *italics* for emphasis
-5. Create numbered lists for sequential information
-6. Include blockquotes (>) for important quotes or definitions
-7. Suggest diagrams where visual representations would help (use comments like <!-- DIAGRAM: [description] -->)
-8. Organize information hierarchically
-9. Keep the notes concise but comprehensive
-
-TRANSCRIPT:
-${args.transcript}
-
-Please generate well-structured markdown notes from this transcript. Include diagram suggestions in HTML comments where visual aids would enhance understanding.`;
+    // Use citation-aware prompt when segments are available
+    const prompt =
+      args.transcriptSegments && args.transcriptSegments.length > 0
+        ? getNoteGenerationPromptWithCitations(
+            args.transcriptSegments,
+            lectureType,
+            args.quickNotes,
+          )
+        : getNoteGenerationPrompt(args.transcript, lectureType, args.quickNotes);
 
     const message = await anthropic.messages.create({
       model: AI_MODEL,
@@ -47,8 +57,15 @@ Please generate well-structured markdown notes from this transcript. Include dia
 
     const generatedNotes = message.content[0].type === 'text' ? message.content[0].text : '';
 
+    // Parse citations if segments were provided
+    const citations =
+      args.transcriptSegments && args.transcriptSegments.length > 0
+        ? parseCitations(generatedNotes, args.transcriptSegments)
+        : [];
+
     return {
       notes: generatedNotes,
+      citations,
       success: true,
     };
   },

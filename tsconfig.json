@@ -29,6 +29,11 @@
       "@/*": ["./src/renderer/*"]
     }
   },
-  "include": ["src/vite-env.d.ts", "src/renderer/**/*.ts", "src/renderer/**/*.tsx", "src/preload/**/*.ts"],
+  "include": [
+    "src/vite-env.d.ts",
+    "src/renderer/**/*.ts",
+    "src/renderer/**/*.tsx",
+    "src/preload/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
