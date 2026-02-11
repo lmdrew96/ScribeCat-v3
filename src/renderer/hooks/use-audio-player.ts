@@ -36,25 +36,20 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   /**
    * Load audio file
    */
+  /**
+   * Load audio from a URL (Convex storage URL or any audio URL)
+   */
   const load = useCallback(
-    async (filename: string) => {
+    async (audioUrl: string) => {
       try {
-        if (!window.electronAPI) {
-          throw new Error('Electron API not available');
+        if (!audioUrl) {
+          throw new Error('No audio URL provided');
         }
 
-        // Load audio file from disk
-        const result = await window.electronAPI.loadAudio(filename);
-
-        if (!result.success || !result.data) {
-          throw new Error(result.error || 'Failed to load audio');
-        }
-
-        // Create audio element
+        // Create audio element directly from URL
         const audio = new Audio();
-        const blob = new Blob([result.data], { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        audio.src = url;
+        audio.src = audioUrl;
+        audio.crossOrigin = 'anonymous';
 
         // Set up event listeners
         audio.addEventListener('loadedmetadata', () => {

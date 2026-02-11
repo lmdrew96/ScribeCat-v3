@@ -16,8 +16,10 @@ import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
+import { useMutation } from 'convex/react';
 import { Mic, Pause, Play, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 interface RecordingPanelProps {
@@ -46,6 +48,9 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     },
     [onInsertNote],
   );
+
+  // Convex audio upload mutation
+  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
 
   // Notify parent when session changes
   useEffect(() => {
@@ -83,17 +88,23 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     getStream,
   } = useAudioRecorder({
     onDataAvailable: async (audioBlob) => {
-      // Save audio file when recording stops
-      if (currentSessionId && window.electronAPI) {
-        const arrayBuffer = await audioBlob.arrayBuffer();
-        const filename = `${currentSessionId}.webm`;
-        const result = await window.electronAPI.saveAudio(filename, arrayBuffer);
+      // Upload audio to Convex storage when recording stops
+      if (currentSessionId) {
+        try {
+          const uploadUrl = await generateUploadUrl();
+          const uploadResult = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
+            body: audioBlob,
+          });
+          const { storageId } = await uploadResult.json();
 
-        if (result.success && result.filePath) {
           await updateSession({
             id: currentSessionId,
-            audioFilePath: result.filePath,
+            audioStorageId: storageId,
           });
+        } catch (error) {
+          console.error('Error uploading audio:', error);
         }
       }
     },

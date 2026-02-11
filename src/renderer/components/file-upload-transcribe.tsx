@@ -2,8 +2,10 @@ import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-s
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useSessions } from '@/hooks/use-sessions';
+import { useMutation } from 'convex/react';
 import { FileAudio, Loader2, Upload, Users } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 interface FileUploadTranscribeProps {
@@ -21,118 +23,149 @@ interface TranscribeResult {
 export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeProps) {
   const userId = 'anonymous-user'; // TODO: Get from authenticated user
   const { createSession, updateSession } = useSessions(userId);
+  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const getAudioUrl = useMutation(api.audioStorage.getAudioUrlMutation);
 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [progress, setProgress] = useState('');
   const [lectureType, setLectureType] = useState<LectureType>('general');
   const [speakerLabels, setSpeakerLabels] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = useCallback(async () => {
-    if (!window.electronAPI?.showOpenDialog) return;
+  const handleFileSelected = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    try {
-      const result = await window.electronAPI.showOpenDialog({
-        filters: [
-          {
-            name: 'Audio Files',
-            extensions: ['mp3', 'wav', 'webm', 'ogg', 'm4a', 'flac', 'mp4', 'aac'],
-          },
-        ],
-      });
+      const fileName = file.name.replace(/\.[^.]+$/, '') || 'Uploaded Recording';
 
-      if (result.canceled || result.filePaths.length === 0) return;
+      try {
+        setIsTranscribing(true);
+        setProgress('Uploading audio file...');
 
-      const filePath = result.filePaths[0];
-      const fileName = filePath.split(/[/\\]/).pop() || 'Uploaded Recording';
+        // Step 1: Upload audio to Convex storage
+        const uploadUrl = await generateUploadUrl();
+        const uploadResult = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        });
+        const { storageId } = await uploadResult.json();
 
-      setIsTranscribing(true);
-      setProgress('Uploading audio file...');
+        // Step 2: Create session and save audio reference
+        const sessionId = await createSession({
+          userId,
+          title: fileName,
+          lectureType,
+        });
 
-      // Create session
-      const sessionId = await createSession({
-        userId,
-        title: fileName.replace(/\.[^.]+$/, ''), // Remove extension
-        lectureType,
-      });
+        await updateSession({
+          id: sessionId,
+          audioStorageId: storageId,
+        });
 
-      setProgress('Transcribing with AssemblyAI...');
+        setProgress('Transcribing with AssemblyAI...');
 
-      // Transcribe via main process
-      const transcribeResult: TranscribeResult = await window.electronAPI.transcribeFile(
-        filePath,
-        speakerLabels,
-      );
-
-      if (!transcribeResult.success) {
-        throw new Error(transcribeResult.error || 'Transcription failed');
-      }
-
-      setProgress('Saving transcript...');
-
-      // Build transcript with speaker labels if available
-      let formattedTranscript = transcribeResult.transcript || '';
-      const segments: Array<{ text: string; timestamp: number; isFinal: boolean }> = [];
-
-      if (speakerLabels && transcribeResult.utterances && transcribeResult.utterances.length > 0) {
-        // Use utterances for speaker-labeled transcript
-        formattedTranscript = transcribeResult.utterances
-          .map((u) => `[Speaker ${u.speaker}]: ${u.text}`)
-          .join('\n\n');
-
-        for (const utterance of transcribeResult.utterances) {
-          segments.push({
-            text: `[Speaker ${utterance.speaker}]: ${utterance.text}`,
-            timestamp: utterance.start,
-            isFinal: true,
-          });
+        // Step 3: Get the public Convex storage URL
+        const audioUrl = await getAudioUrl({ storageId });
+        if (!audioUrl) {
+          throw new Error('Failed to get audio URL from storage');
         }
-      } else if (transcribeResult.words && transcribeResult.words.length > 0) {
-        // Group words into sentence-like segments (~50 words each)
-        const words = transcribeResult.words;
-        let currentSegment = '';
-        let segmentStart = words[0].start;
 
-        for (let i = 0; i < words.length; i++) {
-          currentSegment += `${words[i].text} `;
+        // Step 4: Send to Convex transcription endpoint
+        const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+        const httpBase = convexUrl.replace('.cloud', '.site');
 
-          // Create a segment every ~50 words or at sentence boundaries
-          const isEndOfSentence = words[i].text.match(/[.!?]$/);
-          const isLongEnough = currentSegment.split(/\s+/).length >= 40;
+        const transcribeRes = await fetch(`${httpBase}/assemblyai/transcribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioUrl, speakerLabels }),
+        });
 
-          if ((isEndOfSentence && isLongEnough) || i === words.length - 1) {
+        const transcribeResult = (await transcribeRes.json()) as TranscribeResult;
+
+        if (!transcribeResult.success) {
+          throw new Error(transcribeResult.error || 'Transcription failed');
+        }
+
+        setProgress('Saving transcript...');
+
+        // Build transcript with speaker labels if available
+        let formattedTranscript = transcribeResult.transcript || '';
+        const segments: Array<{ text: string; timestamp: number; isFinal: boolean }> = [];
+
+        if (
+          speakerLabels &&
+          transcribeResult.utterances &&
+          transcribeResult.utterances.length > 0
+        ) {
+          formattedTranscript = transcribeResult.utterances
+            .map((u) => `[Speaker ${u.speaker}]: ${u.text}`)
+            .join('\n\n');
+
+          for (const utterance of transcribeResult.utterances) {
             segments.push({
-              text: currentSegment.trim(),
-              timestamp: segmentStart,
+              text: `[Speaker ${utterance.speaker}]: ${utterance.text}`,
+              timestamp: utterance.start,
               isFinal: true,
             });
-            if (i < words.length - 1) {
-              segmentStart = words[i + 1].start;
+          }
+        } else if (transcribeResult.words && transcribeResult.words.length > 0) {
+          const words = transcribeResult.words;
+          let currentSegment = '';
+          let segmentStart = words[0].start;
+
+          for (let i = 0; i < words.length; i++) {
+            currentSegment += `${words[i].text} `;
+            const isEndOfSentence = words[i].text.match(/[.!?]$/);
+            const isLongEnough = currentSegment.split(/\s+/).length >= 40;
+
+            if ((isEndOfSentence && isLongEnough) || i === words.length - 1) {
+              segments.push({
+                text: currentSegment.trim(),
+                timestamp: segmentStart,
+                isFinal: true,
+              });
+              if (i < words.length - 1) {
+                segmentStart = words[i + 1].start;
+              }
+              currentSegment = '';
             }
-            currentSegment = '';
           }
         }
+
+        await updateSession({
+          id: sessionId,
+          transcript: formattedTranscript,
+          transcriptSegments: segments.length > 0 ? segments : undefined,
+          duration: segments.length > 0 ? segments[segments.length - 1].timestamp : 0,
+        });
+
+        setProgress('Done!');
+        onSessionCreated?.(sessionId);
+      } catch (error) {
+        console.error('File upload transcription error:', error);
+        setProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setTimeout(() => {
+          setIsTranscribing(false);
+          setProgress('');
+        }, 2000);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
-
-      // Save to session
-      await updateSession({
-        id: sessionId,
-        transcript: formattedTranscript,
-        transcriptSegments: segments.length > 0 ? segments : undefined,
-        duration: segments.length > 0 ? segments[segments.length - 1].timestamp : 0,
-      });
-
-      setProgress('Done!');
-      onSessionCreated?.(sessionId);
-    } catch (error) {
-      console.error('File upload transcription error:', error);
-      setProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setTimeout(() => {
-        setIsTranscribing(false);
-        setProgress('');
-      }, 2000);
-    }
-  }, [createSession, updateSession, lectureType, speakerLabels, onSessionCreated]);
+    },
+    [
+      createSession,
+      updateSession,
+      generateUploadUrl,
+      getAudioUrl,
+      lectureType,
+      speakerLabels,
+      onSessionCreated,
+    ],
+  );
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3">
@@ -165,8 +198,16 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
         </div>
       </div>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,.mp3,.wav,.webm,.ogg,.m4a,.flac,.mp4,.aac"
+        onChange={handleFileSelected}
+        style={{ display: 'none' }}
+      />
+
       <Button
-        onClick={handleUpload}
+        onClick={() => fileInputRef.current?.click()}
         disabled={isTranscribing}
         variant="secondary"
         size="sm"

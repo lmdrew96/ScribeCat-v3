@@ -47,7 +47,7 @@ export const update = mutation({
   args: {
     id: v.id('sessions'),
     title: v.optional(v.string()),
-    audioFilePath: v.optional(v.string()),
+    audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.string()),
     transcriptSegments: v.optional(
       v.array(

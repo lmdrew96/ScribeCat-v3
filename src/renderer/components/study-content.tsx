@@ -112,11 +112,10 @@ export function StudyContent({ recording }: StudyContentProps) {
 
   // Load audio when recording changes
   useEffect(() => {
-    if (recording.audioFilePath) {
-      const filename = recording.audioFilePath.split('/').pop() || '';
-      load(filename);
+    if (recording.audioUrl) {
+      load(recording.audioUrl);
     }
-  }, [recording.audioFilePath, load]);
+  }, [recording.audioUrl, load]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -145,7 +144,7 @@ export function StudyContent({ recording }: StudyContentProps) {
       </div>
 
       {/* Audio playback controls */}
-      {recording.audioFilePath && (
+      {recording.audioUrl && (
         <div className="mb-3 rounded-lg bg-card p-2 space-y-2">
           <AudioWaveform isActive={isPlaying} audioLevel={audioLevel} />
 

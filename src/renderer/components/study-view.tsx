@@ -5,8 +5,10 @@ import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools';
 import { Button } from '@/components/ui/button';
 import { useSessions } from '@/hooks/use-sessions';
+import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '../../../convex/_generated/api';
 
 export interface TranscriptSegment {
   text: string;
@@ -21,7 +23,8 @@ export interface Recording {
   duration: string;
   transcript: string;
   notes: string;
-  audioFilePath?: string;
+  audioUrl?: string | null;
+  audioStorageId?: string;
   transcriptSegments?: TranscriptSegment[];
   lectureType?: string;
 }
@@ -47,6 +50,13 @@ export function StudyView() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Resolve audio URL for the selected recording
+  const selectedSession = sessions.find((s) => s._id === selectedRecording?.id);
+  const audioUrl = useQuery(
+    api.audioStorage.getAudioUrl,
+    selectedSession?.audioStorageId ? { storageId: selectedSession.audioStorageId } : 'skip',
+  );
+
   // Convert Convex sessions to Recording format
   const recordings: Recording[] = sessions.map((session) => ({
     id: session._id,
@@ -59,7 +69,8 @@ export function StudyView() {
     duration: formatDuration(session.duration),
     transcript: session.transcript || '',
     notes: session.notes || '',
-    audioFilePath: session.audioFilePath,
+    audioStorageId: session.audioStorageId,
+    audioUrl: session._id === selectedRecording?.id ? audioUrl : undefined,
     transcriptSegments: session.transcriptSegments,
     lectureType: session.lectureType,
   }));

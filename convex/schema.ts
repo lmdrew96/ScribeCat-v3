@@ -10,7 +10,7 @@ export default defineSchema({
     userId: v.string(),
     title: v.string(),
     lectureType: v.optional(v.string()), // "stem" | "humanities" | "discussion" | "lab" | "review" | "general"
-    audioFilePath: v.optional(v.string()), // Local file path
+    audioStorageId: v.optional(v.string()), // Convex storage ID for audio file
     transcript: v.optional(v.string()),
     quickNotes: v.optional(v.string()), // User's manual notes during recording
     transcriptSegments: v.optional(
