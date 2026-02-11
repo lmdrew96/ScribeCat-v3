@@ -10,7 +10,6 @@
 
 import type * as ai from "../ai.js";
 import type * as audioStorage from "../audioStorage.js";
-import type * as auth from "../auth.js";
 import type * as citations from "../citations.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
@@ -33,7 +32,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   audioStorage: typeof audioStorage;
-  auth: typeof auth;
   citations: typeof citations;
   config: typeof config;
   crons: typeof crons;

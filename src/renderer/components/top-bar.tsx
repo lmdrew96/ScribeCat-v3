@@ -1,6 +1,7 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Home, Settings } from 'lucide-react';
+import { useStudyStats } from '@/hooks/use-productivity';
+import { BookOpen, Flame, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 interface TopBarProps {
@@ -10,6 +11,7 @@ interface TopBarProps {
 
 export function TopBar({ currentView, onViewChange }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const stats = useStudyStats();
 
   return (
     <>
@@ -48,8 +50,14 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
           </Button>
         </nav>
 
-        {/* Right side - Settings */}
+        {/* Right side - Streak + Settings */}
         <div className="flex items-center gap-2">
+          {stats && stats.streak > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-1 text-sm font-medium text-orange-500">
+              <Flame className="h-3.5 w-3.5" />
+              <span>{stats.streak}</span>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="icon"

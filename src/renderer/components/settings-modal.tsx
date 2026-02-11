@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -11,9 +12,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useAchievements, useStudySettings, useStudyStats } from '@/hooks/use-productivity';
 import { cn } from '@/lib/utils';
-import { BookOpen, Bug, Check, ExternalLink, Github, Info, Mic, Palette, User } from 'lucide-react';
-import { useState } from 'react';
+import { useClerk, useUser } from '@clerk/clerk-react';
+import {
+  Award,
+  BookOpen,
+  Bug,
+  Check,
+  ExternalLink,
+  Flame,
+  Github,
+  Info,
+  Lock,
+  Mic,
+  Palette,
+  User,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ACHIEVEMENT_DEFINITIONS } from '../../../convex/productivity';
 import packageJson from '../../../package.json';
 
 interface SettingsModalProps {
@@ -55,19 +72,80 @@ const themes = [
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('appearance');
   const { theme, setTheme } = useTheme();
-  const [showWaveform, setShowWaveform] = useState(true);
+  const { signOut } = useClerk();
+  const { user } = useUser();
+
+  // Study settings from Convex
+  const { settings, updateSettings } = useStudySettings();
+  const stats = useStudyStats();
+  const achievements = useAchievements();
+
+  // Local state synced from Convex settings
   const [breakReminders, setBreakReminders] = useState(true);
   const [breakInterval, setBreakInterval] = useState('25');
   const [dailyGoalHours, setDailyGoalHours] = useState('2');
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState('0');
   const [weeklyGoal, setWeeklyGoal] = useState('10');
-  const [displayName, setDisplayName] = useState('Student');
+
+  // Audio settings (local only)
+  const [showWaveform, setShowWaveform] = useState(true);
   const [micLevel, setMicLevel] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
 
+  // Sync Convex settings → local state when loaded
+  useEffect(() => {
+    if (!settings || !('_id' in settings)) return;
+    setBreakReminders(settings.breakReminders);
+    setBreakInterval(String(settings.breakIntervalMinutes));
+    const hours = Math.floor(settings.dailyGoalMinutes / 60);
+    const mins = settings.dailyGoalMinutes % 60;
+    setDailyGoalHours(String(hours));
+    setDailyGoalMinutes(String(mins));
+    setWeeklyGoal(String(Math.floor(settings.weeklyGoalMinutes / 60)));
+  }, [settings]);
+
+  // Save settings to Convex
+  const saveSettings = useCallback(
+    (updates: {
+      breakReminders?: boolean;
+      breakIntervalMinutes?: number;
+      dailyGoalMinutes?: number;
+      weeklyGoalMinutes?: number;
+      theme?: string;
+    }) => {
+      void updateSettings(updates);
+    },
+    [updateSettings],
+  );
+
+  const handleBreakRemindersChange = (checked: boolean) => {
+    setBreakReminders(checked);
+    saveSettings({ breakReminders: checked });
+  };
+
+  const handleBreakIntervalChange = (value: string) => {
+    setBreakInterval(value);
+    saveSettings({ breakIntervalMinutes: Number(value) });
+  };
+
+  const handleDailyGoalChange = (hours: string, minutes: string) => {
+    setDailyGoalHours(hours);
+    setDailyGoalMinutes(minutes);
+    saveSettings({ dailyGoalMinutes: Number(hours) * 60 + Number(minutes) });
+  };
+
+  const handleWeeklyGoalChange = (hours: string) => {
+    setWeeklyGoal(hours);
+    saveSettings({ weeklyGoalMinutes: Number(hours) * 60 });
+  };
+
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    saveSettings({ theme: newTheme });
+  };
+
   const testMicrophone = () => {
     setIsTesting(true);
-    // Simulate mic level changes
     const interval = setInterval(() => {
       setMicLevel(Math.random() * 100);
     }, 100);
@@ -76,6 +154,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setIsTesting(false);
       setMicLevel(0);
     }, 3000);
+  };
+
+  // Achievement helpers
+  const unlockedIds = new Set(achievements?.map((a) => a.achievementId) ?? []);
+
+  const formatMinutes = (mins: number) => {
+    if (mins < 60) return `${mins}m`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
   return (
@@ -121,7 +209,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       <button
                         type="button"
                         key={themeOption.id}
-                        onClick={() => setTheme(themeOption.id as Theme)}
+                        onClick={() => handleThemeChange(themeOption.id as Theme)}
                         className={cn(
                           'relative flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
                           theme === themeOption.id
@@ -180,15 +268,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       {isTesting ? 'Listening...' : 'Test Mic'}
                     </Button>
                     <div className="flex h-6 flex-1 items-center gap-0.5 rounded bg-background px-2">
-                      {Array.from({ length: 20 }).map((_, i) => (
-                        <div
-                          key={`mic-level-${i}`}
-                          className={cn(
-                            'h-3 w-1 rounded-sm transition-all',
-                            i < micLevel / 5 ? 'bg-success' : 'bg-border',
-                          )}
-                        />
-                      ))}
+                      {Array.from({ length: 20 }).map((_, i) => {
+                        const barKey = `mic-level-${String(i)}`;
+                        return (
+                          <div
+                            key={barKey}
+                            className={cn(
+                              'h-3 w-1 rounded-sm transition-all',
+                              i < micLevel / 5 ? 'bg-success' : 'bg-border',
+                            )}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -203,18 +294,19 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {/* Study */}
             {activeCategory === 'study' && (
               <div className="space-y-5">
+                {/* Break Reminders */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-sm text-foreground">Break Reminders</Label>
                     <p className="text-xs text-muted-foreground">Get reminded to take breaks</p>
                   </div>
-                  <Switch checked={breakReminders} onCheckedChange={setBreakReminders} />
+                  <Switch checked={breakReminders} onCheckedChange={handleBreakRemindersChange} />
                 </div>
 
                 {breakReminders && (
                   <div className="space-y-2">
                     <Label className="text-sm text-foreground">Break Interval</Label>
-                    <Select value={breakInterval} onValueChange={setBreakInterval}>
+                    <Select value={breakInterval} onValueChange={handleBreakIntervalChange}>
                       <SelectTrigger className="w-40 bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
@@ -229,6 +321,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </div>
                 )}
 
+                {/* Goals */}
                 <div className="space-y-2">
                   <Label className="text-sm text-foreground">Daily Study Goal</Label>
                   <div className="flex items-center gap-2">
@@ -237,7 +330,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       min="0"
                       max="24"
                       value={dailyGoalHours}
-                      onChange={(e) => setDailyGoalHours(e.target.value)}
+                      onChange={(e) => handleDailyGoalChange(e.target.value, dailyGoalMinutes)}
                       className="w-20 bg-background border-border"
                     />
                     <span className="text-xs text-muted-foreground">hours</span>
@@ -246,7 +339,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       min="0"
                       max="59"
                       value={dailyGoalMinutes}
-                      onChange={(e) => setDailyGoalMinutes(e.target.value)}
+                      onChange={(e) => handleDailyGoalChange(dailyGoalHours, e.target.value)}
                       className="w-20 bg-background border-border"
                     />
                     <span className="text-xs text-muted-foreground">minutes</span>
@@ -261,10 +354,98 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       min="0"
                       max="168"
                       value={weeklyGoal}
-                      onChange={(e) => setWeeklyGoal(e.target.value)}
+                      onChange={(e) => handleWeeklyGoalChange(e.target.value)}
                       className="w-20 bg-background border-border"
                     />
                     <span className="text-xs text-muted-foreground">hours</span>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                {stats && (
+                  <div className="border-t border-border pt-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      <span className="text-sm font-medium text-foreground">
+                        {stats.streak > 0 ? `${stats.streak}-day streak` : 'No active streak'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Today</span>
+                        <span>
+                          {formatMinutes(stats.today.studyMinutes)} /{' '}
+                          {formatMinutes(stats.today.goalMinutes)}
+                        </span>
+                      </div>
+                      <Progress
+                        value={Math.min(
+                          (stats.today.studyMinutes / stats.today.goalMinutes) * 100,
+                          100,
+                        )}
+                        className="h-2"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>This Week</span>
+                        <span>
+                          {formatMinutes(stats.weeklyMinutes)} /{' '}
+                          {formatMinutes(
+                            settings && '_id' in settings ? settings.weeklyGoalMinutes : 600,
+                          )}
+                        </span>
+                      </div>
+                      <Progress
+                        value={Math.min(
+                          (stats.weeklyMinutes /
+                            (settings && '_id' in settings ? settings.weeklyGoalMinutes : 600)) *
+                            100,
+                          100,
+                        )}
+                        className="h-2"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Achievements */}
+                <div className="border-t border-border pt-4">
+                  <h3 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
+                    <Award className="h-4 w-4" />
+                    Achievements
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ACHIEVEMENT_DEFINITIONS.map((achievement) => {
+                      const unlocked = unlockedIds.has(achievement.id);
+                      return (
+                        <div
+                          key={achievement.id}
+                          className={cn(
+                            'flex items-center gap-2 rounded-md border p-2 text-xs',
+                            unlocked
+                              ? 'border-accent/50 bg-accent/10'
+                              : 'border-border bg-background opacity-50',
+                          )}
+                        >
+                          {unlocked ? (
+                            <Check className="h-3.5 w-3.5 text-accent shrink-0" />
+                          ) : (
+                            <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground truncate">
+                              {achievement.name}
+                            </p>
+                            <p className="text-muted-foreground truncate">
+                              {achievement.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -274,21 +455,19 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {activeCategory === 'account' && (
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-sm text-foreground">Display Name</Label>
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="bg-background border-border"
-                  />
+                  <Label className="text-sm text-foreground">Name</Label>
+                  <p className="text-sm text-muted-foreground">{user?.fullName ?? 'Student'}</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm text-foreground">Email</Label>
-                  <p className="text-sm text-muted-foreground">student@university.edu</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.primaryEmailAddress?.emailAddress ?? 'No email'}
+                  </p>
                 </div>
 
                 <div className="pt-4 border-t border-border">
-                  <Button variant="destructive" size="sm">
+                  <Button variant="destructive" size="sm" onClick={() => signOut()}>
                     Sign Out
                   </Button>
                 </div>

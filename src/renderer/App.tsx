@@ -4,6 +4,7 @@ import { TopBar } from '@/components/top-bar';
 import { SignIn } from '@clerk/clerk-react';
 import { AuthLoading, Authenticated, Unauthenticated } from 'convex/react';
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 
 function AuthenticatedApp() {
   const [currentView, setCurrentView] = useState<'home' | 'study'>('home');
@@ -35,6 +36,7 @@ export function App() {
 
       <Authenticated>
         <AuthenticatedApp />
+        <Toaster position="top-right" richColors closeButton />
       </Authenticated>
     </>
   );

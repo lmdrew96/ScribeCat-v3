@@ -6,22 +6,22 @@ export default defineSchema({
   sessions: defineTable({
     userId: v.string(),
     title: v.string(),
-    lectureType: v.optional(v.string()), // "stem" | "humanities" | "discussion" | "lab" | "review" | "general"
-    audioStorageId: v.optional(v.string()), // Convex storage ID for audio file
+    lectureType: v.optional(v.string()),
+    audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.string()),
-    quickNotes: v.optional(v.string()), // User's manual notes during recording
+    quickNotes: v.optional(v.string()),
     transcriptSegments: v.optional(
       v.array(
         v.object({
           text: v.string(),
-          timestamp: v.number(), // Milliseconds from start
+          timestamp: v.number(),
           isFinal: v.boolean(),
         }),
       ),
     ),
     notes: v.optional(v.string()),
-    notesPlainText: v.optional(v.string()), // Plain text for search
-    duration: v.number(), // Duration in milliseconds
+    notesPlainText: v.optional(v.string()),
+    duration: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
     isDeleted: v.boolean(),
@@ -35,13 +35,34 @@ export default defineSchema({
       filterFields: ['userId', 'isDeleted'],
     }),
 
-  // User settings (extended from auth)
+  // User settings
   userSettings: defineTable({
     userId: v.string(),
     theme: v.string(),
     breakReminders: v.boolean(),
-    breakInterval: v.number(), // Minutes
+    breakIntervalMinutes: v.number(),
     dailyGoalMinutes: v.number(),
     weeklyGoalMinutes: v.number(),
   }).index('by_user', ['userId']),
+
+  // Daily study stats (one row per user per day)
+  studyStats: defineTable({
+    userId: v.string(),
+    date: v.string(), // "YYYY-MM-DD"
+    studyMinutes: v.number(),
+    sessionsCount: v.number(),
+    goalMinutes: v.number(),
+    goalMet: v.boolean(),
+  })
+    .index('by_user_date', ['userId', 'date'])
+    .index('by_user', ['userId']),
+
+  // Unlocked achievements
+  achievements: defineTable({
+    userId: v.string(),
+    achievementId: v.string(),
+    unlockedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_achievement', ['userId', 'achievementId']),
 });

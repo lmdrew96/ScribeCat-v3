@@ -14,13 +14,16 @@ import {
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { useNuggetNotes } from '@/hooks/use-nugget-notes';
+import { useBreakReminder, useLogStudyTime } from '@/hooks/use-productivity';
 import { useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
 import { useMutation } from 'convex/react';
 import { Mic, Pause, Play, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { ACHIEVEMENT_DEFINITIONS } from '../../../convex/productivity';
 
 interface RecordingPanelProps {
   onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
@@ -29,6 +32,7 @@ interface RecordingPanelProps {
 
 export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanelProps) {
   const { createSession, updateSession } = useSessions();
+  const logStudyTime = useLogStudyTime();
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
 
   // Lecture type and quick notes state
@@ -120,6 +124,9 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     reset: resetTranscription,
     getFullTranscript,
   } = useTranscription();
+
+  // Break reminder toasts during recording
+  useBreakReminder(isRecording);
 
   // Track the last saved transcript to avoid duplicate saves
   const lastSavedTranscriptRef = useRef<string>('');
@@ -277,6 +284,32 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
         transcriptSegments: segments,
         quickNotes,
       });
+    }
+
+    // Log study time for productivity tracking
+    const durationMinutes = Math.round(recordingTime / 60);
+    if (durationMinutes > 0) {
+      try {
+        const result = await logStudyTime({
+          durationMinutes,
+          sessionHour: new Date().getHours(),
+        });
+
+        // Show toast for newly unlocked achievements
+        if (result?.newUnlocks?.length) {
+          for (const id of result.newUnlocks) {
+            const def = ACHIEVEMENT_DEFINITIONS.find((a) => a.id === id);
+            if (def) {
+              toast.success(`Achievement Unlocked: ${def.name}`, {
+                description: def.description,
+                duration: 5000,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error logging study time:', error);
+      }
     }
 
     // Clear refs to help garbage collection
