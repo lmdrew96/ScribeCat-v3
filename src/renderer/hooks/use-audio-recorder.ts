@@ -39,7 +39,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     try {
       const deviceInfos = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = deviceInfos
-        .filter((device) => device.kind === 'audioinput')
+        .filter((device) => device.kind === 'audioinput' && device.deviceId !== '')
         .map((device) => ({
           deviceId: device.deviceId,
           label: device.label || `Microphone ${device.deviceId.slice(0, 5)}`,
