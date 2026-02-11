@@ -173,9 +173,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <DialogTitle className="text-base font-semibold text-foreground">Settings</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <nav className="flex w-48 flex-col gap-1 border-r border-border bg-background/50 p-2">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+          {/* Sidebar — horizontal strip on mobile, vertical sidebar on desktop */}
+          <nav className="flex w-full md:w-48 flex-row md:flex-col gap-1 border-b md:border-b-0 md:border-r border-border bg-background/50 p-2 overflow-x-auto md:overflow-x-visible shrink-0">
             {categories.map((category) => {
               const Icon = category.icon;
               return (
@@ -184,7 +184,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   key={category.id}
                   onClick={() => setActiveCategory(category.id)}
                   className={cn(
-                    'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                    'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors whitespace-nowrap',
                     activeCategory === category.id
                       ? 'bg-accent text-accent-foreground'
                       : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
@@ -204,7 +204,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <div className="space-y-4">
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-foreground">Theme</h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {themes.map((themeOption) => (
                       <button
                         type="button"

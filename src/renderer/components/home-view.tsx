@@ -2,7 +2,10 @@ import type React from 'react';
 
 import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
-import { GripVertical } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { cn } from '@/lib/utils';
+import { FileText, GripVertical, Mic } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -12,6 +15,8 @@ export interface NotesPanelRef {
 }
 
 export function HomeView() {
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
@@ -42,6 +47,41 @@ export function HomeView() {
       notesPanelRef.current.insertNote(noteText);
     }
   }, []);
+
+  if (isMobile) {
+    return (
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as 'notes' | 'recording')}
+        className="flex h-full flex-col"
+      >
+        <TabsList className="mx-2 mt-2 shrink-0">
+          <TabsTrigger value="recording" className="gap-1.5">
+            <Mic className="h-3.5 w-3.5" />
+            Recording
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="gap-1.5">
+            <FileText className="h-3.5 w-3.5" />
+            Notes
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="recording"
+          forceMount
+          className={cn('flex-1 min-h-0', activeTab !== 'recording' && 'hidden')}
+        >
+          <RecordingPanel onSessionChange={setCurrentSessionId} onInsertNote={handleInsertNote} />
+        </TabsContent>
+        <TabsContent
+          value="notes"
+          forceMount
+          className={cn('flex-1 min-h-0', activeTab !== 'notes' && 'hidden')}
+        >
+          <NotesPanel sessionId={currentSessionId} ref={notesPanelRef} />
+        </TabsContent>
+      </Tabs>
+    );
+  }
 
   return (
     <div

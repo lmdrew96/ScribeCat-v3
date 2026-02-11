@@ -204,8 +204,8 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5">
+    <div className="flex items-center gap-1 flex-nowrap overflow-x-auto">
+      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5 shrink-0">
         {/* Basic formatting */}
         <Button
           variant="ghost"
@@ -361,7 +361,7 @@ export function EditorToolbar({
           }
         }}
       >
-        <SelectTrigger className="h-7 w-20 text-xs">
+        <SelectTrigger className="h-7 w-20 text-xs shrink-0">
           <SelectValue placeholder="Size" />
         </SelectTrigger>
         <SelectContent>
@@ -378,7 +378,7 @@ export function EditorToolbar({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5">
+      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5 shrink-0">
         {/* Highlighter Colors */}
         {highlightColors.map((color) => (
           <Button
@@ -549,7 +549,7 @@ export function EditorToolbar({
         </Button>
       </div>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-2" />
 
       {/* Save indicator and button */}
       <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ export function EditorToolbar({
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 h-7 px-2 text-xs"
+          className="gap-1.5 h-7 px-2 text-xs shrink-0"
           onClick={onSave}
           title="Save (Cmd+S)"
         >
@@ -572,7 +572,7 @@ export function EditorToolbar({
       <Button
         variant="default"
         size="sm"
-        className="gap-1.5 h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+        className="gap-1.5 h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
         onClick={onGenerateNotes}
         disabled={isGenerating}
       >

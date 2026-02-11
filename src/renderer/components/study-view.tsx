@@ -4,10 +4,12 @@ import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useSessions } from '@/hooks/use-sessions';
+import { cn } from '@/lib/utils';
 import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 
 export interface TranscriptSegment {
@@ -37,17 +39,19 @@ const formatDuration = (ms: number) => {
 };
 
 export function StudyView() {
+  const isMobile = useIsMobile();
   const { sessions } = useSessions();
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
-  // Helper function to format duration
-  const formatDuration = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Auto-close sidebar on mobile when selecting a recording
+  const handleSelect = useCallback(
+    (recording: Recording) => {
+      setSelectedRecording(recording);
+      if (isMobile) setSidebarOpen(false);
+    },
+    [isMobile],
+  );
 
   // Resolve audio URL for the selected recording
   const selectedSession = sessions.find((s) => s._id === selectedRecording?.id);
@@ -75,14 +79,29 @@ export function StudyView() {
   }));
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
+      {/* Mobile backdrop */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/40"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={() => {}}
+          role="presentation"
+        />
+      )}
+
       {/* Collapsible sidebar */}
       {sidebarOpen && (
-        <div className="w-56 border-r border-border shrink-0">
+        <div
+          className={cn(
+            'w-56 border-r border-border shrink-0',
+            isMobile && 'fixed left-0 top-16 bottom-0 z-30 bg-sidebar',
+          )}
+        >
           <RecordingsSidebar
             recordings={recordings}
             selectedId={selectedRecording?.id}
-            onSelect={setSelectedRecording}
+            onSelect={handleSelect}
             onCollapse={() => setSidebarOpen(false)}
           />
         </div>

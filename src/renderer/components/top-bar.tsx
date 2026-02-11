@@ -15,7 +15,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
 
   return (
     <>
-      <header className="relative flex h-16 items-center justify-between border-b border-border bg-card px-4">
+      <header className="relative flex h-16 items-center justify-between border-b border-border bg-card px-2 sm:px-4">
         {/* Left side - Logo */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -24,7 +24,9 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
               alt="ScribeCat logo"
               className="h-10 w-10 rounded-lg object-cover"
             />
-            <span className="text-lg font-semibold text-foreground">ScribeCat</span>
+            <span className="hidden sm:inline text-lg font-semibold text-foreground">
+              ScribeCat
+            </span>
           </div>
         </div>
 

@@ -18,6 +18,7 @@ import type * as http from "../http.js";
 import type * as lectureContext from "../lectureContext.js";
 import type * as nuggetChat from "../nuggetChat.js";
 import type * as nuggetNotes from "../nuggetNotes.js";
+import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
 import type * as sessions from "../sessions.js";
 import type * as transcription from "../transcription.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   lectureContext: typeof lectureContext;
   nuggetChat: typeof nuggetChat;
   nuggetNotes: typeof nuggetNotes;
+  productivity: typeof productivity;
   prompts: typeof prompts;
   sessions: typeof sessions;
   transcription: typeof transcription;
