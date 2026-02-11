@@ -44,8 +44,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  const userId = 'anonymous-user'; // TODO: Get from authenticated user
-  const { updateSession } = useSessions(userId);
+  const { updateSession } = useSessions();
   const session = useSession(sessionId || null);
   const generateNotesAction = useAction(api.ai.generateNotesFromTranscript);
 

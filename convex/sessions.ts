@@ -1,13 +1,28 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
 
-// List all sessions for a user (excluding deleted)
+/**
+ * Helper to get the authenticated user's ID from the JWT token.
+ * Throws if not authenticated.
+ */
+async function requireAuth(ctx: {
+  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
+}) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new ConvexError('Not authenticated');
+  }
+  return identity.subject;
+}
+
+// List all sessions for the authenticated user (excluding deleted)
 export const list = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
     return await ctx.db
       .query('sessions')
-      .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', false))
+      .withIndex('by_user_deleted', (q) => q.eq('userId', userId).eq('isDeleted', false))
       .order('desc')
       .collect();
   },
@@ -24,14 +39,14 @@ export const get = query({
 // Create a new session
 export const create = mutation({
   args: {
-    userId: v.string(),
     title: v.string(),
     lectureType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
     const now = Date.now();
     return await ctx.db.insert('sessions', {
-      userId: args.userId,
+      userId,
       title: args.title,
       lectureType: args.lectureType ?? 'general',
       duration: 0,
@@ -65,6 +80,7 @@ export const update = mutation({
     duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, value]) => value !== undefined),
@@ -81,6 +97,7 @@ export const update = mutation({
 export const softDelete = mutation({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db.patch(args.id, {
       isDeleted: true,
       deletedAt: Date.now(),
@@ -93,6 +110,7 @@ export const softDelete = mutation({
 export const restore = mutation({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db.patch(args.id, {
       isDeleted: false,
       deletedAt: undefined,
@@ -110,6 +128,7 @@ export const appendTranscriptSegment = mutation({
     isFinal: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const session = await ctx.db.get(args.id);
     if (!session) throw new Error('Session not found');
 
@@ -131,17 +150,19 @@ export const appendTranscriptSegment = mutation({
 export const permanentDelete = mutation({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db.delete(args.id);
   },
 });
 
-// List deleted sessions (trash)
+// List deleted sessions (trash) for the authenticated user
 export const listDeleted = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
     return await ctx.db
       .query('sessions')
-      .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', true))
+      .withIndex('by_user_deleted', (q) => q.eq('userId', userId).eq('isDeleted', true))
       .order('desc')
       .collect();
   },

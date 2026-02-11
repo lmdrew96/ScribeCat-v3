@@ -1,26 +1,13 @@
-import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
-import { useEffect } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 /**
- * Hook for anonymous authentication
- * Automatically signs in anonymous users on mount
+ * Hook for managing recording sessions.
+ * userId is now derived from the JWT token on the backend.
  */
-export function useAuth() {
-  const { signIn } = useAuthActions();
-
-  useEffect(() => {
-    void signIn('anonymous');
-  }, [signIn]);
-}
-
-/**
- * Hook for managing recording sessions
- */
-export function useSessions(userId: string) {
-  const sessions = useQuery(api.sessions.list, { userId });
+export function useSessions() {
+  const sessions = useQuery(api.sessions.list);
   const createSession = useMutation(api.sessions.create);
   const updateSession = useMutation(api.sessions.update);
   const deleteSession = useMutation(api.sessions.softDelete);
@@ -54,9 +41,10 @@ export function useTranscriptAppend() {
 }
 
 /**
- * Hook for trash management
+ * Hook for trash management.
+ * userId is now derived from the JWT token on the backend.
  */
-export function useTrash(userId: string) {
-  const deletedSessions = useQuery(api.sessions.listDeleted, { userId });
+export function useTrash() {
+  const deletedSessions = useQuery(api.sessions.listDeleted);
   return deletedSessions || [];
 }

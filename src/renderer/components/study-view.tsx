@@ -37,8 +37,7 @@ const formatDuration = (ms: number) => {
 };
 
 export function StudyView() {
-  const userId = 'anonymous-user'; // TODO: Get from authenticated user
-  const { sessions } = useSessions(userId);
+  const { sessions } = useSessions();
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 

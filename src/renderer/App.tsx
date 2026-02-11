@@ -1,14 +1,12 @@
 import { HomeView } from '@/components/home-view';
 import { StudyView } from '@/components/study-view';
 import { TopBar } from '@/components/top-bar';
-import { useAuth } from '@/hooks/use-sessions';
+import { SignIn } from '@clerk/clerk-react';
+import { AuthLoading, Authenticated, Unauthenticated } from 'convex/react';
 import { useState } from 'react';
 
-export function App() {
+function AuthenticatedApp() {
   const [currentView, setCurrentView] = useState<'home' | 'study'>('home');
-
-  // Automatically sign in anonymously
-  useAuth();
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -17,5 +15,27 @@ export function App() {
         {currentView === 'home' ? <HomeView /> : <StudyView />}
       </main>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <>
+      <AuthLoading>
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="text-muted-foreground text-sm">Loading...</div>
+        </div>
+      </AuthLoading>
+
+      <Unauthenticated>
+        <div className="flex h-screen items-center justify-center bg-background">
+          <SignIn />
+        </div>
+      </Unauthenticated>
+
+      <Authenticated>
+        <AuthenticatedApp />
+      </Authenticated>
+    </>
   );
 }

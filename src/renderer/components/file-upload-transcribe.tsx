@@ -21,8 +21,7 @@ interface TranscribeResult {
 }
 
 export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeProps) {
-  const userId = 'anonymous-user'; // TODO: Get from authenticated user
-  const { createSession, updateSession } = useSessions(userId);
+  const { createSession, updateSession } = useSessions();
   const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
   const getAudioUrl = useMutation(api.audioStorage.getAudioUrlMutation);
 
@@ -54,7 +53,6 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
 
         // Step 2: Create session and save audio reference
         const sessionId = await createSession({
-          userId,
           title: fileName,
           lectureType,
         });

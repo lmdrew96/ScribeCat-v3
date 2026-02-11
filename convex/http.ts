@@ -1,6 +1,5 @@
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
-import { auth } from './auth';
 import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
 import { nuggetChat } from './nuggetChat';
@@ -8,8 +7,6 @@ import { generateNuggetNotes } from './nuggetNotes';
 import { getStreamingToken, transcribeFromUrl } from './transcription';
 
 const http = httpRouter();
-
-auth.addHttpRoutes(http);
 
 // CORS preflight handler
 const corsHandler = httpAction(async () => {

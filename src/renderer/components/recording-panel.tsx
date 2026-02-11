@@ -28,8 +28,7 @@ interface RecordingPanelProps {
 }
 
 export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanelProps) {
-  const userId = 'anonymous-user'; // TODO: Get from authenticated user
-  const { createSession, updateSession } = useSessions(userId);
+  const { createSession, updateSession } = useSessions();
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
 
   // Lecture type and quick notes state
@@ -226,7 +225,6 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     try {
       // Create a new session with lecture type
       const sessionId = await createSession({
-        userId,
         title: `Recording ${new Date().toLocaleString()}`,
         lectureType,
       });
