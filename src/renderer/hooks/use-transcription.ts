@@ -33,11 +33,18 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const start = useCallback(
     async (stream: MediaStream) => {
       try {
-        // Get AssemblyAI API key from main process
-        const tokenResponse = await window.electronAPI?.getAssemblyAIToken();
+        // Get AssemblyAI streaming token from Convex backend
+        const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+        const httpBase = convexUrl.replace('.cloud', '.site');
+        const tokenRes = await fetch(`${httpBase}/assemblyai/token`);
+        const tokenResponse = (await tokenRes.json()) as {
+          success: boolean;
+          token?: string;
+          error?: string;
+        };
 
-        if (!tokenResponse?.success || !tokenResponse.token) {
-          throw new Error(tokenResponse?.error || 'Failed to get AssemblyAI token');
+        if (!tokenResponse.success || !tokenResponse.token) {
+          throw new Error(tokenResponse.error || 'Failed to get AssemblyAI token');
         }
 
         const token = tokenResponse.token;

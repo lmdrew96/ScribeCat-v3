@@ -9,8 +9,10 @@ export default defineSchema({
   sessions: defineTable({
     userId: v.string(),
     title: v.string(),
-    audioFilePath: v.optional(v.string()), // Local file path
+    lectureType: v.optional(v.string()), // "stem" | "humanities" | "discussion" | "lab" | "review" | "general"
+    audioStorageId: v.optional(v.string()), // Convex storage ID for audio file
     transcript: v.optional(v.string()),
+    quickNotes: v.optional(v.string()), // User's manual notes during recording
     transcriptSegments: v.optional(
       v.array(
         v.object({

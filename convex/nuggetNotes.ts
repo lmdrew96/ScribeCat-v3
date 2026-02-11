@@ -2,11 +2,13 @@
  * NuggetNotes - Haiku-powered note generation
  * Called every ~45 seconds during recording to generate 1-3 bullet notes.
  * Uses context from Sonnet for better understanding.
+ * Now lecture-type-aware and can incorporate student's quick notes.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
 import { AI_MODEL } from './config';
+import { type LectureType, getNuggetNotePrompt } from './prompts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,8 +30,9 @@ export interface NuggetNote {
   recordingTime: number;
 }
 
-export const generateNuggetNotes = httpAction(async (ctx, request) => {
-  const { transcript, context, recordingTimeSeconds } = await request.json();
+export const generateNuggetNotes = httpAction(async (_ctx, request) => {
+  const { transcript, context, recordingTimeSeconds, lectureType, quickNotes } =
+    await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -41,19 +44,12 @@ export const generateNuggetNotes = httpAction(async (ctx, request) => {
 
   const anthropic = new Anthropic({ apiKey });
 
-  // Build context string
-  const contextStr = context?.currentTopic
-    ? `Topic: "${context.currentTopic}". Themes: ${context.themes?.join(', ') || 'general'}.`
-    : 'Lecture in progress.';
-
-  const prompt = `Create 1-3 concise bullet notes from this lecture segment.
-
-CONTEXT: ${contextStr}
-
-TRANSCRIPT:
-"${transcript.slice(-500)}"
-
-Output ONLY bullet points (no intro, no explanation). Each must start with "- ":`;
+  const prompt = getNuggetNotePrompt(
+    transcript,
+    context,
+    (lectureType || 'general') as LectureType,
+    quickNotes,
+  );
 
   try {
     const message = await anthropic.messages.create({

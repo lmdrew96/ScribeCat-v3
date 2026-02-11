@@ -3,8 +3,9 @@ import { httpAction } from './_generated/server';
 import { auth } from './auth';
 import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
-import { generateNuggetNotes } from './nuggetNotes';
 import { nuggetChat } from './nuggetChat';
+import { generateNuggetNotes } from './nuggetNotes';
+import { getStreamingToken, transcribeFromUrl } from './transcription';
 
 const http = httpRouter();
 
@@ -72,6 +73,32 @@ http.route({
   path: '/nuggetChat',
   method: 'POST',
   handler: nuggetChat,
+});
+
+// AssemblyAI Streaming Token (for real-time transcription)
+http.route({
+  path: '/assemblyai/token',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/assemblyai/token',
+  method: 'GET',
+  handler: getStreamingToken,
+});
+
+// AssemblyAI Batch Transcription (file upload)
+http.route({
+  path: '/assemblyai/transcribe',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/assemblyai/transcribe',
+  method: 'POST',
+  handler: transcribeFromUrl,
 });
 
 export default http;

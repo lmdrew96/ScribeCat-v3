@@ -1,10 +1,24 @@
 import type { JSONContent } from '@tiptap/core';
 
-export function markdownToTipTap(markdown: string): JSONContent {
+interface CitationData {
+  noteText: string;
+  timestamp: number;
+  segmentText: string;
+}
+
+export function markdownToTipTap(markdown: string, citations?: CitationData[]): JSONContent {
   const lines = markdown.split('\n');
   const content: JSONContent[] = [];
   let currentList: JSONContent | null = null;
   let currentListType: 'bulletList' | 'orderedList' | null = null;
+
+  // Build a citation lookup by timestamp for quick access
+  const citationMap = new Map<number, CitationData>();
+  if (citations) {
+    for (const c of citations) {
+      citationMap.set(c.timestamp, c);
+    }
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -29,7 +43,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
       content.push({
         type: 'heading',
         attrs: { level: 3 },
-        content: [{ type: 'text', text: line.slice(4) }],
+        content: parseInlineFormatting(line.slice(4), citationMap),
       });
     } else if (line.startsWith('## ')) {
       if (currentList) {
@@ -40,7 +54,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
       content.push({
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: line.slice(3) }],
+        content: parseInlineFormatting(line.slice(3), citationMap),
       });
     } else if (line.startsWith('# ')) {
       if (currentList) {
@@ -51,7 +65,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
       content.push({
         type: 'heading',
         attrs: { level: 1 },
-        content: [{ type: 'text', text: line.slice(2) }],
+        content: parseInlineFormatting(line.slice(2), citationMap),
       });
     }
     // Blockquote
@@ -66,7 +80,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
         content: [
           {
             type: 'paragraph',
-            content: [{ type: 'text', text: line.slice(2) }],
+            content: parseInlineFormatting(line.slice(2), citationMap),
           },
         ],
       });
@@ -79,7 +93,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
         content: [
           {
             type: 'paragraph',
-            content: parseInlineFormatting(text),
+            content: parseInlineFormatting(text, citationMap),
           },
         ],
       };
@@ -105,7 +119,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
         content: [
           {
             type: 'paragraph',
-            content: parseInlineFormatting(text),
+            content: parseInlineFormatting(text, citationMap),
           },
         ],
       };
@@ -148,7 +162,7 @@ export function markdownToTipTap(markdown: string): JSONContent {
       }
       content.push({
         type: 'paragraph',
-        content: parseInlineFormatting(line),
+        content: parseInlineFormatting(line, citationMap),
       });
     }
   }
@@ -164,9 +178,15 @@ export function markdownToTipTap(markdown: string): JSONContent {
   };
 }
 
-function parseInlineFormatting(text: string): JSONContent[] {
+function parseInlineFormatting(
+  text: string,
+  citationMap?: Map<number, CitationData>,
+): JSONContent[] {
+  // First, extract and process citations [cite:XXXXX]
+  const { cleanText, citationTimestamps } = extractCitations(text);
+
   const content: JSONContent[] = [];
-  let remaining = text;
+  let remaining = cleanText;
   let position = 0;
 
   while (position < remaining.length) {
@@ -216,5 +236,51 @@ function parseInlineFormatting(text: string): JSONContent[] {
     content.push({ type: 'text', text: remaining });
   }
 
-  return content.length > 0 ? content : [{ type: 'text', text: text }];
+  const result = content.length > 0 ? content : [{ type: 'text', text: cleanText }];
+
+  // If there are citations, wrap the entire line content with a citation mark
+  if (citationTimestamps.length > 0 && citationMap) {
+    const timestamp = citationTimestamps[0]; // Use the first citation
+    const citation = citationMap.get(timestamp);
+
+    return result.map((node) => ({
+      ...node,
+      marks: [
+        ...(node.marks || []),
+        {
+          type: 'citation',
+          attrs: {
+            timestamp,
+            segmentText: citation?.segmentText || '',
+          },
+        },
+      ],
+    }));
+  }
+
+  return result;
+}
+
+/**
+ * Extract [cite:XXXXX] patterns from text and return cleaned text + timestamps
+ */
+function extractCitations(text: string): {
+  cleanText: string;
+  citationTimestamps: number[];
+} {
+  const citationPattern = /\s*\[cite:(\d+)\]/g;
+  const timestamps: number[] = [];
+  let match = citationPattern.exec(text);
+
+  while (match !== null) {
+    timestamps.push(Number.parseInt(match[1], 10));
+    match = citationPattern.exec(text);
+  }
+
+  const cleanText = text.replace(citationPattern, '').trim();
+
+  return {
+    cleanText,
+    citationTimestamps: timestamps,
+  };
 }

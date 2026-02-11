@@ -26,12 +26,14 @@ export const create = mutation({
   args: {
     userId: v.string(),
     title: v.string(),
+    lectureType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert('sessions', {
       userId: args.userId,
       title: args.title,
+      lectureType: args.lectureType ?? 'general',
       duration: 0,
       createdAt: now,
       updatedAt: now,
@@ -45,7 +47,7 @@ export const update = mutation({
   args: {
     id: v.id('sessions'),
     title: v.optional(v.string()),
-    audioFilePath: v.optional(v.string()),
+    audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.string()),
     transcriptSegments: v.optional(
       v.array(
@@ -56,6 +58,8 @@ export const update = mutation({
         }),
       ),
     ),
+    lectureType: v.optional(v.string()),
+    quickNotes: v.optional(v.string()),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
     duration: v.optional(v.number()),

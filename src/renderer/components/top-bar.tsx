@@ -1,6 +1,5 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
-import { WindowControls } from '@/components/window-controls';
 import { BookOpen, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,20 +10,13 @@ interface TopBarProps {
 
 export function TopBar({ currentView, onViewChange }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const isMac = window.electronAPI?.platform === 'darwin';
 
   return (
     <>
-      <header
-        className="relative flex h-16 items-center justify-between border-b border-border bg-card px-4"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
-        {/* Left side - Logo (with macOS traffic light offset) */}
-        <div className="flex items-center gap-3" style={{ marginLeft: isMac ? '70px' : '0' }}>
-          <div
-            className="flex items-center gap-2"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          >
+      <header className="relative flex h-16 items-center justify-between border-b border-border bg-card px-4">
+        {/* Left side - Logo */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <img
               src="/nuggy-baby-boy.png"
               alt="ScribeCat logo"
@@ -35,10 +27,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
         </div>
 
         {/* Center - Navigation */}
-        <nav
-          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
+        <nav className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1">
           <Button
             variant={currentView === 'home' ? 'secondary' : 'ghost'}
             size="sm"
@@ -59,11 +48,8 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
           </Button>
         </nav>
 
-        {/* Right side - Theme, Settings, Window Controls */}
-        <div
-          className="flex items-center gap-2"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
+        {/* Right side - Settings */}
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -73,7 +59,6 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
             <Settings className="h-4 w-4" />
             <span className="sr-only">Settings</span>
           </Button>
-          <WindowControls />
         </div>
       </header>
 

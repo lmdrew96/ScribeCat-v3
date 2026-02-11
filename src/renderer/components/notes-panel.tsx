@@ -1,6 +1,7 @@
 import { EditorToolbar } from '@/components/editor-toolbar';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { useSession, useSessions } from '@/hooks/use-sessions';
+import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
 import { FontSize } from '@/lib/font-size-extension';
@@ -109,6 +110,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       DraggableImage,
       TextBox,
       ExcalidrawNode,
+      CitationMark,
     ],
     [],
   );
@@ -217,14 +219,17 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       console.log('Calling generateNotesAction...');
       const data = await generateNotesAction({
         transcript: session.transcript,
+        transcriptSegments: session.transcriptSegments,
         sessionId: sessionId as string,
+        lectureType: session.lectureType,
+        quickNotes: session.quickNotes,
       });
       console.log('Response data:', data);
 
       if (data.success && data.notes && editor) {
-        // Convert markdown to TipTap JSON
+        // Convert markdown to TipTap JSON (with citation data if available)
         console.log('Raw markdown notes:', data.notes);
-        const tiptapContent = markdownToTipTap(data.notes);
+        const tiptapContent = markdownToTipTap(data.notes, data.citations);
         console.log('Converted TipTap content:', JSON.stringify(tiptapContent, null, 2));
 
         // Append to existing content

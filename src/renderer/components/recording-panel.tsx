@@ -1,6 +1,8 @@
 import { AudioWaveform } from '@/components/audio-waveform';
+import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
+import { QuickNotesInput } from '@/components/quick-notes-input';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,11 +12,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
+import { useMutation } from 'convex/react';
 import { Mic, Pause, Play, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 interface RecordingPanelProps {
@@ -26,6 +31,10 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   const userId = 'anonymous-user'; // TODO: Get from authenticated user
   const { createSession, updateSession } = useSessions(userId);
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
+
+  // Lecture type and quick notes state
+  const [lectureType, setLectureType] = useState<LectureType>('general');
+  const [quickNotes, setQuickNotes] = useState('');
 
   // Nugget Notes hook for real-time AI note generation
   const nuggetNotes = useNuggetNotes();
@@ -39,6 +48,9 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     },
     [onInsertNote],
   );
+
+  // Convex audio upload mutation
+  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
 
   // Notify parent when session changes
   useEffect(() => {
@@ -76,17 +88,23 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     getStream,
   } = useAudioRecorder({
     onDataAvailable: async (audioBlob) => {
-      // Save audio file when recording stops
-      if (currentSessionId && window.electronAPI) {
-        const arrayBuffer = await audioBlob.arrayBuffer();
-        const filename = `${currentSessionId}.webm`;
-        const result = await window.electronAPI.saveAudio(filename, arrayBuffer);
+      // Upload audio to Convex storage when recording stops
+      if (currentSessionId) {
+        try {
+          const uploadUrl = await generateUploadUrl();
+          const uploadResult = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
+            body: audioBlob,
+          });
+          const { storageId } = await uploadResult.json();
 
-        if (result.success && result.filePath) {
           await updateSession({
             id: currentSessionId,
-            audioFilePath: result.filePath,
+            audioStorageId: storageId,
           });
+        } catch (error) {
+          console.error('Error uploading audio:', error);
         }
       }
     },
@@ -107,6 +125,29 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   // Track the last saved transcript to avoid duplicate saves
   const lastSavedTranscriptRef = useRef<string>('');
   const lastNuggetProcessRef = useRef<string>('');
+
+  // Debounced save for quick notes (2 second delay)
+  const saveQuickNotes = useCallback(
+    async (notes: string) => {
+      if (!currentSessionId) return;
+      try {
+        await updateSession({ id: currentSessionId, quickNotes: notes });
+      } catch (error) {
+        console.error('Error saving quick notes:', error);
+      }
+    },
+    [currentSessionId, updateSession],
+  );
+  const debouncedSaveQuickNotes = useDebouncedCallback(saveQuickNotes, 2000);
+
+  // Handle quick notes changes
+  const handleQuickNotesChange = useCallback(
+    (value: string) => {
+      setQuickNotes(value);
+      debouncedSaveQuickNotes(value);
+    },
+    [debouncedSaveQuickNotes],
+  );
 
   // Save transcript when we get new final segments (debounced by checking if content changed)
   useEffect(() => {
@@ -159,8 +200,13 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       // Check again if still active before async operation
       if (!nuggetEffectActiveRef.current) return;
 
-      // Process the transcript chunk
-      await nuggetNotes.processTranscriptChunk(fullTranscript, recordingTime);
+      // Process the transcript chunk with lecture type and quick notes context
+      await nuggetNotes.processTranscriptChunk(
+        fullTranscript,
+        recordingTime,
+        lectureType,
+        quickNotes,
+      );
     };
 
     processForNugget();
@@ -168,7 +214,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     return () => {
       nuggetEffectActiveRef.current = false;
     };
-  }, [segments, recordingTime, nuggetNotes]);
+  }, [segments, recordingTime, nuggetNotes, lectureType, quickNotes]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -178,18 +224,18 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
 
   const handleRecord = async () => {
     try {
-      // Create a new session
+      // Create a new session with lecture type
       const sessionId = await createSession({
         userId,
         title: `Recording ${new Date().toLocaleString()}`,
+        lectureType,
       });
 
       setCurrentSessionId(sessionId);
 
-      // Clear previous transcription when starting a new recording
+      // Clear previous state for new recording
       resetTranscription();
-
-      // Clear and start Nugget Notes
+      setQuickNotes('');
       nuggetNotes.clearNotes();
       nuggetNotes.startRecording();
       lastNuggetProcessRef.current = '';
@@ -224,13 +270,14 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     const finalTranscript = getFullTranscript();
     await nuggetNotes.stopRecording(finalTranscript);
 
-    // Update final session data
+    // Update final session data including quick notes
     if (currentSessionId) {
       await updateSession({
         id: currentSessionId,
         duration: recordingTime * 1000, // Convert to milliseconds
         transcript: getFullTranscript(),
         transcriptSegments: segments,
+        quickNotes,
       });
     }
 
@@ -263,26 +310,38 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
         onToggleEnabled={nuggetNotes.setEnabled}
       />
 
+      {/* Quick Notes - user's own notes during recording */}
+      <QuickNotesInput
+        value={quickNotes}
+        onChange={handleQuickNotesChange}
+        isRecording={isRecording}
+      />
+
       {/* Waveform visualizer - compact */}
       <AudioWaveform isActive={isRecording && !isPaused} audioLevel={audioLevel} />
 
       {/* Recording controls - compact bottom bar */}
       <div className="flex items-center gap-3 rounded-lg bg-card p-2">
-        {/* Device selector - only show when not recording */}
+        {/* Device selector + Lecture type - only show when not recording */}
         {!isRecording && (
-          <div className="flex-1 min-w-0">
-            <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select microphone" />
-              </SelectTrigger>
-              <SelectContent>
-                {devices.map((device) => (
-                  <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
-                    {device.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex-1 min-w-0 flex gap-2">
+            <div className="flex-1 min-w-0">
+              <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select microphone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {devices.map((device) => (
+                    <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
+                      {device.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-32 shrink-0">
+              <LectureTypeSelect value={lectureType} onChange={setLectureType} />
+            </div>
           </div>
         )}
 
