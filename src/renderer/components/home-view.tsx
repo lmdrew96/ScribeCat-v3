@@ -102,7 +102,7 @@ export function HomeView() {
         <GripVertical className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
-      <div style={{ width: `${100 - leftWidth}%` }} className="min-w-0">
+      <div style={{ width: `${100 - leftWidth}%` }} className="min-w-[260px]">
         <RecordingPanel onSessionChange={setCurrentSessionId} onInsertNote={handleInsertNote} />
       </div>
     </div>
