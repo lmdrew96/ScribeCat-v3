@@ -18,9 +18,14 @@ export interface NotesPanelRef {
 interface HomeViewProps {
   onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
   onNuggetNotesChange?: (notes: NuggetNote[]) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
-export function HomeView({ onSessionChange, onNuggetNotesChange }: HomeViewProps) {
+export function HomeView({
+  onSessionChange,
+  onNuggetNotesChange,
+  onRecordingStateChange,
+}: HomeViewProps) {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);
@@ -85,6 +90,7 @@ export function HomeView({ onSessionChange, onNuggetNotesChange }: HomeViewProps
             onSessionChange={setCurrentSessionId}
             onInsertNote={handleInsertNote}
             onNuggetNotesChange={onNuggetNotesChange}
+            onRecordingStateChange={onRecordingStateChange}
           />
         </TabsContent>
         <TabsContent
@@ -122,6 +128,7 @@ export function HomeView({ onSessionChange, onNuggetNotesChange }: HomeViewProps
           onSessionChange={setCurrentSessionId}
           onInsertNote={handleInsertNote}
           onNuggetNotesChange={onNuggetNotesChange}
+          onRecordingStateChange={onRecordingStateChange}
         />
       </div>
     </div>

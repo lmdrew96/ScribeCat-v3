@@ -29,12 +29,14 @@ interface RecordingPanelProps {
   onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
   onInsertNote?: (noteText: string) => void;
   onNuggetNotesChange?: (notes: NuggetNote[]) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
 export function RecordingPanel({
   onSessionChange,
   onInsertNote,
   onNuggetNotesChange,
+  onRecordingStateChange,
 }: RecordingPanelProps) {
   const { createSession, updateSession } = useSessions();
   const logStudyTime = useLogStudyTime();
@@ -139,6 +141,11 @@ export function RecordingPanel({
 
   // Break reminder toasts during recording
   useBreakReminder(isRecording);
+
+  // Notify parent when recording state changes
+  useEffect(() => {
+    onRecordingStateChange?.(isRecording);
+  }, [isRecording, onRecordingStateChange]);
 
   // Track the last saved transcript to avoid duplicate saves
   const lastSavedTranscriptRef = useRef<string>('');
@@ -264,13 +271,15 @@ export function RecordingPanel({
     await nuggetNotes.stopRecording(finalTranscript);
 
     // Update final session data (including nugget notes)
+    // Use getLatestNotes() instead of .notes to get notes generated
+    // during stopRecording (React state may not have flushed yet)
     if (currentSessionId) {
       await updateSession({
         id: currentSessionId,
         duration: recordingTime * 1000, // Convert to milliseconds
         transcript: getFullTranscript(),
         transcriptSegments: segments,
-        nuggetNotes: nuggetNotes.notes.map((n) => ({
+        nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
           text: n.text,
           recordingTime: n.recordingTime,
         })),
@@ -308,8 +317,9 @@ export function RecordingPanel({
     lastNuggetProcessRef.current = '';
 
     // Reset recorder but keep transcription visible
+    // NOTE: Do NOT clear currentSessionId here — notes must remain
+    // editable/saveable until a new recording starts
     resetRecorder();
-    setCurrentSessionId(null);
   };
 
   const handlePauseResume = () => {

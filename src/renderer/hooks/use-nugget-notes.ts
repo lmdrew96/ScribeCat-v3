@@ -66,6 +66,8 @@ export interface UseNuggetNotesReturn {
     userNotes?: string,
   ) => Promise<void>;
   clearNotes: () => void;
+  /** Get the latest notes synchronously (bypasses React state batching) */
+  getLatestNotes: () => NuggetNote[];
 }
 
 export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesReturn {
@@ -77,6 +79,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const [isEnabled, setIsEnabled] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Synchronous ref for latest notes (React state is async, so this
+  // ensures callers can read the up-to-date list immediately after stopRecording)
+  const notesRef = useRef<NuggetNote[]>([]);
 
   // Refs for tracking timing/buffering
   const transcriptBufferRef = useRef('');
@@ -201,7 +207,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             };
           });
 
-          setNotes((prev) => [...prev, ...newNotes]);
+          const updated = [...notesRef.current, ...newNotes];
+          notesRef.current = updated;
+          setNotes(updated);
           lastNoteTimeRef.current = Date.now();
           wordsSinceNoteRef.current = 0;
           console.log(`📝 Generated ${newNotes.length} notes`);
@@ -399,6 +407,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
 
+    notesRef.current = [];
     setNotes([]);
     setContext(EMPTY_CONTEXT);
     transcriptBufferRef.current = '';
@@ -442,5 +451,6 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     stopRecording,
     processTranscriptChunk,
     clearNotes,
+    getLatestNotes: useCallback(() => notesRef.current, []),
   };
 }

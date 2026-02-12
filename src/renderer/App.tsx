@@ -14,6 +14,7 @@ function AuthenticatedApp() {
   const [currentView, setCurrentView] = useState<'home' | 'study'>('home');
   const [activeSessionId, setActiveSessionId] = useState<Id<'sessions'> | null>(null);
   const [nuggetNotes, setNuggetNotes] = useState<NuggetNote[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
 
   // Reactively get session data for NuggetChat
   const session = useSession(activeSessionId);
@@ -36,6 +37,10 @@ function AuthenticatedApp() {
     setNuggetNotes(notes);
   }, []);
 
+  const handleRecordingStateChange = useCallback((recording: boolean) => {
+    setIsRecording(recording);
+  }, []);
+
   return (
     <div className="app-bg-orbs flex h-screen flex-col">
       <TopBar currentView={currentView} onViewChange={setCurrentView} />
@@ -44,6 +49,7 @@ function AuthenticatedApp() {
           <HomeView
             onSessionChange={handleHomeSessionChange}
             onNuggetNotesChange={handleNuggetNotesChange}
+            onRecordingStateChange={handleRecordingStateChange}
           />
         ) : (
           <StudyView onSessionChange={handleStudySessionChange} />
@@ -57,7 +63,7 @@ function AuthenticatedApp() {
         sessionId={activeSessionId ?? undefined}
         lectureType={session?.lectureType}
         nuggetNotes={nuggetNotesText}
-        isRecording={currentView === 'home' && !!activeSessionId}
+        isRecording={currentView === 'home' && isRecording}
       />
     </div>
   );
