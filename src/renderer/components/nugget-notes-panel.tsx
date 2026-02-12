@@ -12,6 +12,7 @@ import { useState } from 'react';
 interface NuggetNotesPanelProps {
   notes: NuggetNote[];
   isRecording: boolean;
+  isProcessing: boolean;
   isEnabled: boolean;
   onInsertNote: (noteText: string) => void;
   onToggleEnabled?: (enabled: boolean) => void;
@@ -20,6 +21,7 @@ interface NuggetNotesPanelProps {
 export function NuggetNotesPanel({
   notes,
   isRecording,
+  isProcessing,
   isEnabled,
   onInsertNote,
   // onToggleEnabled - reserved for future settings integration
@@ -47,7 +49,13 @@ export function NuggetNotesPanel({
           {notes.length > 0 && (
             <span className="text-xs text-muted-foreground">({notes.length})</span>
           )}
-          {isRecording && isEnabled && (
+          {isProcessing && (
+            <span className="flex items-center gap-1 text-xs text-primary">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Finishing up...</span>
+            </span>
+          )}
+          {isRecording && isEnabled && !isProcessing && (
             <span className="flex items-center gap-1 text-xs text-primary">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Listening...</span>
@@ -77,7 +85,13 @@ export function NuggetNotesPanel({
                     formatTime={formatTime}
                   />
                 ))}
-                {isRecording && isEnabled && (
+                {isProcessing && (
+                  <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Processing remaining transcript...</span>
+                  </div>
+                )}
+                {isRecording && isEnabled && !isProcessing && (
                   <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Notes in progress...</span>

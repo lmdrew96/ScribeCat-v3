@@ -55,6 +55,7 @@ export interface UseNuggetNotesReturn {
   context: LectureContext;
   isEnabled: boolean;
   isRecording: boolean;
+  isProcessing: boolean;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
   stopRecording: (finalTranscript?: string) => Promise<void>;
@@ -74,6 +75,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const [context, setContext] = useState<LectureContext>(EMPTY_CONTEXT);
   const [isEnabled, setIsEnabled] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Refs for tracking timing/buffering
   const transcriptBufferRef = useRef('');
@@ -300,38 +302,71 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     console.log('🎙️ Nugget Notes recording started');
   }, []);
 
-  // Stop recording
+  // Stop recording — process all remaining unprocessed transcript into notes
   const stopRecording = useCallback(
     async (finalTranscript?: string): Promise<void> => {
       if (!isRecording) return;
 
-      console.log('⏹️ Nugget Notes stopping, processing final chunk...');
+      console.log('⏹️ Nugget Notes stopping, processing remaining transcript...');
 
-      // Mark as not recording immediately to prevent new requests
+      // Mark as not recording to prevent processTranscriptChunk from firing
       isRecordingRef.current = false;
 
       // Abort any pending fetch requests
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
 
-      // Process final chunk if we have new content (do this synchronously before state update)
-      if (finalTranscript && isEnabled) {
-        const newChunk = finalTranscript.slice(transcriptBufferRef.current.length);
-        if (newChunk.trim()) {
-          // Limit final buffer size
-          if (finalTranscript.length > MAX_BUFFER_SIZE) {
-            transcriptBufferRef.current = finalTranscript.slice(-MAX_BUFFER_SIZE);
-          } else {
-            transcriptBufferRef.current = finalTranscript;
-          }
-          const recordingTimeSeconds = (Date.now() - recordingStartTimeRef.current) / 1000;
+      // Process all unprocessed transcript content into notes
+      const hasUnprocessedWords = wordsSinceNoteRef.current > 0;
+      if (finalTranscript && isEnabled && hasUnprocessedWords) {
+        setIsProcessing(true);
 
-          // Temporarily re-enable for final notes generation
-          isRecordingRef.current = true;
-          const recentTranscript = getRecentTranscript();
-          await generateNotes(recentTranscript, context, recordingTimeSeconds);
-          isRecordingRef.current = false;
+        // Update buffer with final transcript
+        if (finalTranscript.length > MAX_BUFFER_SIZE) {
+          transcriptBufferRef.current = finalTranscript.slice(-MAX_BUFFER_SIZE);
+        } else {
+          transcriptBufferRef.current = finalTranscript;
         }
+
+        const recordingTimeSeconds = (Date.now() - recordingStartTimeRef.current) / 1000;
+
+        // Temporarily re-enable so generateNotes doesn't bail out
+        isRecordingRef.current = true;
+
+        const words = transcriptBufferRef.current.trim().split(/\s+/);
+        const totalWords = words.length;
+        const unprocessedWordCount = wordsSinceNoteRef.current;
+
+        // Where unprocessed content starts, with ~20 words of prior context
+        const unprocessedStart = Math.max(0, totalWords - unprocessedWordCount);
+        const contextStart = Math.max(0, unprocessedStart - 20);
+
+        if (unprocessedWordCount <= 120) {
+          // Small enough for a single generation
+          const chunk = words.slice(contextStart).join(' ');
+          if (chunk.trim()) {
+            await generateNotes(chunk, context, recordingTimeSeconds);
+          }
+        } else {
+          // Large amount of unprocessed content — process in overlapping windows
+          const CHUNK_SIZE = 100;
+          const STEP_SIZE = 80;
+          let pos = contextStart;
+
+          while (pos < totalWords && isRecordingRef.current) {
+            const endPos = Math.min(pos + CHUNK_SIZE, totalWords);
+            const chunk = words.slice(pos, endPos).join(' ');
+            if (chunk.trim()) {
+              await generateNotes(chunk, context, recordingTimeSeconds);
+            }
+            // If this chunk reached the end, we're done
+            if (endPos >= totalWords) break;
+            pos += STEP_SIZE;
+          }
+        }
+
+        isRecordingRef.current = false;
+        setIsProcessing(false);
       }
 
       // Clear the buffer to free memory
@@ -340,7 +375,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       setIsRecording(false);
       console.log('⏹️ Nugget Notes recording stopped');
     },
-    [isRecording, isEnabled, context, getRecentTranscript, generateNotes],
+    [isRecording, isEnabled, context, generateNotes],
   );
 
   // Clear all notes
@@ -386,6 +421,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     context,
     isEnabled,
     isRecording,
+    isProcessing,
     setEnabled: handleSetEnabled,
     startRecording,
     stopRecording,

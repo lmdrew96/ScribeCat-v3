@@ -305,6 +305,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       <NuggetNotesPanel
         notes={nuggetNotes.notes}
         isRecording={isRecording}
+        isProcessing={nuggetNotes.isProcessing}
         isEnabled={nuggetNotes.isEnabled}
         onInsertNote={handleInsertNote}
         onToggleEnabled={nuggetNotes.setEnabled}
