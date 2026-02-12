@@ -25,9 +25,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StudyContentProps {
   recording: Recording;
+  sidebarCollapsed?: boolean;
 }
 
-export function StudyContent({ recording }: StudyContentProps) {
+export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -133,7 +134,7 @@ export function StudyContent({ recording }: StudyContentProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-2">
+      <div className={`mb-2 ${sidebarCollapsed ? 'pl-8' : ''}`}>
         <h1 className="text-base font-semibold text-foreground">{recording.title}</h1>
         <p className="text-xs text-muted-foreground">
           {recording.date} • {recording.duration}

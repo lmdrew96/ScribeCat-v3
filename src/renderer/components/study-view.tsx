@@ -160,7 +160,7 @@ export function StudyView() {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-2 top-14 z-10 h-7 w-7"
+            className="absolute left-5 top-[1.6rem] z-10 h-7 w-7"
             onClick={() => setSidebarOpen(true)}
           >
             <PanelLeft className="h-4 w-4" />
@@ -170,7 +170,7 @@ export function StudyView() {
         {selectedRecording ? (
           <>
             <div className="flex-1 overflow-auto p-5">
-              <StudyContent recording={selectedRecording} />
+              <StudyContent recording={selectedRecording} sidebarCollapsed={!sidebarOpen} />
             </div>
             <div className="border-t border-[var(--glass-border)]">
               <StudyTools sessionId={selectedRecording.id as Id<'sessions'>} />
