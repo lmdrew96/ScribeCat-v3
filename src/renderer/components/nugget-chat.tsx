@@ -236,7 +236,7 @@ export function NuggetChat({
       <Button
         variant="default"
         size="icon"
-        className="fixed bottom-6 left-6 z-50 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform glass-heavy border border-[var(--glass-border-strong)]"
+        className="fixed bottom-6 left-6 z-50 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform bg-primary text-primary-foreground border border-primary/30"
         onClick={() => setIsOpen(true)}
         title="Chat with Nugget"
       >
