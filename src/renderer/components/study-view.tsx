@@ -13,6 +13,8 @@ import { useCallback, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
+type SessionId = Id<'sessions'>;
+
 export interface TranscriptSegment {
   text: string;
   timestamp: number;
@@ -41,9 +43,19 @@ const formatDuration = (ms: number) => {
 
 export function StudyView() {
   const isMobile = useIsMobile();
-  const { sessions } = useSessions();
+  const { sessions, deleteSession } = useSessions();
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  const handleDelete = useCallback(
+    (recordingId: string) => {
+      deleteSession({ id: recordingId as SessionId });
+      if (selectedRecording?.id === recordingId) {
+        setSelectedRecording(null);
+      }
+    },
+    [deleteSession, selectedRecording],
+  );
 
   // Auto-close sidebar on mobile when selecting a recording
   const handleSelect = useCallback(
@@ -103,6 +115,7 @@ export function StudyView() {
             recordings={recordings}
             selectedId={selectedRecording?.id}
             onSelect={handleSelect}
+            onDelete={handleDelete}
             onCollapse={() => setSidebarOpen(false)}
           />
         </div>

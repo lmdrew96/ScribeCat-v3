@@ -52,7 +52,7 @@ pnpm dev
 ## 📖 Documentation
 
 - **[Setup Guide](docs/SETUP.md)** — Installation and configuration
-- **[Phase Implementation Guide](docs/PHASES.md)** — Feature roadmap
+- **[Phase Implementation Guide](PHASES.md)** — Feature roadmap
 
 ---
 
