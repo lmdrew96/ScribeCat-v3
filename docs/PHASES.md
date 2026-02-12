@@ -139,13 +139,13 @@
 
 ### AI Study Tools
 
-- [ ] **Summary Generator** — comprehensive session summaries
-- [ ] **Key Concepts** — 5-7 important concepts with definitions
-- [ ] **Flashcard Generator** — interactive cards, Review/Learn modes
-- [ ] **Quiz Generator** — multiple choice, configurable count
-- [ ] **Concept Map** — visual hierarchical mind map
-- [ ] **ELI5 Explainer** — simple explanations with analogies
-- [ ] **AI Chat** — ask questions about transcript/notes
+- [x] **Summary Generator** — comprehensive session summaries
+- [x] **Key Concepts** — 5-7 important concepts with definitions
+- [x] **Flashcard Generator** — interactive cards, Browse/Learn modes with spaced repetition
+- [x] **Quiz Generator** — multiple choice, configurable count (5/10/15/20), scoring + history
+- [x] **Concept Map** — visual hierarchical SVG mind map
+- [x] **ELI5 Explainer** — simple explanations with analogies + real-world examples
+- [x] **AI Chat** — persistent Nugget Chat with session-based history + clickable suggestions
 
 ### StudyQuest (JRPG)
 
@@ -163,18 +163,18 @@
 
 ### Productivity & Gamification
 
-- [ ] Study goals (daily/weekly)
-- [ ] Streak tracking
-- [ ] Break reminders (configurable intervals)
-- [ ] Achievements (~15-20 to start)
+- [x] Study goals (daily/weekly)
+- [x] Streak tracking
+- [x] Break reminders (configurable intervals)
+- [x] Achievements (14 achievements)
 
 ### Acceptance Criteria
 
-- [ ] All 7 AI tools generate useful output
+- [x] All 7 AI tools generate useful output
 - [ ] StudyQuest cat responds to study activity
-- [ ] Goals and streaks track correctly
-- [ ] Break reminders fire at correct intervals
-- [ ] Achievements unlock appropriately
+- [x] Goals and streaks track correctly
+- [x] Break reminders fire at correct intervals
+- [x] Achievements unlock appropriately
 
 ---
 

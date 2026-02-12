@@ -65,4 +65,58 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_achievement', ['userId', 'achievementId']),
+
+  // AI study tool cached results (one row per tool per session)
+  studyToolResults: defineTable({
+    userId: v.string(),
+    sessionId: v.id('sessions'),
+    toolType: v.string(),
+    result: v.string(),
+    lectureType: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_session_tool', ['sessionId', 'toolType'])
+    .index('by_user', ['userId']),
+
+  // Flashcard learning progress (spaced repetition tracking)
+  flashcardProgress: defineTable({
+    userId: v.string(),
+    sessionId: v.id('sessions'),
+    cardIndex: v.number(),
+    confidence: v.string(),
+    lastReviewed: v.number(),
+    reviewCount: v.number(),
+    nextReview: v.optional(v.number()),
+  }).index('by_user_session', ['userId', 'sessionId']),
+
+  // Quiz attempt history
+  quizAttempts: defineTable({
+    userId: v.string(),
+    sessionId: v.id('sessions'),
+    answers: v.array(
+      v.object({
+        questionIndex: v.number(),
+        selectedAnswer: v.number(),
+        correct: v.boolean(),
+      }),
+    ),
+    score: v.number(),
+    totalQuestions: v.number(),
+    completedAt: v.number(),
+  }).index('by_user_session', ['userId', 'sessionId']),
+
+  // Persistent chat history per session
+  chatHistory: defineTable({
+    userId: v.string(),
+    sessionId: v.id('sessions'),
+    messages: v.array(
+      v.object({
+        role: v.string(),
+        content: v.string(),
+        timestamp: v.number(),
+      }),
+    ),
+    updatedAt: v.number(),
+  }).index('by_user_session', ['userId', 'sessionId']),
 });

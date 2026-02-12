@@ -1,12 +1,15 @@
 /**
  * NuggetChat - Floating AI chat button and drawer
- * Provides Q&A about transcript/notes using Sonnet
+ * Provides Q&A about transcript/notes with persistent chat history
  */
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useMutation, useQuery } from 'convex/react';
 import { Cat, Loader2, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 interface ChatMessage {
   id: string;
@@ -18,10 +21,11 @@ interface ChatMessage {
 interface NuggetChatProps {
   transcript?: string;
   notes?: string;
+  sessionId?: string;
   convexUrl?: string;
 }
 
-export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
+export function NuggetChat({ transcript, notes, sessionId, convexUrl }: NuggetChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -31,6 +35,32 @@ export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Chat history persistence
+  const chatHistory = useQuery(
+    api.studyTools.getChatHistory,
+    sessionId ? { sessionId: sessionId as Id<'sessions'> } : 'skip',
+  );
+  const saveChatHistory = useMutation(api.studyTools.saveChatHistory);
+
+  // Load persisted messages when session changes or drawer opens
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Load messages when chatHistory or sessionId changes
+  useEffect(() => {
+    if (chatHistory?.messages) {
+      setMessages(
+        chatHistory.messages.map(
+          (m: { role: string; content: string; timestamp: number }, i: number) => ({
+            id: `${m.role}-${m.timestamp}-${i}`,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp,
+          }),
+        ),
+      );
+    } else {
+      setMessages([]);
+    }
+  }, [chatHistory, sessionId]);
 
   // Get the API base URL
   const getApiUrl = useCallback(() => {
@@ -68,68 +98,106 @@ export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Send message
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: input.trim(),
-      timestamp: Date.now(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(getApiUrl(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage.content,
-          conversationHistory: messages.map((m) => ({
+  // Persist messages to Convex
+  const persistMessages = useCallback(
+    async (updatedMessages: ChatMessage[]) => {
+      if (!sessionId) return;
+      try {
+        await saveChatHistory({
+          sessionId: sessionId as Id<'sessions'>,
+          messages: updatedMessages.map((m) => ({
             role: m.role,
             content: m.content,
+            timestamp: m.timestamp,
           })),
-          transcript: includeTranscript ? transcript : undefined,
-          notes: includeNotes ? notes : undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.response) {
-        const assistantMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: data.response,
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        const errorMessage: ChatMessage = {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: 'Sorry, I had trouble responding. Please try again! 🐱',
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        });
+      } catch {
+        // Silently fail — chat still works locally
       }
-    } catch (error) {
-      console.error('Chat error:', error);
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: 'Meow! Something went wrong. Please check your connection and try again. 🐱',
+    },
+    [sessionId, saveChatHistory],
+  );
+
+  // Send message
+  const sendMessage = useCallback(
+    async (messageText?: string) => {
+      const text = messageText || input.trim();
+      if (!text || isLoading) return;
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: text,
         timestamp: Date.now(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [input, isLoading, messages, transcript, notes, includeTranscript, includeNotes, getApiUrl]);
+
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
+      setInput('');
+      setIsLoading(true);
+
+      try {
+        const response = await fetch(getApiUrl(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMessage.content,
+            conversationHistory: messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+            transcript: includeTranscript ? transcript : undefined,
+            notes: includeNotes ? notes : undefined,
+          }),
+        });
+
+        const responseData = await response.json();
+
+        if (responseData.success && responseData.response) {
+          const assistantMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: responseData.response,
+            timestamp: Date.now(),
+          };
+          const withResponse = [...updatedMessages, assistantMessage];
+          setMessages(withResponse);
+          await persistMessages(withResponse);
+        } else {
+          const errorMsg: ChatMessage = {
+            id: `error-${Date.now()}`,
+            role: 'assistant',
+            content: 'Sorry, I had trouble responding. Please try again!',
+            timestamp: Date.now(),
+          };
+          const withError = [...updatedMessages, errorMsg];
+          setMessages(withError);
+        }
+      } catch (err) {
+        console.error('Chat error:', err);
+        const errorMsg: ChatMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: 'Meow! Something went wrong. Please check your connection and try again.',
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      input,
+      isLoading,
+      messages,
+      transcript,
+      notes,
+      includeTranscript,
+      includeNotes,
+      getApiUrl,
+      persistMessages,
+    ],
+  );
 
   // Handle input keydown
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -186,7 +254,7 @@ export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
             {/* Messages */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               {messages.length === 0 ? (
-                <WelcomeMessage />
+                <WelcomeMessage onSuggestionClick={sendMessage} />
               ) : (
                 <div className="flex flex-col gap-4">
                   {messages.map((message) => (
@@ -239,7 +307,7 @@ export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
               <Button
                 size="icon"
                 className="h-10 w-10 shrink-0"
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={!input.trim() || isLoading}
               >
                 <Send className="h-4 w-4" />
@@ -253,11 +321,11 @@ export function NuggetChat({ transcript, notes, convexUrl }: NuggetChatProps) {
 }
 
 // Welcome message component
-function WelcomeMessage() {
+function WelcomeMessage({ onSuggestionClick }: { onSuggestionClick: (text: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-8 text-center">
       <Cat className="h-16 w-16 text-primary mb-4" />
-      <h3 className="text-lg font-semibold text-foreground mb-2">Hey there! I&apos;m Nugget 🐱</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-2">Hey there! I&apos;m Nugget</h3>
       <p className="text-sm text-muted-foreground max-w-xs">
         I&apos;m here to help you understand your lecture content. Ask me anything about your
         transcript or notes!
@@ -265,9 +333,9 @@ function WelcomeMessage() {
       <div className="flex flex-col gap-2 mt-6 text-sm">
         <p className="text-muted-foreground">Try asking:</p>
         <div className="flex flex-wrap gap-2 justify-center">
-          <SuggestionChip text="Summarize the main points" />
-          <SuggestionChip text="What are the key concepts?" />
-          <SuggestionChip text="Explain this in simpler terms" />
+          <SuggestionChip text="Summarize the main points" onClick={onSuggestionClick} />
+          <SuggestionChip text="What are the key concepts?" onClick={onSuggestionClick} />
+          <SuggestionChip text="Explain this in simpler terms" onClick={onSuggestionClick} />
         </div>
       </div>
     </div>
@@ -275,11 +343,15 @@ function WelcomeMessage() {
 }
 
 // Suggestion chip component
-function SuggestionChip({ text }: { text: string }) {
+function SuggestionChip({ text, onClick }: { text: string; onClick: (text: string) => void }) {
   return (
-    <span className="inline-flex px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs hover:bg-muted/80 cursor-pointer">
+    <button
+      type="button"
+      className="inline-flex px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs hover:bg-muted/80 cursor-pointer transition-colors"
+      onClick={() => onClick(text)}
+    >
       {text}
-    </span>
+    </button>
   );
 }
 

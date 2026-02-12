@@ -2,7 +2,7 @@ import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
 import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
-import { StudyTools } from '@/components/study-tools';
+import { StudyTools } from '@/components/study-tools/index';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useSessions } from '@/hooks/use-sessions';
@@ -11,6 +11,7 @@ import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 export interface TranscriptSegment {
   text: string;
@@ -127,7 +128,7 @@ export function StudyView() {
               <StudyContent recording={selectedRecording} />
             </div>
             <div className="border-t border-border">
-              <StudyTools recording={selectedRecording} />
+              <StudyTools sessionId={selectedRecording.id as Id<'sessions'>} />
             </div>
           </>
         ) : (
@@ -146,7 +147,11 @@ export function StudyView() {
       </div>
 
       {/* Nugget Chat - floating button + drawer */}
-      <NuggetChat transcript={selectedRecording?.transcript} notes={selectedRecording?.notes} />
+      <NuggetChat
+        transcript={selectedRecording?.transcript}
+        notes={selectedRecording?.notes}
+        sessionId={selectedRecording?.id}
+      />
     </div>
   );
 }
