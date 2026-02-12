@@ -27,6 +27,8 @@ interface NuggetChatProps {
   lectureType?: string;
   nuggetNotes?: string;
   isRecording?: boolean;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function NuggetChat({
@@ -37,8 +39,9 @@ export function NuggetChat({
   lectureType,
   nuggetNotes,
   isRecording,
+  isOpen,
+  onOpenChange,
 }: NuggetChatProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -109,13 +112,13 @@ export function NuggetChat({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false);
+        onOpenChange(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, onOpenChange]);
 
   // Persist messages to Convex
   const persistMessages = useCallback(
@@ -232,25 +235,14 @@ export function NuggetChat({
 
   return (
     <>
-      {/* Floating Button */}
-      <Button
-        variant="default"
-        size="icon"
-        className="fixed bottom-6 left-6 z-50 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform bg-primary text-primary-foreground border border-primary/30"
-        onClick={() => setIsOpen(true)}
-        title="Chat with Nugget"
-      >
-        <Cat className="h-6 w-6" />
-      </Button>
-
       {/* Chat Drawer */}
       {isOpen && (
         <>
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-            onKeyDown={(e) => e.key === 'Enter' && setIsOpen(false)}
+            onClick={() => onOpenChange(false)}
+            onKeyDown={(e) => e.key === 'Enter' && onOpenChange(false)}
             role="button"
             tabIndex={0}
             aria-label="Close chat"
@@ -273,7 +265,7 @@ export function NuggetChat({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 <X className="h-4 w-4" />
               </Button>

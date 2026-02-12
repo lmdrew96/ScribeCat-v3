@@ -1,15 +1,16 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { useStudyStats } from '@/hooks/use-productivity';
-import { BookOpen, Flame, Home, Settings } from 'lucide-react';
+import { BookOpen, Cat, Flame, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 interface TopBarProps {
   currentView: 'home' | 'study';
   onViewChange: (view: 'home' | 'study') => void;
+  onOpenChat: () => void;
 }
 
-export function TopBar({ currentView, onViewChange }: TopBarProps) {
+export function TopBar({ currentView, onViewChange, onOpenChat }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const stats = useStudyStats();
 
@@ -60,6 +61,16 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
               <span>{stats.streak}</span>
             </div>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-primary"
+            onClick={onOpenChat}
+            title="Chat with Nugget"
+          >
+            <Cat className="h-4 w-4" />
+            <span className="sr-only">Chat with Nugget</span>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
