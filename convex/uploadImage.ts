@@ -10,9 +10,7 @@ export const saveImage = mutation({
     storageId: v.string(),
     userId: v.string(),
   },
-  handler: async (ctx, args) => {
-    // Store image metadata (optional, for tracking)
-    // You can create an images table if you want to track uploaded images
+  handler: async (_ctx, args) => {
     return args.storageId;
   },
 });

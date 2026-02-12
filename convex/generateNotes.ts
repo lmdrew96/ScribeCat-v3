@@ -8,8 +8,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export const generateNotes = httpAction(async (ctx, request) => {
-  const { transcript, sessionId } = await request.json();
+export const generateNotes = httpAction(async (_ctx, request) => {
+  const { transcript } = await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

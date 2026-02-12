@@ -24,7 +24,15 @@ import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useAction } from 'convex/react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -43,6 +51,8 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
 ) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isEmpty, setIsEmpty] = useState(true);
+  const loadedSessionId = useRef<string | null>(null);
 
   const { updateSession } = useSessions();
   const session = useSession(sessionId || null);
@@ -123,6 +133,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       },
     },
     onUpdate: ({ editor }) => {
+      setIsEmpty(editor.isEmpty);
       const json = JSON.stringify(editor.getJSON());
       const plainText = editor.getText();
       debouncedSave(json, plainText);
@@ -172,15 +183,28 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleManualSave]);
 
-  // Load initial content from session
+  // Load content from session only on initial load or session switch
   useEffect(() => {
-    if (editor && session?.notes) {
+    if (!editor || !session) return;
+
+    const currentId = session._id as string;
+
+    // Skip if we already loaded this session — prevents save round-trips from overwriting the editor
+    if (loadedSessionId.current === currentId) return;
+
+    loadedSessionId.current = currentId;
+
+    if (session.notes) {
       try {
         const content = JSON.parse(session.notes);
         editor.commands.setContent(content);
+        setIsEmpty(editor.isEmpty);
       } catch (error) {
         console.error('Error parsing notes:', error);
       }
+    } else {
+      editor.commands.clearContent();
+      setIsEmpty(true);
     }
   }, [editor, session]);
 
@@ -250,6 +274,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
         console.log('New content to set:', JSON.stringify(newContent, null, 2));
 
         editor.commands.setContent(newContent);
+        setIsEmpty(editor.isEmpty);
         console.log('Notes generated and inserted successfully');
 
         // Scroll to the end
@@ -282,7 +307,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       <div className="relative flex-1 rounded-xl glass min-h-0 overflow-auto">
         <EditorContent editor={editor} className="h-full" />
 
-        {!editor?.getText() && (
+        {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Start typing your notes...</p>

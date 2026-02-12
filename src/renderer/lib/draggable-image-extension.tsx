@@ -1,35 +1,21 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer } from '@tiptap/react';
+import { type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import interact from 'interactjs';
 import { useEffect, useRef, useState } from 'react';
 
-interface DraggableImageComponentProps {
-  node: {
-    attrs: {
-      src: string;
-      alt: string;
-      title: string;
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-  };
-  updateAttributes: (
-    attrs: Partial<{
-      src: string;
-      alt: string;
-      title: string;
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    }>,
-  ) => void;
+interface DraggableImageAttrs {
+  src: string;
+  alt: string;
+  title: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-function DraggableImageComponent({ node, updateAttributes }: DraggableImageComponentProps) {
+function DraggableImageComponent({ node, updateAttributes }: ReactNodeViewProps) {
+  const attrs = node.attrs as DraggableImageAttrs;
   const imageRef = useRef<HTMLImageElement>(null);
   const [isAltPressed, setIsAltPressed] = useState(false);
 
@@ -145,7 +131,7 @@ function DraggableImageComponent({ node, updateAttributes }: DraggableImageCompo
     };
   }, [updateAttributes, isAltPressed]);
 
-  const { src, alt, width, height, x, y } = node.attrs;
+  const { src, alt, width, height, x, y } = attrs;
 
   return (
     <NodeViewWrapper className="draggable-image-wrapper" style={{ display: 'inline-block' }}>

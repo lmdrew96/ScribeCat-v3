@@ -193,7 +193,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
                       onClick={() => handleSegmentClick(segment.timestamp)}
                       className={`whitespace-pre-wrap leading-relaxed text-xs cursor-pointer rounded px-2 py-1 transition-colors text-left w-full ${
                         highlightedSegmentIndex ===
-                        recording.transcriptSegments.filter((s) => s.isFinal).indexOf(segment)
+                        recording.transcriptSegments?.filter((s) => s.isFinal).indexOf(segment)
                           ? 'bg-primary/20 text-foreground'
                           : 'text-foreground/90 hover:bg-secondary/50'
                       }`}

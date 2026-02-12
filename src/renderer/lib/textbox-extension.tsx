@@ -1,17 +1,19 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer } from '@tiptap/react';
+import { type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import interact from 'interactjs';
 import { useEffect, useRef } from 'react';
 
-interface TextBoxComponentProps {
-  node: { attrs: { content: string; x: number; y: number; width: number; height: number } };
-  updateAttributes: (
-    attrs: Partial<{ content: string; x: number; y: number; width: number; height: number }>,
-  ) => void;
+interface TextBoxAttrs {
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-function TextBoxComponent({ node, updateAttributes }: TextBoxComponentProps) {
+function TextBoxComponent({ node, updateAttributes }: ReactNodeViewProps) {
+  const attrs = node.attrs as TextBoxAttrs;
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -92,7 +94,7 @@ function TextBoxComponent({ node, updateAttributes }: TextBoxComponentProps) {
     };
   }, [updateAttributes]);
 
-  const { content, width, height, x, y } = node.attrs;
+  const { content, width, height, x, y } = attrs;
 
   return (
     <NodeViewWrapper className="textbox-wrapper" style={{ display: 'inline-block' }}>

@@ -19,7 +19,7 @@ interface ChatMessage {
   content: string;
 }
 
-export const nuggetChat = httpAction(async (ctx, request) => {
+export const nuggetChat = httpAction(async (_ctx, request) => {
   const { message, conversationHistory, transcript, notes, lectureType, nuggetNotes } =
     await request.json();
 

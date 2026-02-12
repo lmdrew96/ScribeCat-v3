@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer } from '@tiptap/react';
+import { type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import interact from 'interactjs';
 import { Loader2 } from 'lucide-react';
@@ -10,15 +10,24 @@ const Excalidraw = lazy(() =>
   import('@excalidraw/excalidraw').then((module) => ({ default: module.Excalidraw })),
 );
 
-interface ExcalidrawComponentProps {
-  node: { attrs: { sceneData: string; width: number; height: number } };
-  updateAttributes: (attrs: Partial<{ sceneData: string; width: number; height: number }>) => void;
+interface ExcalidrawAttrs {
+  data: string | null;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
 }
 
-function ExcalidrawComponent({ node, updateAttributes }: ExcalidrawComponentProps) {
+interface ExcalidrawAPI {
+  getSceneElements: () => readonly unknown[];
+  getAppState: () => Record<string, unknown>;
+}
+
+function ExcalidrawComponent({ node, updateAttributes }: ReactNodeViewProps) {
+  const attrs = node.attrs as ExcalidrawAttrs;
   const containerRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [excalidrawAPI, setExcalidrawAPI] = useState<unknown>(null);
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawAPI | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || isEditing) return;
@@ -78,7 +87,7 @@ function ExcalidrawComponent({ node, updateAttributes }: ExcalidrawComponentProp
     setIsEditing(false);
   };
 
-  const { width, height, x, y, data } = node.attrs;
+  const { width, height, x, y, data } = attrs;
   let sceneData = { elements: [], appState: {} };
 
   if (data) {
@@ -166,7 +175,7 @@ function ExcalidrawComponent({ node, updateAttributes }: ExcalidrawComponentProp
           <Excalidraw
             initialData={sceneData}
             viewModeEnabled={!isEditing}
-            excalidrawAPI={(api) => setExcalidrawAPI(api)}
+            excalidrawAPI={(api) => setExcalidrawAPI(api as ExcalidrawAPI)}
             onChange={() => {
               if (isEditing && excalidrawAPI) {
                 const elements = excalidrawAPI.getSceneElements();

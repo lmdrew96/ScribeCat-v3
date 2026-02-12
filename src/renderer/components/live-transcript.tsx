@@ -1,4 +1,3 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { TranscriptSegment } from '@/hooks/use-transcription';
 import { useEffect, useRef } from 'react';
 
