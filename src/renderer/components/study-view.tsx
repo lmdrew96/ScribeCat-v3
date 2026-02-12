@@ -1,5 +1,4 @@
 import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
-import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools/index';
@@ -9,7 +8,7 @@ import { useSessions, useTrash } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -41,12 +40,21 @@ const formatDuration = (ms: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export function StudyView() {
+interface StudyViewProps {
+  onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
+}
+
+export function StudyView({ onSessionChange }: StudyViewProps) {
   const isMobile = useIsMobile();
   const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
   const trashedSessions = useTrash();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Notify parent when selected session changes
+  useEffect(() => {
+    onSessionChange?.(selectedId as Id<'sessions'> | null);
+  }, [selectedId, onSessionChange]);
 
   const handleDelete = useCallback(
     (recordingId: string) => {
@@ -193,13 +201,6 @@ export function StudyView() {
           </div>
         )}
       </div>
-
-      {/* Nugget Chat - floating button + drawer */}
-      <NuggetChat
-        transcript={selectedRecording?.transcript}
-        notes={selectedRecording?.notes}
-        sessionId={selectedRecording?.id}
-      />
     </div>
   );
 }

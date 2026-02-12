@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 
-import { useNuggetNotes } from '@/hooks/use-nugget-notes';
+import { type NuggetNote, useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useBreakReminder, useLogStudyTime } from '@/hooks/use-productivity';
 import { useSession, useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
@@ -28,9 +28,14 @@ import { ACHIEVEMENT_DEFINITIONS } from '../../shared/achievements';
 interface RecordingPanelProps {
   onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
   onInsertNote?: (noteText: string) => void;
+  onNuggetNotesChange?: (notes: NuggetNote[]) => void;
 }
 
-export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanelProps) {
+export function RecordingPanel({
+  onSessionChange,
+  onInsertNote,
+  onNuggetNotesChange,
+}: RecordingPanelProps) {
   const { createSession, updateSession } = useSessions();
   const logStudyTime = useLogStudyTime();
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
@@ -61,6 +66,11 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   useEffect(() => {
     onSessionChange?.(currentSessionId);
   }, [currentSessionId, onSessionChange]);
+
+  // Notify parent when Nugget Notes change
+  useEffect(() => {
+    onNuggetNotesChange?.(nuggetNotes.notes);
+  }, [nuggetNotes.notes, onNuggetNotesChange]);
 
   // Track if component is mounted for async operations
   const isMountedRef = useRef(true);
