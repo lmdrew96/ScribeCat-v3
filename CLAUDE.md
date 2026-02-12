@@ -2,11 +2,13 @@
 
 ## About This Project
 
-ScribeCat v3 is a **complete rebuild** of the ADHD-friendly lecture companion app.
+ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** deployed on Vercel.
 
-**What it does:** Recording + transcription → AI notes → Study tools → Collaborative studying
+**What it does:** Recording + transcription -> AI notes -> Study tools -> Collaborative studying
 
-**Tech Stack:** Electron + React, TypeScript, Tailwind + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, AssemblyAI transcription, Claude AI
+**Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
+
+**Current Version:** 4.6.12 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -14,29 +16,23 @@ ScribeCat v3 is a **complete rebuild** of the ADHD-friendly lecture companion ap
 
 ## Core Philosophy
 
-### 🚨 NO BANDAID FIXES — ONLY ROOT CAUSE SOLUTIONS
+### NO BANDAID FIXES — ONLY ROOT CAUSE SOLUTIONS
 
 If something's broken, fix it properly. Don't patch over symptoms.
 
-| ❌ BAD | ✅ GOOD |
-|--------|---------|
+| BAD | GOOD |
+|-----|------|
 | "Let's add a try-catch to hide that error" | "That error means X is misconfigured. Let's fix the config." |
 | "Just restart the service when it fails" | "The service fails because of Y. Let's fix Y." |
 | "Add a timeout to work around the race condition" | "There's a race condition between A and B. Let's fix the sequencing." |
 
-### 🚨 COMPLETE ALL ASPECTS OF EVERY PLAN
+### COMPLETE ALL ASPECTS OF EVERY PLAN
 
 When given a task, execute it fully. No loose ends. No "the rest follows the same pattern."
 
-| ❌ BAD | ✅ GOOD |
-|--------|---------|
-| Implementing 3 of 5 planned functions | Implementing all 5 functions completely |
-| Creating a component without styles or integration | Delivering the complete, working feature |
-| "I'll wire up the backend later" | Feature works end-to-end before moving on |
+### EACH PHASE = WORKING APP
 
-### 🚨 EACH PHASE = WORKING APP
-
-This project is built in phases. At the end of each phase, the app must be **fully functional** for what's been built so far. No "we'll connect it later."
+This project is built in phases. At the end of each phase, the app must be **fully functional** for what's been built so far.
 
 ---
 
@@ -44,173 +40,140 @@ This project is built in phases. At the end of each phase, the app must be **ful
 
 | Layer | Technology | Notes |
 |-------|------------|-------|
-| **Desktop** | Electron | Main process + renderer |
-| **UI** | React | v0-generated components |
-| **Styling** | Tailwind CSS + shadcn/ui | CSS variables for theming |
-| **State/Backend** | Convex | Realtime-first, TypeScript-native |
-| **Rich Text** | TipTap | ProseMirror-based |
-| **Diagrams** | Excalidraw | Embedded React component |
-| **Drag/Resize** | interact.js | For editor objects |
-| **Transcription** | AssemblyAI | Real-time STT |
-| **AI** | Anthropic Claude | claude-sonnet-4-5-20250929 |
-| **Auth** | Convex Auth | Built-in |
-| **Linting/Formatting** | Biome | Fast, all-in-one |
+| **UI** | React 19 | Functional components + hooks |
+| **Styling** | Tailwind CSS 4 + shadcn/ui | CSS variables for theming, glassmorphism |
+| **Build** | Vite 7 | Dev server on port 5173 |
+| **State/Backend** | Convex 1.31+ | Realtime-first, TypeScript-native |
+| **Auth** | Clerk + Convex | @udel.edu restriction, JWT integration |
+| **Rich Text** | TipTap 3.14 | 15+ extensions, ProseMirror-based |
+| **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
+| **Drag/Resize** | interact.js 1.10 | For editor objects |
+| **Transcription** | AssemblyAI | Real-time WebSocket STT |
+| **AI** | Anthropic Claude | Sonnet 4.5 + Haiku 4.5 |
+| **Linting/Formatting** | Biome 1.9 | Fast, all-in-one |
 | **Pre-commit hooks** | Husky + lint-staged | Prevents bad commits |
-
----
-
-## Dev Tooling Setup
-
-### MUST be configured at project init. Non-negotiable.
-
-### TypeScript Strict Mode
-
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
-}
-```
-
-**No `any` types. Ever.** If you're tempted to use `any`, define a proper type or use `unknown` and narrow it.
-
----
-
-### Biome (Linting + Formatting)
-
-**Install:**
-```bash
-npm install --save-dev @biomejs/biome
-npx biome init
-```
-
-**biome.json:**
-```json
-{
-  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": { "enabled": true },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "error"
-      }
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
-  }
-}
-```
-
-**Add scripts to package.json:**
-```json
-{
-  "scripts": {
-    "lint": "biome check .",
-    "lint:fix": "biome check --apply .",
-    "format": "biome format --write ."
-  }
-}
-```
-
----
-
-### Husky + lint-staged (Pre-commit Hooks)
-
-**This blocks commits if code doesn't pass checks.** Prevents broken code from ever entering the repo.
-
-**Install:**
-```bash
-npm install --save-dev husky lint-staged
-npx husky init
-```
-
-**Add to package.json:**
-```json
-{
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "biome check --apply",
-      "biome format --write"
-    ]
-  }
-}
-```
-
-**Update .husky/pre-commit:**
-```bash
-npx lint-staged
-```
-
-**What this does:**
-- Every time you commit, Husky runs
-- lint-staged only checks files you're committing (fast!)
-- Biome fixes what it can, fails if there are errors
-- If it fails, commit is blocked until you fix the issues
-
----
-
-### VS Code Integration (Optional but Recommended)
-
-**.vscode/settings.json:**
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.codeActionsOnSave": {
-    "source.organizeImports.biome": "explicit"
-  }
-}
-```
-
-**.vscode/extensions.json:**
-```json
-{
-  "recommendations": ["biomejs.biome"]
-}
-```
 
 ---
 
 ## Project Structure
 
 ```
-scribecat-v3/
+ScribeCat-v3/
+├── convex/                    # Convex backend (server-side)
+│   ├── schema.ts             # Database schema (7 tables)
+│   ├── sessions.ts           # Session CRUD queries/mutations
+│   ├── ai.ts                 # AI note generation (Convex action)
+│   ├── nuggetNotes.ts        # Real-time Haiku note generation (HTTP action)
+│   ├── nuggetChat.ts         # AI chat endpoint (HTTP action)
+│   ├── lectureContext.ts     # Sonnet context extraction (HTTP action)
+│   ├── studyTools.ts         # Study tool AI actions
+│   ├── studyToolPrompts.ts   # Study tool prompt templates
+│   ├── prompts.ts            # Note generation prompts by lecture type
+│   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
+│   ├── audioStorage.ts       # Audio file upload/storage
+│   ├── transcription.ts      # AssemblyAI token generation
+│   ├── productivity.ts       # Goals, streaks, achievements
+│   ├── crons.ts              # Scheduled jobs (trash cleanup)
+│   ├── http.ts               # HTTP action routes
+│   ├── auth.config.ts        # Clerk JWT config
+│   └── _generated/           # Auto-generated types (DO NOT EDIT)
 ├── src/
-│   ├── main/                 # Electron main process
-│   │   ├── main.ts           # Entry point
-│   │   └── ipc/              # IPC handlers
-│   ├── preload/              # Context bridge (preload.ts)
-│   ├── renderer/             # React app
-│   │   ├── App.tsx           # Root component
-│   │   ├── components/       # UI components
-│   │   │   ├── editor/       # TipTap + Excalidraw integration
-│   │   │   ├── recording/    # Audio capture + transcription UI
-│   │   │   ├── study/        # Study tools UI
-│   │   │   ├── social/       # Friends, rooms, chat, games
-│   │   │   └── game/         # StudyQuest JRPG
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── lib/              # Utilities
-│   │   └── styles/           # Tailwind config + theme CSS
-│   └── convex/               # Convex schema + functions
-├── convex/                   # Convex backend (if separate)
-├── assets/                   # Images, sprites, audio
-├── browser-extension/        # Canvas LMS integration
-└── electron-builder.json     # Build config
+│   └── renderer/             # React app
+│       ├── App.tsx           # Root with Clerk auth gates
+│       ├── index.tsx         # Entry point (Clerk + Convex providers)
+│       ├── components/
+│       │   ├── home-view.tsx         # Recording mode (main view)
+│       │   ├── study-view.tsx        # Study mode (sessions + tools)
+│       │   ├── recording-panel.tsx   # Audio recording + transcript + nugget notes
+│       │   ├── notes-panel.tsx       # TipTap editor + AI generation
+│       │   ├── study-content.tsx     # Study content viewer (notes + transcript + tools)
+│       │   ├── nugget-notes-panel.tsx # Real-time AI note bubbles
+│       │   ├── nugget-chat.tsx       # AI chat drawer
+│       │   ├── recordings-sidebar.tsx # Session list + trash
+│       │   ├── top-bar.tsx           # Navigation + theme selector
+│       │   ├── settings-modal.tsx    # User settings (goals, breaks, themes)
+│       │   ├── editor-toolbar.tsx    # TipTap formatting toolbar
+│       │   ├── live-transcript.tsx   # Real-time transcript display
+│       │   ├── lecture-type-select.tsx # Lecture type dropdown
+│       │   ├── audio-waveform.tsx    # Waveform visualization
+│       │   ├── file-upload-transcribe.tsx # File upload + transcription
+│       │   ├── theme-provider.tsx    # Theme context provider
+│       │   ├── study-tools/          # 7 AI study tool components
+│       │   │   ├── index.tsx         # Study tools container
+│       │   │   ├── summary-tool.tsx
+│       │   │   ├── key-concepts-tool.tsx
+│       │   │   ├── flashcard-tool.tsx
+│       │   │   ├── quiz-tool.tsx
+│       │   │   ├── concept-map-tool.tsx
+│       │   │   ├── eli5-tool.tsx
+│       │   │   ├── generate-button.tsx
+│       │   │   └── use-study-tool.ts # Shared hook for tool generation
+│       │   └── ui/                   # shadcn/ui components
+│       ├── hooks/
+│       │   ├── use-audio-recorder.ts   # MediaRecorder wrapper
+│       │   ├── use-audio-player.ts     # Audio playback + seeking
+│       │   ├── use-transcription.ts    # AssemblyAI WebSocket
+│       │   ├── use-nugget-notes.ts     # Two-model AI pipeline orchestrator
+│       │   ├── use-sessions.ts         # Session CRUD hook
+│       │   ├── use-productivity.ts     # Goals + streaks + achievements
+│       │   ├── use-debounced-callback.ts
+│       │   └── use-is-mobile.ts
+│       ├── lib/
+│       │   ├── markdown-to-tiptap.ts   # MD -> TipTap JSON converter
+│       │   ├── citation-mark.ts        # TipTap citation mark extension
+│       │   ├── excalidraw-extension.tsx # TipTap Excalidraw node
+│       │   ├── draggable-image-extension.tsx
+│       │   ├── textbox-extension.tsx
+│       │   ├── font-size-extension.ts
+│       │   └── utils.ts               # cn() helper
+│       ├── types/
+│       │   └── study-tools.ts
+│       └── styles/
+│           └── globals.css           # Tailwind imports + 6 theme definitions
+├── public/                    # Static assets
+├── docs/                      # Documentation
+│   ├── PHASES.md             # Phase implementation guide
+│   ├── NOTION-INSPIRED-FEATURES.md
+│   └── nugget-integration-handoff.md
+├── biome.json                 # Biome linting/formatting config
+├── vite.config.ts             # Vite build config
+├── tsconfig.json              # TypeScript strict config
+├── .env.example               # Environment variable template
+└── .env.local                 # Local environment variables (gitignored)
+```
+
+---
+
+## Database Schema (Convex)
+
+7 tables in `convex/schema.ts`:
+
+| Table | Purpose |
+|-------|---------|
+| `sessions` | Recording sessions (audio, transcript, notes, lecture type) |
+| `userSettings` | Theme, break reminders, study goals |
+| `studyStats` | Daily study minutes, session counts, goal tracking |
+| `achievements` | Unlocked achievement tracking |
+| `studyToolResults` | Cached AI study tool output per session |
+| `flashcardProgress` | Spaced repetition tracking per card |
+| `quizAttempts` | Quiz answer history and scores |
+| `chatHistory` | Persistent per-session Nugget Chat messages |
+
+---
+
+## Environment Variables
+
+**Local `.env.local`** (client-side, VITE_ prefix):
+```
+VITE_CONVEX_URL=              # From `npx convex dev`
+VITE_CLERK_PUBLISHABLE_KEY=   # From Clerk dashboard
+```
+
+**Convex Dashboard** (server-side):
+```
+ASSEMBLYAI_API_KEY=           # Real-time transcription
+ANTHROPIC_API_KEY=            # AI note generation + study tools
+CLERK_JWT_ISSUER_DOMAIN=      # Clerk JWT validation
 ```
 
 ---
@@ -220,10 +183,10 @@ scribecat-v3/
 **See `/docs/PHASES.md` for the current phase, feature checklists, and acceptance criteria.**
 
 This project is built in 4 phases:
-1. **Capture** — Recording + transcription
-2. **Process** — Notes editor + AI generation
-3. **Learn** — Study tools + StudyQuest
-4. **Connect** — Social + Study Rooms + Games
+1. **Capture** — Recording + transcription (COMPLETE)
+2. **Process** — Notes editor + AI generation (COMPLETE)
+3. **Learn** — Study tools + StudyQuest (IN PROGRESS — AI tools done, StudyQuest pending)
+4. **Connect** — Social + Study Rooms + Games (NOT STARTED)
 
 Always check PHASES.md before starting work to know what's in scope.
 
@@ -231,42 +194,19 @@ Always check PHASES.md before starting work to know what's in scope.
 
 ## Convex Patterns
 
-### Schema Definition
-```typescript
-// convex/schema.ts
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  sessions: defineTable({
-    userId: v.string(),
-    title: v.string(),
-    audioUrl: v.optional(v.string()),
-    transcript: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    duration: v.number(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-    isDeleted: v.boolean(),
-    deletedAt: v.optional(v.number()),
-  }).index("by_user", ["userId"]),
-});
-```
-
 ### Query Pattern
 ```typescript
-// convex/sessions.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+import { query } from './_generated/server';
+import { v } from 'convex/values';
 
 export const list = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("sessions")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .filter((q) => q.eq(q.field("isDeleted"), false))
-      .order("desc")
+      .query('sessions')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .order('desc')
       .collect();
   },
 });
@@ -274,18 +214,14 @@ export const list = query({
 
 ### Mutation Pattern
 ```typescript
-// convex/sessions.ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { mutation } from './_generated/server';
+import { v } from 'convex/values';
 
 export const create = mutation({
-  args: { 
-    userId: v.string(),
-    title: v.string(),
-  },
+  args: { userId: v.string(), title: v.string() },
   handler: async (ctx, args) => {
     const now = Date.now();
-    return await ctx.db.insert("sessions", {
+    return await ctx.db.insert('sessions', {
       ...args,
       duration: 0,
       createdAt: now,
@@ -296,181 +232,106 @@ export const create = mutation({
 });
 ```
 
+### HTTP Action Pattern (for AI endpoints)
+```typescript
+import { httpAction } from './_generated/server';
+
+export const generateNotes = httpAction(async (ctx, request) => {
+  const { transcript, lectureType } = await request.json();
+  // ... call Anthropic API
+  return new Response(JSON.stringify({ notes }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+});
+```
+
 ### Using in React
 ```typescript
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 
-function SessionList({ userId }) {
+function SessionList() {
   const sessions = useQuery(api.sessions.list, { userId });
   const createSession = useMutation(api.sessions.create);
-  
-  // sessions is undefined while loading, then array
+
   if (!sessions) return <Loading />;
-  
-  return sessions.map(s => <SessionCard key={s._id} session={s} />);
+  return sessions.map((s) => <SessionCard key={s._id} session={s} />);
 }
 ```
 
 ---
 
-## TipTap Editor Setup
+## Auth System (Clerk)
 
-### Basic Configuration
+Authentication uses **Clerk** with the **ConvexProviderWithClerk** integration.
+
 ```typescript
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-
-const editor = useEditor({
-  extensions: [
-    StarterKit,
-    Table.configure({ resizable: true }),
-    TableRow,
-    TableCell,
-    TableHeader,
-  ],
-  content: '',
-  onUpdate: ({ editor }) => {
-    // Auto-save here
-    debouncedSave(editor.getHTML());
-  },
-});
+// src/renderer/index.tsx — provider setup
+<ClerkProvider publishableKey={clerkPubKey}>
+  <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    <App />
+  </ConvexProviderWithClerk>
+</ClerkProvider>
 ```
 
-### Auto-Save Pattern
 ```typescript
-const debouncedSave = useMemo(
-  () => debounce((content: string) => {
-    saveNotes({ sessionId, content });
-  }, 2000),
-  [sessionId]
-);
+// src/renderer/App.tsx — auth gates
+<AuthLoading>...</AuthLoading>
+<Unauthenticated><SignIn /></Unauthenticated>
+<Authenticated><AuthenticatedApp /></Authenticated>
 ```
+
+User ID comes from Clerk's JWT, validated by Convex via `auth.config.ts`.
 
 ---
 
-## Excalidraw Integration
+## AI Architecture
 
-### Embedding in Notes
-```typescript
-import { Excalidraw } from "@excalidraw/excalidraw";
+### Two-Model Pipeline (Nugget's Notes)
+During recording, two models work together:
 
-function DiagramEditor({ initialData, onChange }) {
-  return (
-    <div style={{ height: "400px" }}>
-      <Excalidraw
-        initialData={initialData}
-        onChange={(elements, state) => {
-          onChange({ elements, state });
-        }}
-      />
-    </div>
-  );
-}
-```
+| Model | Role | Frequency | File |
+|-------|------|-----------|------|
+| **Sonnet 4.5** | Context Analyzer | Every ~2 min / 200 words | `convex/lectureContext.ts` |
+| **Haiku 4.5** | Note Writer | Every ~45s / 30 words | `convex/nuggetNotes.ts` |
 
-### Storing Diagram Data
-Excalidraw outputs JSON. Store it as a string in Convex:
-```typescript
-diagrams: defineTable({
-  sessionId: v.id("sessions"),
-  data: v.string(), // JSON.stringify({ elements, state })
-  position: v.object({ x: v.number(), y: v.number() }),
-  size: v.object({ width: v.number(), height: v.number() }),
-})
-```
+Orchestrated by `src/renderer/hooks/use-nugget-notes.ts`.
 
----
+### Full Note Generation
+Post-recording or on-demand via "Generate Notes" button:
+- Uses Sonnet 4.5 via `convex/ai.ts`
+- Lecture-type-aware prompts from `convex/prompts.ts`
+- Outputs markdown, converted to TipTap JSON by `lib/markdown-to-tiptap.ts`
 
-## AssemblyAI Integration
-
-### Real-Time Transcription Setup
-```typescript
-// Use AssemblyAI's real-time WebSocket
-import { RealtimeTranscriber } from 'assemblyai';
-
-const transcriber = new RealtimeTranscriber({
-  apiKey: process.env.ASSEMBLYAI_API_KEY,
-  sampleRate: 16000,
-});
-
-transcriber.on('transcript', (transcript) => {
-  if (transcript.message_type === 'FinalTranscript') {
-    appendToTranscript(transcript.text);
-  }
-});
-
-// Connect and stream audio
-await transcriber.connect();
-// ... stream audio chunks
-```
-
-### IPC Pattern for Audio
-Audio capture happens in renderer (Web Audio API), but API keys stay in main process:
-```typescript
-// Main process: expose API key securely
-ipcMain.handle('transcription:getToken', async () => {
-  // Generate temporary token or return key securely
-});
-
-// Renderer: use token for WebSocket connection
-const token = await window.electronAPI.getTranscriptionToken();
-```
+### Study Tools
+7 tools in `convex/studyTools.ts` with prompts in `convex/studyToolPrompts.ts`:
+- Summary, Key Concepts, Flashcards, Quiz, Concept Map, ELI5, Chat
 
 ---
 
 ## Theme System
 
-### CSS Variables Approach
-```css
-/* styles/themes.css */
-:root {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --accent: #e74c3c;
-  --border: #3d3d3d;
-}
+6 themes defined via CSS variables in `src/renderer/styles/globals.css`:
 
-[data-theme="soft-focus"] {
-  --bg-primary: #faf8f5;
-  --bg-secondary: #f0ebe3;
-  --text-primary: #2d2d2d;
-  --text-secondary: #6b6b6b;
-  --accent: #d4a574;
-  --border: #e0d8cc;
-}
-```
-
-### Switching Themes
-```typescript
-function setTheme(themeName: string) {
-  document.documentElement.setAttribute('data-theme', themeName);
-  localStorage.setItem('theme', themeName);
-}
-```
-
-### Available Themes
-1. **Nugg's Favorite** (default) — #88739E, #DEA549, #8CBDB9, #DBD5E2, #244952, #96D080
+1. **Nugg's Favorite** (default)
 2. **Purring Pastels** — light, muted pastels
 3. **Void Kitty** — true dark, high contrast
 4. **Chaos Cat** — fun wildcard
 5. **High Contrast Dark** — accessibility
 6. **High Contrast Light** — accessibility
 
+All themes include glassmorphism effects (frosted glass panels, gradient backgrounds, glow accents).
+
+Theme switching via `ThemeProvider` context (`src/renderer/components/theme-provider.tsx`).
+
 ---
 
-## How to Communicate with Nae ⚡
+## How to Communicate with Nae
 
 ### Lead with ACTION, then explain WHY
 ```
-✅ "Run `npm run build` to compile. This ensures TypeScript catches errors."
-❌ "You might want to consider building the project..."
+GOOD: "Run `pnpm build` to compile. This ensures TypeScript catches errors."
+BAD:  "You might want to consider building the project..."
 ```
 
 ### No Decision Paralysis
@@ -496,23 +357,24 @@ function setTheme(themeName: string) {
 
 ```bash
 # Development
-npm run dev          # Development with hot reload
+pnpm dev              # Vite dev server (requires convex:dev running)
+pnpm convex:dev       # Start Convex backend
 
 # Building
-npm run build        # Full production build
-npm run compile      # TypeScript compilation only
-npm run clean        # Delete dist/ folder
+pnpm build            # Production build (Vite)
+pnpm compile          # TypeScript type-checking only (tsc --noEmit)
+pnpm clean            # Delete dist/ folder
 
 # Code Quality (runs automatically on commit via Husky)
-npm run lint         # Check for issues
-npm run lint:fix     # Auto-fix issues
-npm run format       # Format all files
+pnpm lint             # Check with Biome
+pnpm lint:fix         # Auto-fix issues
+pnpm format           # Format all files
 
-# Testing
-npm run test         # Run tests
+# Deployment
+pnpm convex:deploy    # Deploy Convex to production
 ```
 
-**Always run `npm run clean` before building if something seems broken.**
+**Always run `pnpm clean` before building if something seems broken.**
 
 ---
 
@@ -525,17 +387,22 @@ npm run test         # Run tests
 - If you don't know the type, use `unknown` and narrow it
 
 ```typescript
-// ❌ BAD — will be blocked by Biome
+// BAD — will be blocked by Biome
 function process(data: any) { ... }
 
-// ✅ GOOD — proper typing
+// GOOD — proper typing
 function process(data: TranscriptSegment) { ... }
 
-// ✅ ACCEPTABLE — unknown with narrowing
+// ACCEPTABLE — unknown with narrowing
 function process(data: unknown) {
   if (isTranscriptSegment(data)) { ... }
 }
 ```
+
+### Biome Config
+- Single quotes, semicolons always, 2-space indent, 100 char line width
+- Ignores: `node_modules`, `dist`, `convex/_generated`, config files
+- `noExplicitAny: "error"`, `noArrayIndexKey: "warn"`, `noNonNullAssertion: "warn"`
 
 ### Files
 - Max 500 lines per file
@@ -548,8 +415,8 @@ function process(data: unknown) {
 - Error boundaries for major sections
 
 ### Naming
-- Components: `PascalCase.tsx`
-- Hooks: `useCamelCase.ts`
+- Components: `PascalCase.tsx` (but file names are `kebab-case.tsx`)
+- Hooks: `use-kebab-case.ts`
 - Utils: `camelCase.ts`
 - Convex functions: `camelCase`
 
@@ -557,40 +424,17 @@ function process(data: unknown) {
 - Update the version number in package.json applying semantic versioning
 - Husky will automatically run, but you can manually check:
   ```bash
-  npm run lint        # Check for issues
-  npm run lint:fix    # Auto-fix what's fixable
+  pnpm lint        # Check for issues
+  pnpm lint:fix    # Auto-fix what's fixable
   ```
-
----
-
-## Testing
-
-```bash
-npm run test              # Watch mode
-npm run test:run          # Run once
-npm run test:coverage     # Coverage report
-```
-
-**Stack:** Vitest + React Testing Library
-
-**Priority:** Test critical paths first (recording, saving, auth)
-
----
-
-## Security
-
-- **NEVER expose API keys in renderer process**
-- API keys live in main process, accessed via IPC
-- Validate all user input
-- Sanitize content before rendering
 
 ---
 
 ## Debugging Tips
 
-### Electron DevTools
-- Main process: Terminal output
-- Renderer: Cmd+Option+I (Mac) / Ctrl+Shift+I (Win/Linux)
+### Browser DevTools
+- Open: Cmd+Option+I (Mac) / Ctrl+Shift+I (Win/Linux)
+- Check Console for Convex query errors, auth issues
 
 ### Convex Dashboard
 - View data, run queries, check function logs
@@ -599,10 +443,12 @@ npm run test:coverage     # Coverage report
 ### Common Issues
 | Problem | Solution |
 |---------|----------|
-| Convex not connecting | Check `convex dev` is running |
+| Convex not connecting | Check `pnpm convex:dev` is running |
 | Types out of sync | Run `npx convex codegen` |
-| Build fails mysteriously | `npm run clean` then rebuild |
-| Audio not working | Check device permissions in system settings |
+| Build fails mysteriously | `pnpm clean` then rebuild |
+| Audio not working | Check browser microphone permissions |
+| Auth not working | Check VITE_CLERK_PUBLISHABLE_KEY in .env.local |
+| AI actions failing | Check ANTHROPIC_API_KEY in Convex dashboard env vars |
 
 ---
 
@@ -610,31 +456,19 @@ npm run test:coverage     # Coverage report
 
 ### Commit Format
 ```
-v0.1.0: Brief description of change
+v4.6.12: Brief description of change
 ```
 
 ### Version Bumping
-- **Patch** (0.1.0 → 0.1.1): Bug fixes
-- **Minor** (0.1.0 → 0.2.0): New features
-- **Major** (0.1.0 → 1.0.0): Breaking changes / phase completion
+- **Patch** (4.6.12 -> 4.6.13): Bug fixes
+- **Minor** (4.6.12 -> 4.7.0): New features
+- **Major** (4.6.12 -> 5.0.0): Breaking changes / phase completion
 
 ### Before Committing
-1. `npm run clean && npm run build` passes
+1. `pnpm clean && pnpm build` passes
 2. Test the feature manually
 3. Update version in package.json
 4. Commit with version in message
-
----
-
-## Reference: v2 Code
-
-The v2 codebase can be referenced for:
-- AssemblyAI integration patterns (`src/renderer/audio/`)
-- AI prompt structures (`src/renderer/ai/`)
-- Jeopardy game logic (`src/renderer/components/games/`)
-- Canvas browser extension (`browser-extension/`)
-
-**DO NOT copy-paste.** The architecture is different. Understand the pattern, then implement fresh for v3.
 
 ---
 

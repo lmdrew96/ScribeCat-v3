@@ -1,135 +1,74 @@
 # Notion-Inspired Features — Implementation Plan
 
-> **Three features that upgrade ScribeCat's recording→notes pipeline**
+> **Three features that upgrade ScribeCat's recording->notes pipeline**
 >
-> These enhance Phases 1-2 (Capture + Process) before Phase 3 begins.
+> These enhance Phases 1-2 (Capture + Process).
 > Each feature builds on existing infrastructure — no new services needed.
 >
 > Last updated: February 2026
+>
+> **Status:** Feature 2 (Lecture Types) COMPLETE | Feature 3 (Citations) COMPLETE | Feature 1 (Dual-Input) NOT IMPLEMENTED
 
 ---
 
 ## Feature Overview
 
-| # | Feature | What It Does | Key Files Touched |
-|---|---------|-------------|-------------------|
-| 1 | **Dual-Input Synthesis** | User's quick notes + transcript → smarter AI output | `recording-panel.tsx`, `ai.ts`, `nuggetNotes.ts`, `schema.ts` |
-| 2 | **Lecture-Type-Aware AI** | Pick lecture format → AI customizes note style | `recording-panel.tsx`, `ai.ts`, `nuggetNotes.ts`, `lectureContext.ts`, `schema.ts` |
-| 3 | **Transcript ↔ Notes Citations** | Generated notes link back to transcript timestamps → click to hear | `ai.ts`, `notes-panel.tsx`, `study-content.tsx`, TipTap extension |
+| # | Feature | What It Does | Status |
+|---|---------|-------------|--------|
+| 1 | **Dual-Input Synthesis** | User's quick notes + transcript -> smarter AI output | NOT IMPLEMENTED |
+| 2 | **Lecture-Type-Aware AI** | Pick lecture format -> AI customizes note style | COMPLETE |
+| 3 | **Transcript <-> Notes Citations** | Generated notes link back to transcript timestamps -> click to hear | COMPLETE |
 
-**Recommended build order:** 2 → 1 → 3 (each builds on the previous)
+**Build order used:** 2 -> 3 (Feature 1 deferred — no `quickNotes` field in schema)
 
 ---
 
-## Feature 1: Dual-Input Synthesis
+## Feature 1: Dual-Input Synthesis — NOT IMPLEMENTED
+
+> **Status:** Not yet implemented. The approach has been revised — see below.
 
 ### The Idea
 
-Notion proved that AI summaries dramatically improve when fed **both** the transcript AND the user's manual notes. The user adds strategic highlights ("this will be on the exam", "key formula", "professor emphasized this") that the AI can't infer from speech alone.
+AI summaries dramatically improve when fed **both** the transcript AND the user's own notes. The user adds strategic highlights ("this will be on the exam", "key formula", "professor emphasized this") that the AI can't infer from speech alone.
 
-ScribeCat already has Nugget Notes (AI-generated bullet points during recording), but the user can't add their own quick observations during a recording session. This feature adds that capability and feeds both streams to AI.
+### Approach: Use the Existing Notes Editor
 
-### Current State
+The user already has the TipTap notes editor open in the left panel while recording. That IS the "quick notes" input — no need for a separate textarea. The user types notes in the editor during the lecture, and when AI generates/regenerates notes, it reads the existing editor content as context alongside the transcript.
 
 ```
-Recording Panel layout (right side):
-┌─────────────────────────┐
-│ Live Transcript          │  ← flex-[3], scrolling segments
-│                          │
-│                          │
-├─────────────────────────┤
-│ Nugget's Notes           │  ← AI-generated bullets, collapsible
-├─────────────────────────┤
-│ ~~~ Waveform ~~~         │  ← AudioWaveform component
-├─────────────────────────┤
-│ [Mic] 02:34 [Pause]     │  ← Controls bar
-└─────────────────────────┘
+┌──────────────────────────┬──────────────────────────┐
+│ Notes Panel (left)        │ Recording Panel (right)   │
+│                           │                           │
+│ TipTap Editor             │ Live Transcript            │
+│ ┌──────────────────────┐ │                           │
+│ │ User's own notes     │ │                           │
+│ │ typed during lecture  │ │ Nugget's Notes            │
+│ │ "prof says this is   │ │ • AI bullet 1         [+] │
+│ │  on the final"       │ │ • AI bullet 2         [+] │
+│ └──────────────────────┘ │                           │
+│                           │ [Mic] 02:34 [Pause]      │
+└──────────────────────────┴──────────────────────────┘
 ```
 
-- `recording-panel.tsx:250-349` — renders this layout
-- `ai.ts:19-35` — prompt only receives `transcript`, no user context
-- `nuggetNotes.ts:49-56` — prompt only receives transcript + lecture context
-- `schema.ts:9-30` — `sessions` table has no field for user quick notes
+**Key insight:** No new UI, no new schema field, no `quickNotes` column. The notes are already saved to `session.notes`. We just need to feed them into the AI prompts.
 
 ### What Changes
 
-#### 1a. Schema: Add `quickNotes` field to sessions
-
-**File:** `convex/schema.ts`
-
-Add to the `sessions` table:
-```typescript
-quickNotes: v.optional(v.string()), // User's manual notes during recording
-```
-
-This stores the raw text of whatever the user typed during the session. Simple string, not rich text — this is a scratchpad, not the TipTap editor.
-
-#### 1b. Mutation: Allow updating quickNotes
-
-**File:** `convex/sessions.ts`
-
-Add `quickNotes` to the `update` mutation args:
-```typescript
-quickNotes: v.optional(v.string()),
-```
-
-No new mutation needed — the existing `update` just needs the new field in its args.
-
-#### 1c. UI: Quick Notes textarea in RecordingPanel
-
-**File:** `src/renderer/components/recording-panel.tsx`
-
-Add a new collapsible section between Nugget's Notes and the Waveform:
-
-```
-┌─────────────────────────┐
-│ Live Transcript          │
-├─────────────────────────┤
-│ Nugget's Notes           │
-├─────────────────────────┤
-│ 📝 My Notes        [▼]  │  ← NEW: collapsible quick notes
-│ ┌─────────────────────┐ │
-│ │ (textarea)          │ │  ← plain textarea, not TipTap
-│ │ "prof said this is  │ │
-│ │  on the final..."   │ │
-│ └─────────────────────┘ │
-├─────────────────────────┤
-│ ~~~ Waveform ~~~         │
-├─────────────────────────┤
-│ [Mic] 02:34 [Pause]     │
-└─────────────────────────┘
-```
-
-Implementation details:
-- Simple `<textarea>` with a collapsible wrapper (same pattern as NuggetNotesPanel)
-- State: `const [quickNotes, setQuickNotes] = useState('')`
-- Auto-save: debounced save to Convex via `updateSession({ id: currentSessionId, quickNotes })` every 2 seconds on change
-- Only visible when recording is active (no point showing it otherwise)
-- Placeholder text: *"Jot quick notes here — the AI will use these when generating your notes"*
-- Compact: `h-20` with resize handle, max `h-40`
-- Clear when new recording starts (alongside nugget notes clear)
-- Keyboard shortcut: `Ctrl/Cmd+Shift+N` to focus the textarea while recording
-
-**New component:** `src/renderer/components/quick-notes-input.tsx`
-- Props: `value`, `onChange`, `isRecording`, `isCollapsed`, `onToggleCollapse`
-- Renders the collapsible textarea with header
-- Handles auto-resize as text grows
-
-#### 1d. Pass quickNotes to AI generation
+#### 1a. Pass existing notes to AI generation
 
 **File:** `convex/ai.ts`
 
-Update `generateNotesFromTranscript` to accept and use quick notes:
+Update `generateNotesFromTranscript` to accept the user's current notes:
 
 ```typescript
 args: {
   transcript: v.string(),
   sessionId: v.string(),
-  quickNotes: v.optional(v.string()), // NEW
+  existingNotes: v.optional(v.string()), // User's current editor content as plain text
 },
 ```
 
-Update the prompt to incorporate user notes:
+Update the prompt to incorporate the user's notes:
 
 ```
 You are an expert note-taking assistant. Given the following lecture transcript
@@ -138,7 +77,7 @@ well-structured notes in markdown format.
 
 STUDENT'S NOTES (pay special attention to these — the student highlighted
 these as important):
-${args.quickNotes || '(No manual notes provided)'}
+${args.existingNotes || '(No manual notes provided)'}
 
 TRANSCRIPT:
 ${args.transcript}
@@ -146,23 +85,23 @@ ${args.transcript}
 
 The student's notes should appear BEFORE the transcript in the prompt — this tells Claude to weight them more heavily.
 
-#### 1e. Pass quickNotes to Nugget Notes pipeline
+#### 1b. Pass existing notes to Nugget Notes pipeline
 
 **File:** `convex/nuggetNotes.ts`
 
-Update the HTTP action to accept `quickNotes`:
+Update the HTTP action to optionally accept the user's notes context:
 
 ```typescript
-const { transcript, context, recordingTimeSeconds, quickNotes } = await request.json();
+const { transcript, context, recordingTimeSeconds, userNotes } = await request.json();
 ```
 
-Update the prompt:
+Update the prompt to include them:
 
 ```
 Create 1-3 concise bullet notes from this lecture segment.
 
 CONTEXT: ${contextStr}
-${quickNotes ? `\nSTUDENT NOTES: "${quickNotes.slice(-200)}"` : ''}
+${userNotes ? `\nSTUDENT NOTES (recent): "${userNotes.slice(-300)}"` : ''}
 
 TRANSCRIPT:
 "${transcript.slice(-500)}"
@@ -170,48 +109,58 @@ TRANSCRIPT:
 
 **File:** `src/renderer/hooks/use-nugget-notes.ts`
 
-Update `processTranscriptChunk` and `generateNotes` to accept and forward `quickNotes`:
-- Add `quickNotes?: string` parameter to `processTranscriptChunk`
-- Pass through to `generateNotes` fetch body
-- RecordingPanel passes current quickNotes state when calling `processTranscriptChunk`
+Update `processTranscriptChunk` to accept and forward `userNotes`:
+- Add `userNotes?: string` parameter
+- Pass through to fetch body
+- RecordingPanel reads current `notesPlainText` from session and passes it
 
-#### 1f. Wire it up in RecordingPanel
-
-**File:** `src/renderer/components/recording-panel.tsx`
-
-- Pass `quickNotes` state to `nuggetNotes.processTranscriptChunk()` (line ~163)
-- Pass `quickNotes` when calling final note generation via `handleStop()`
-- Clear `quickNotes` state when starting a new recording
-- Save quickNotes to session on stop (alongside duration, transcript)
-
-#### 1g. Wire it up in NotesPanel
+#### 1c. Wire it up in NotesPanel
 
 **File:** `src/renderer/components/notes-panel.tsx`
 
-- In `handleGenerateNotes` (line ~186), pass `session.quickNotes` to the generate action:
-  ```typescript
-  const data = await generateNotesAction({
-    transcript: session.transcript,
-    sessionId: sessionId as string,
-    quickNotes: session.quickNotes, // NEW
-  });
-  ```
+In `handleGenerateNotes`, pass the current editor plain text:
+
+```typescript
+const existingNotes = editor?.getText() || '';
+const data = await generateNotesAction({
+  transcript: session.transcript,
+  sessionId: sessionId as string,
+  existingNotes,
+});
+```
+
+#### 1d. Wire it up in RecordingPanel
+
+**File:** `src/renderer/components/recording-panel.tsx`
+
+When calling `nuggetNotes.processTranscriptChunk()`, pass the session's current `notesPlainText`:
+
+```typescript
+nuggetNotes.processTranscriptChunk(transcript, durationMinutes, session?.notesPlainText);
+```
 
 ### Testing Checklist
 
-- [ ] Can type quick notes during recording
-- [ ] Quick notes persist if app is closed mid-recording
-- [ ] Quick notes auto-save every 2 seconds
-- [ ] AI-generated notes reference/incorporate user's quick notes
-- [ ] Nugget Notes reference quick notes context
-- [ ] Quick notes area only appears during recording
-- [ ] Quick notes clear when starting a new recording
-- [ ] Can collapse/expand quick notes area
-- [ ] Works with empty quick notes (no errors)
+- [ ] AI-generated notes reference/incorporate user's existing editor notes
+- [ ] Nugget Notes consider user's notes as context
+- [ ] Works with empty notes (no errors)
+- [ ] Works when user hasn't typed anything yet
+- [ ] Re-generating notes with different user content produces different output
+- [ ] Existing editor content is not destroyed when AI generates new notes
 
 ---
 
-## Feature 2: Lecture-Type-Aware AI
+## Feature 2: Lecture-Type-Aware AI — COMPLETE
+
+> **Status:** Fully implemented. `lectureType` field in schema, `LectureTypeSelect` component, type-specific prompts in `convex/prompts.ts`, threaded through Nugget Notes and full note generation.
+>
+> **Implemented files:**
+> - `convex/schema.ts` — `lectureType` field on sessions
+> - `convex/prompts.ts` — Centralized prompt templates by lecture type
+> - `src/renderer/components/lecture-type-select.tsx` — Dropdown with icons
+> - `src/renderer/components/recording-panel.tsx` — Selector before recording
+> - `src/renderer/hooks/use-nugget-notes.ts` — Lecture type passed to AI
+> - `src/renderer/components/notes-panel.tsx` — Lecture type passed to generation
 
 ### The Idea
 
@@ -429,7 +378,16 @@ Structure notes with these priorities:
 
 ---
 
-## Feature 3: Transcript ↔ Notes Citations
+## Feature 3: Transcript <-> Notes Citations — COMPLETE
+
+> **Status:** Fully implemented. Citation mark TipTap extension, parser utility, markdown-to-TipTap converter handles `[cite:XXXXX]` patterns, visual marks in editor and study view.
+>
+> **Implemented files:**
+> - `src/renderer/lib/citation-mark.ts` — TipTap Mark extension
+> - `convex/citations.ts` — Citation parser
+> - `src/renderer/lib/markdown-to-tiptap.ts` — Handles citation patterns
+> - `src/renderer/components/notes-panel.tsx` — Citation mark registered
+> - `src/renderer/components/study-content.tsx` — Clickable citations
 
 ### The Idea
 
@@ -741,24 +699,15 @@ This can be done via TipTap's `addNodeView` or via CSS + `title` attribute for t
 ## Build Order & Dependencies
 
 ```
-Feature 2: Lecture-Type-Aware AI
+Feature 2: Lecture-Type-Aware AI ✅ COMPLETE
 ├── 2a. Schema: add lectureType
 ├── 2b. Mutation: accept lectureType
 ├── 2c. UI: lecture type selector
-├── 2d. Prompt templates (convex/prompts.ts) ← FOUNDATION for all 3 features
+├── 2d. Prompt templates (convex/prompts.ts)
 ├── 2e. Update AI endpoints
 └── 2f. Thread through pipeline
 
-Feature 1: Dual-Input Synthesis (depends on 2d — prompts.ts exists)
-├── 1a. Schema: add quickNotes
-├── 1b. Mutation: accept quickNotes
-├── 1c. UI: quick notes textarea
-├── 1d. Update AI generation (uses prompts.ts)
-├── 1e. Update Nugget Notes (uses prompts.ts)
-├── 1f. Wire up RecordingPanel
-└── 1g. Wire up NotesPanel
-
-Feature 3: Transcript ↔ Notes Citations (depends on 2d — prompts.ts, and 1d — updated AI generation)
+Feature 3: Transcript <-> Notes Citations ✅ COMPLETE
 ├── 3a. TipTap citation mark extension
 ├── 3b. Register in NotesPanel
 ├── 3c. Update prompts for citations
@@ -766,85 +715,46 @@ Feature 3: Transcript ↔ Notes Citations (depends on 2d — prompts.ts, and 1d 
 ├── 3e. Citation parser utility
 ├── 3f. Markdown-to-TipTap citation handling
 ├── 3g. Pass segments in NotesPanel
-├── 3h. Study view: click citation → seek
+├── 3h. Study view: click citation -> seek
 └── 3i. Citation tooltip
+
+Feature 1: Dual-Input Synthesis ⬜ NOT YET IMPLEMENTED
+├── 1a. Pass existing editor notes to AI generation (convex/ai.ts)
+├── 1b. Pass existing notes to Nugget Notes pipeline
+├── 1c. Wire up in NotesPanel (editor.getText())
+└── 1d. Wire up in RecordingPanel (session.notesPlainText)
 ```
 
-### Why this order?
+### Implementation notes
 
-1. **Feature 2 first** because it creates `convex/prompts.ts` — the centralized prompt system that Features 1 and 3 both need. Building the lecture type system also requires the smallest schema change and gives immediate visible value.
-
-2. **Feature 1 second** because it adds `quickNotes` to the schema and the AI pipeline. The prompt system from Feature 2 is already in place, so adding quick notes is just extending the prompt functions.
-
-3. **Feature 3 last** because it's the most complex and depends on both the prompt system (Feature 2) and the updated AI pipeline (Feature 1). It introduces a new TipTap extension, a citation parser, and study view changes.
+- Feature 2 and 3 were built together as part of the Notion-inspired features work.
+- Feature 1 was redesigned: instead of a separate `quickNotes` field + textarea, it uses the **existing TipTap notes editor** content. The user's notes are already saved to `session.notes` / `session.notesPlainText` — the AI just needs to read them as context. No new UI, no schema changes needed.
 
 ---
 
 ## Schema Changes Summary
 
-All three features modify `convex/schema.ts`. Here's the final state of the sessions table:
-
-```typescript
-sessions: defineTable({
-  userId: v.string(),
-  title: v.string(),
-  lectureType: v.optional(v.string()),        // Feature 2
-  audioFilePath: v.optional(v.string()),
-  transcript: v.optional(v.string()),
-  transcriptSegments: v.optional(
-    v.array(
-      v.object({
-        text: v.string(),
-        timestamp: v.number(),
-        isFinal: v.boolean(),
-      }),
-    ),
-  ),
-  quickNotes: v.optional(v.string()),          // Feature 1
-  notes: v.optional(v.string()),
-  notesPlainText: v.optional(v.string()),
-  duration: v.number(),
-  createdAt: v.number(),
-  updatedAt: v.number(),
-  isDeleted: v.boolean(),
-  deletedAt: v.optional(v.number()),
-})
-```
-
-Both new fields are `v.optional()` — fully backwards-compatible with existing sessions.
+Features 2 and 3 added `lectureType` to the sessions table. Feature 1 requires **no schema changes** — it reads the existing `notes` / `notesPlainText` fields that are already auto-saved by the TipTap editor.
 
 ---
 
-## New Files Summary
+## Files Created (Features 2 & 3)
 
-| File | Feature | Purpose |
-|------|---------|---------|
-| `convex/prompts.ts` | 2 | Centralized AI prompt templates by lecture type |
-| `convex/citations.ts` | 3 | Citation parser for `[cite:XXXXX]` patterns |
-| `src/renderer/components/lecture-type-select.tsx` | 2 | Lecture type dropdown with icons |
-| `src/renderer/components/quick-notes-input.tsx` | 1 | Collapsible textarea for user notes during recording |
-| `src/renderer/lib/citation-mark.ts` | 3 | TipTap Mark extension for transcript citations |
+| File | Feature | Purpose | Status |
+|------|---------|---------|--------|
+| `convex/prompts.ts` | 2 | Centralized AI prompt templates by lecture type | Created |
+| `convex/citations.ts` | 3 | Citation parser for `[cite:XXXXX]` patterns | Created |
+| `src/renderer/components/lecture-type-select.tsx` | 2 | Lecture type dropdown with icons | Created |
+| `src/renderer/lib/citation-mark.ts` | 3 | TipTap Mark extension for transcript citations | Created |
+
+Feature 1 creates **no new files** — it only modifies existing AI action args and prompts.
 
 ---
 
-## Version Bumping
+## Version History
 
-Since these are new features enhancing Phases 1-2:
-
-| Feature | Version | Reason |
+| Feature | Version | Status |
 |---------|---------|--------|
-| Feature 2 (Lecture Types) | 3.4.0 | New feature: lecture-aware AI |
-| Feature 1 (Dual-Input) | 3.5.0 | New feature: user notes synthesis |
-| Feature 3 (Citations) | 3.6.0 | New feature: transcript-linked notes |
-
----
-
-## Risk Assessment
-
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| AI doesn't reliably output `[cite:XXXXX]` | Medium | Validate in parser; fall back to no citations. Use few-shot examples in prompt. |
-| Citation timestamps don't match segments exactly | Medium | Use nearest-segment matching rather than exact match |
-| Quick notes textarea clutters recording panel | Low | Collapsible by default; only show during recording |
-| Lecture type selector adds friction before recording | Low | Default to "General"; remember last-used type per user |
-| Prompt changes degrade note quality | Low | Test each lecture type prompt independently; keep "General" as the proven baseline |
+| Feature 2 (Lecture Types) | 3.4.0 | COMPLETE |
+| Feature 3 (Citations) | 3.4.0 | COMPLETE |
+| Feature 1 (Dual-Input) | TBD | NOT IMPLEMENTED |

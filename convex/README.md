@@ -1,90 +1,41 @@
-# Welcome to your Convex functions directory!
+# ScribeCat v3 — Convex Backend
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+Server-side functions for the ScribeCat app. All functions run on the Convex platform.
 
-A query function that takes two arguments looks like:
+## Files
 
-```ts
-// convex/myFunctions.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+| File | Type | Purpose |
+|------|------|---------|
+| `schema.ts` | Schema | Database schema — 7 tables (sessions, userSettings, studyStats, achievements, studyToolResults, flashcardProgress, quizAttempts, chatHistory) |
+| `sessions.ts` | Queries + Mutations | Session CRUD — list, get, create, update, soft delete, restore, permanent delete, trash listing |
+| `ai.ts` | Action | Full note generation from transcript using Claude Sonnet 4.5 |
+| `nuggetNotes.ts` | HTTP Action | Real-time note generation during recording using Claude Haiku 4.5 |
+| `nuggetChat.ts` | HTTP Action | AI chat with transcript/notes context using Claude Sonnet 4.5 |
+| `lectureContext.ts` | HTTP Action | Lecture context extraction using Claude Sonnet 4.5 (feeds into Nugget Notes) |
+| `studyTools.ts` | Actions | 7 AI study tools — summary, key concepts, flashcards, quiz, concept map, ELI5, chat |
+| `studyToolPrompts.ts` | Utility | Prompt templates for study tools, lecture-type-aware |
+| `prompts.ts` | Utility | Note generation prompt templates by lecture type (STEM, Humanities, etc.) |
+| `citations.ts` | Utility | Parses `[cite:XXXXX]` patterns from AI-generated notes |
+| `audioStorage.ts` | Mutations | Audio file upload to Convex storage + URL generation |
+| `transcription.ts` | Action | AssemblyAI temporary token generation for real-time transcription |
+| `productivity.ts` | Queries + Mutations | Study goals, daily stats, streaks, break reminders, achievements |
+| `crons.ts` | Cron Jobs | Scheduled trash cleanup (30-day retention) |
+| `http.ts` | HTTP Routes | Routes for nuggetNotes, nuggetChat, lectureContext HTTP actions |
+| `auth.config.ts` | Config | Clerk JWT issuer domain for auth validation |
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+## Environment Variables (set in Convex Dashboard)
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query("tablename").collect();
-
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
-
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
-});
+```
+ANTHROPIC_API_KEY      # For all Claude AI calls
+ASSEMBLYAI_API_KEY     # For transcription token generation
+CLERK_JWT_ISSUER_DOMAIN # For auth validation
 ```
 
-Using this query function in a React component looks like:
+## Patterns
 
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-  first: 10,
-  second: "hello",
-});
-```
+- **Queries** return data reactively (auto-update on changes)
+- **Mutations** modify data (insert, update, delete)
+- **Actions** call external APIs (Anthropic, AssemblyAI) — cannot be reactive
+- **HTTP Actions** handle raw HTTP requests (used for streaming AI responses)
 
-A mutation function looks like:
-
-```ts
-// convex/myFunctions.ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
-
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert("messages", message);
-
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get("messages", id);
-  },
-});
-```
-
-Using this mutation function in a React component looks like:
-
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: "Hello!", second: "me" });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: "Hello!", second: "me" }).then((result) =>
-    console.log(result),
-  );
-}
-```
-
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+See [Convex docs](https://docs.convex.dev/functions) for more.

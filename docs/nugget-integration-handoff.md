@@ -1,5 +1,7 @@
 # Nugget Integration Handoff — ScribeCat v3
 
+> **Status: COMPLETE** — Both Nugget's Notes and Nugget Chat are fully implemented and working.
+>
 > **Goal:** Port the real-time AI note-taking system ("Nugget's Notes") and AI Chat from v2 into v3, using v3's working TipTap insertion logic.
 
 ---
@@ -41,14 +43,19 @@ The magic of Nugget's Notes is a two-model system that generates contextually-aw
 
 ---
 
-## v3 Files to Use/Modify
+## v3 Implemented Files
 
-| File | How to Use |
+| File | What It Does |
 |------|------------|
-| `convex/generateNotes.ts` | Reference for Convex HTTP action pattern |
-| `src/renderer/components/notes-panel.tsx` | Has working TipTap insertion logic — **USE THIS** |
-| `src/renderer/components/recording-panel.tsx` | Add Nugget Notes panel here |
-| `src/renderer/components/study-view.tsx` | Add floating chat button |
+| `convex/nuggetNotes.ts` | Haiku-powered real-time note generation (HTTP action) |
+| `convex/lectureContext.ts` | Sonnet-powered context extraction (HTTP action) |
+| `convex/nuggetChat.ts` | AI chat endpoint (HTTP action) |
+| `src/renderer/hooks/use-nugget-notes.ts` | Two-model pipeline orchestrator hook |
+| `src/renderer/components/nugget-notes-panel.tsx` | Note bubbles UI with insert button |
+| `src/renderer/components/nugget-chat.tsx` | AI chat drawer with persistent history |
+| `src/renderer/components/recording-panel.tsx` | Hosts Nugget Notes panel |
+| `src/renderer/components/study-content.tsx` | Hosts Nugget Chat |
+| `convex/schema.ts` | `chatHistory` table for persistent chat |
 
 ---
 
@@ -334,17 +341,17 @@ Add to Convex dashboard (should already exist from generateNotes):
 
 ## Testing Checklist
 
-- [ ] Context updates every ~2 minutes during recording
-- [ ] Notes generate every ~45 seconds during recording
-- [ ] Notes appear in panel as bubbles
-- [ ] Clicking [+] inserts note into TipTap editor
-- [ ] Notes persist after recording stops
-- [ ] Chat drawer opens/closes properly
-- [ ] Chat responds with context from transcript
-- [ ] Chat responds with context from notes
-- [ ] Streaming works for chat responses
-- [ ] Enable/disable toggle works
-- [ ] Works with all 6 themes
+- [x] Context updates every ~2 minutes during recording
+- [x] Notes generate every ~45 seconds during recording
+- [x] Notes appear in panel as bubbles
+- [x] Clicking [+] inserts note into TipTap editor
+- [x] Notes persist after recording stops
+- [x] Chat drawer opens/closes properly
+- [x] Chat responds with context from transcript
+- [x] Chat responds with context from notes
+- [x] Persistent chat history per session (stored in `chatHistory` table)
+- [x] Clickable suggestion prompts in chat
+- [x] Works with all 6 themes
 
 ---
 
@@ -387,13 +394,11 @@ src/renderer/components/
 
 ---
 
-## Questions to Decide
+## Decisions Made
 
-1. **Panel location:** Below transcript (recommended) or separate tab?
-2. **Insert behavior:** At cursor, or always append to end?
-3. **Note format:** Plain text bullet, or formatted markdown?
-4. **Auto-insert option:** Toggle to auto-insert notes as they generate?
-
----
-
-Good luck! 🐱✨
+1. **Panel location:** Below transcript in recording panel (collapsible)
+2. **Insert behavior:** Insert at cursor via `editor.chain().focus().insertContent()`
+3. **Note format:** Plain text bullets with [+] insert button
+4. **Auto-insert option:** Not implemented — manual insert via bubble click
+5. **Chat persistence:** Per-session chat history stored in `chatHistory` Convex table
+6. **Chat suggestions:** Clickable suggestion chips based on session content
