@@ -8,7 +8,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.6.12 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
+**Current Version:** 4.7.2 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -49,7 +49,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 | **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
 | **Drag/Resize** | interact.js 1.10 | For editor objects |
 | **Transcription** | AssemblyAI | Real-time WebSocket STT |
-| **AI** | Anthropic Claude | Sonnet 4.5 + Haiku 4.5 |
+| **AI** | Anthropic Claude | Haiku 4.5 (all endpoints, centralized in `convex/config.ts`) |
 | **Linting/Formatting** | Biome 1.9 | Fast, all-in-one |
 | **Pre-commit hooks** | Husky + lint-staged | Prevents bad commits |
 
@@ -60,17 +60,20 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (7 tables)
+│   ├── schema.ts             # Database schema (8 tables)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
-│   ├── nuggetNotes.ts        # Real-time Haiku note generation (HTTP action)
+│   ├── generateNotes.ts      # AI note generation (HTTP action)
+│   ├── nuggetNotes.ts        # Real-time note generation (HTTP action)
 │   ├── nuggetChat.ts         # AI chat endpoint (HTTP action)
-│   ├── lectureContext.ts     # Sonnet context extraction (HTTP action)
+│   ├── lectureContext.ts     # Context extraction (HTTP action)
 │   ├── studyTools.ts         # Study tool AI actions
 │   ├── studyToolPrompts.ts   # Study tool prompt templates
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
+│   ├── config.ts             # Shared AI model configuration
 │   ├── audioStorage.ts       # Audio file upload/storage
+│   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
@@ -98,7 +101,7 @@ ScribeCat-v3/
 │       │   ├── audio-waveform.tsx    # Waveform visualization
 │       │   ├── file-upload-transcribe.tsx # File upload + transcription
 │       │   ├── theme-provider.tsx    # Theme context provider
-│       │   ├── study-tools/          # 7 AI study tool components
+│       │   ├── study-tools/          # 6 AI study tool components
 │       │   │   ├── index.tsx         # Study tools container
 │       │   │   ├── summary-tool.tsx
 │       │   │   ├── key-concepts-tool.tsx
@@ -146,7 +149,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-7 tables in `convex/schema.ts`:
+8 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -287,25 +290,34 @@ User ID comes from Clerk's JWT, validated by Convex via `auth.config.ts`.
 
 ## AI Architecture
 
-### Two-Model Pipeline (Nugget's Notes)
-During recording, two models work together:
+All AI endpoints use **Haiku 4.5** via centralized `AI_MODEL` in `convex/config.ts`.
 
-| Model | Role | Frequency | File |
-|-------|------|-----------|------|
-| **Sonnet 4.5** | Context Analyzer | Every ~2 min / 200 words | `convex/lectureContext.ts` |
-| **Haiku 4.5** | Note Writer | Every ~45s / 30 words | `convex/nuggetNotes.ts` |
+### Two-Step Pipeline (Nugget's Notes)
+During recording, two steps run at different intervals:
+
+| Step | Role | Frequency | File |
+|------|------|-----------|------|
+| Context Extraction | Extracts themes, topics, definitions | Every ~2 min / 200 words | `convex/lectureContext.ts` |
+| Note Generation | Writes 1-3 bullet notes using context | Every ~45s / 30 words | `convex/nuggetNotes.ts` |
 
 Orchestrated by `src/renderer/hooks/use-nugget-notes.ts`.
 
 ### Full Note Generation
 Post-recording or on-demand via "Generate Notes" button:
-- Uses Sonnet 4.5 via `convex/ai.ts`
+- Uses `convex/ai.ts` (Convex action) or `convex/generateNotes.ts` (HTTP action)
+- Supports dual-input synthesis (user's existing notes + transcript)
 - Lecture-type-aware prompts from `convex/prompts.ts`
 - Outputs markdown, converted to TipTap JSON by `lib/markdown-to-tiptap.ts`
 
 ### Study Tools
-7 tools in `convex/studyTools.ts` with prompts in `convex/studyToolPrompts.ts`:
-- Summary, Key Concepts, Flashcards, Quiz, Concept Map, ELI5, Chat
+6 tools in `convex/studyTools.ts` with prompts in `convex/studyToolPrompts.ts`:
+- Summary, Key Concepts, Flashcards, Quiz, Concept Map, ELI5
+
+### Nugget Chat
+Separate app-level AI chat (`src/renderer/components/nugget-chat.tsx`):
+- Persistent per-session chat history (stored in `chatHistory` table)
+- Context-aware (transcript + notes)
+- Backend: `convex/nuggetChat.ts`
 
 ---
 
@@ -456,13 +468,13 @@ function process(data: unknown) {
 
 ### Commit Format
 ```
-v4.6.12: Brief description of change
+v4.7.2: Brief description of change
 ```
 
 ### Version Bumping
-- **Patch** (4.6.12 -> 4.6.13): Bug fixes
-- **Minor** (4.6.12 -> 4.7.0): New features
-- **Major** (4.6.12 -> 5.0.0): Breaking changes / phase completion
+- **Patch** (4.7.2 -> 4.7.3): Bug fixes
+- **Minor** (4.7.2 -> 4.8.0): New features
+- **Major** (4.7.2 -> 5.0.0): Breaking changes / phase completion
 
 ### Before Committing
 1. `pnpm clean && pnpm build` passes

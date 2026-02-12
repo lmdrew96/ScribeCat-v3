@@ -7,7 +7,7 @@
 >
 > Last updated: February 2026
 >
-> **Status:** Feature 2 (Lecture Types) COMPLETE | Feature 3 (Citations) COMPLETE | Feature 1 (Dual-Input) NOT IMPLEMENTED
+> **Status:** All 3 features COMPLETE
 
 ---
 
@@ -15,17 +15,17 @@
 
 | # | Feature | What It Does | Status |
 |---|---------|-------------|--------|
-| 1 | **Dual-Input Synthesis** | User's quick notes + transcript -> smarter AI output | NOT IMPLEMENTED |
+| 1 | **Dual-Input Synthesis** | User's existing notes + transcript -> smarter AI output | COMPLETE |
 | 2 | **Lecture-Type-Aware AI** | Pick lecture format -> AI customizes note style | COMPLETE |
 | 3 | **Transcript <-> Notes Citations** | Generated notes link back to transcript timestamps -> click to hear | COMPLETE |
 
-**Build order used:** 2 -> 3 (Feature 1 deferred — no `quickNotes` field in schema)
+**Build order used:** 2 -> 3 -> 1 (Feature 1 was redesigned to use existing editor content — no schema changes needed)
 
 ---
 
-## Feature 1: Dual-Input Synthesis — NOT IMPLEMENTED
+## Feature 1: Dual-Input Synthesis — COMPLETE
 
-> **Status:** Not yet implemented. The approach has been revised — see below.
+> **Status:** Fully implemented in v4.6.14. The user's existing editor notes are fed into all AI prompts (note generation, Nugget Notes, Nugget Chat) as additional context alongside the transcript. No schema changes were needed — the existing TipTap editor content is read directly.
 
 ### The Idea
 
@@ -141,12 +141,12 @@ nuggetNotes.processTranscriptChunk(transcript, durationMinutes, session?.notesPl
 
 ### Testing Checklist
 
-- [ ] AI-generated notes reference/incorporate user's existing editor notes
-- [ ] Nugget Notes consider user's notes as context
-- [ ] Works with empty notes (no errors)
-- [ ] Works when user hasn't typed anything yet
-- [ ] Re-generating notes with different user content produces different output
-- [ ] Existing editor content is not destroyed when AI generates new notes
+- [x] AI-generated notes reference/incorporate user's existing editor notes
+- [x] Nugget Notes consider user's notes as context
+- [x] Works with empty notes (no errors)
+- [x] Works when user hasn't typed anything yet
+- [x] Re-generating notes with different user content produces different output
+- [x] Existing editor content is not destroyed when AI generates new notes
 
 ---
 
@@ -718,11 +718,11 @@ Feature 3: Transcript <-> Notes Citations ✅ COMPLETE
 ├── 3h. Study view: click citation -> seek
 └── 3i. Citation tooltip
 
-Feature 1: Dual-Input Synthesis ⬜ NOT YET IMPLEMENTED
-├── 1a. Pass existing editor notes to AI generation (convex/ai.ts)
-├── 1b. Pass existing notes to Nugget Notes pipeline
-├── 1c. Wire up in NotesPanel (editor.getText())
-└── 1d. Wire up in RecordingPanel (session.notesPlainText)
+Feature 1: Dual-Input Synthesis ✅ COMPLETE (v4.6.14)
+├── 1a. Pass existing editor notes to AI generation (convex/ai.ts) ✅
+├── 1b. Pass existing notes to Nugget Notes pipeline ✅
+├── 1c. Wire up in NotesPanel (editor.getText()) ✅
+└── 1d. Wire up in RecordingPanel (session.notesPlainText) ✅
 ```
 
 ### Implementation notes
@@ -757,4 +757,4 @@ Feature 1 creates **no new files** — it only modifies existing AI action args 
 |---------|---------|--------|
 | Feature 2 (Lecture Types) | 3.4.0 | COMPLETE |
 | Feature 3 (Citations) | 3.4.0 | COMPLETE |
-| Feature 1 (Dual-Input) | TBD | NOT IMPLEMENTED |
+| Feature 1 (Dual-Input) | 4.6.14 | COMPLETE |

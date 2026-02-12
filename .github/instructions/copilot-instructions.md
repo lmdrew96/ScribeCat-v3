@@ -6,7 +6,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app**.
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.6.12 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
+**Current Version:** 4.7.2 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
 
 ---
 
@@ -31,7 +31,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app**.
 | **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
 | **Drag/Resize** | interact.js 1.10 | For editor objects |
 | **Transcription** | AssemblyAI | Real-time WebSocket STT |
-| **AI** | Anthropic Claude | Sonnet 4.5 + Haiku 4.5 |
+| **AI** | Anthropic Claude | Haiku 4.5 (all endpoints, centralized in `convex/config.ts`) |
 | **Linting/Formatting** | Biome 1.9 | Fast, all-in-one |
 | **Pre-commit hooks** | Husky + lint-staged | Prevents bad commits |
 
@@ -42,17 +42,20 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app**.
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (7 tables)
+│   ├── schema.ts             # Database schema (8 tables)
 │   ├── sessions.ts           # Session CRUD queries/mutations
-│   ├── ai.ts                 # AI note generation action
-│   ├── nuggetNotes.ts        # Real-time Haiku note generation (HTTP action)
+│   ├── ai.ts                 # AI note generation (Convex action)
+│   ├── generateNotes.ts      # AI note generation (HTTP action)
+│   ├── nuggetNotes.ts        # Real-time note generation (HTTP action)
 │   ├── nuggetChat.ts         # AI chat endpoint (HTTP action)
-│   ├── lectureContext.ts     # Sonnet context extraction (HTTP action)
+│   ├── lectureContext.ts     # Context extraction (HTTP action)
 │   ├── studyTools.ts         # Study tool AI actions
 │   ├── studyToolPrompts.ts   # Study tool prompt templates
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser
+│   ├── config.ts             # Shared AI model configuration
 │   ├── audioStorage.ts       # Audio file upload/storage
+│   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
@@ -75,7 +78,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-7 tables: `sessions`, `userSettings`, `studyStats`, `achievements`, `studyToolResults`, `flashcardProgress`, `quizAttempts`, `chatHistory`
+8 tables: `sessions`, `userSettings`, `studyStats`, `achievements`, `studyToolResults`, `flashcardProgress`, `quizAttempts`, `chatHistory`
 
 ---
 
@@ -110,6 +113,6 @@ pnpm lint:fix         # Auto-fix
 
 ## Git Workflow
 
-Commit format: `v4.6.12: Brief description of change`
+Commit format: `v4.7.2: Brief description of change`
 
 Version bumping: Patch = bug fixes, Minor = new features, Major = breaking changes

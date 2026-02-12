@@ -6,7 +6,7 @@
 
 ---
 
-## Current Status: v4.6 — Phase 3 (Learn)
+## Current Status: v4.7 — Phase 3 (Learn)
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -38,7 +38,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - Smart auto-save (750ms debounce + Cmd+S manual)
 
 ### AI Features (Phase 2-3)
-- **Nugget's Notes** — Real-time AI bullet points during recording (two-model pipeline: Sonnet context + Haiku notes)
+- **Nugget's Notes** — Real-time AI bullet points during recording (two-step pipeline: context extraction + note generation)
 - **Nugget Chat** — Persistent per-session AI chat with clickable suggestions
 - **Summary Generator** — Comprehensive session summaries
 - **Key Concepts** — 5-7 important concepts with definitions
@@ -127,7 +127,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 | **Diagrams** | Excalidraw | 0.18 |
 | **Drag/Resize** | interact.js | 1.10 |
 | **Transcription** | AssemblyAI | Real-time WebSocket |
-| **AI** | Anthropic Claude (Sonnet 4.5 + Haiku 4.5) | |
+| **AI** | Anthropic Claude (Haiku 4.5, all endpoints) | |
 | **Linting** | Biome | 1.9+ |
 | **Pre-commit** | Husky + lint-staged | |
 
@@ -138,17 +138,20 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend
-│   ├── schema.ts             # Database schema (7 tables)
+│   ├── schema.ts             # Database schema (8 tables)
 │   ├── sessions.ts           # Session CRUD
-│   ├── ai.ts                 # AI note generation action
-│   ├── nuggetNotes.ts        # Real-time Haiku note generation
+│   ├── ai.ts                 # AI note generation (Convex action)
+│   ├── generateNotes.ts      # AI note generation (HTTP action)
+│   ├── nuggetNotes.ts        # Real-time note generation
 │   ├── nuggetChat.ts         # AI chat endpoint
-│   ├── lectureContext.ts     # Sonnet context extraction
+│   ├── lectureContext.ts     # Context extraction
 │   ├── studyTools.ts         # Study tool AI actions
 │   ├── studyToolPrompts.ts   # Study tool prompt templates
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser
+│   ├── config.ts             # Shared AI model configuration
 │   ├── audioStorage.ts       # Audio file storage
+│   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
@@ -175,7 +178,7 @@ ScribeCat-v3/
 │       │   ├── audio-waveform.tsx    # Waveform visualization
 │       │   ├── file-upload-transcribe.tsx # File upload
 │       │   ├── theme-provider.tsx    # Theme context
-│       │   ├── study-tools/          # 7 AI study tool components
+│       │   ├── study-tools/          # 6 AI study tool components
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # Audio recording logic
@@ -184,7 +187,8 @@ ScribeCat-v3/
 │       │   ├── use-nugget-notes.ts     # Two-model AI pipeline
 │       │   ├── use-sessions.ts         # Session CRUD hook
 │       │   ├── use-productivity.ts     # Goals + streaks
-│       │   └── use-debounced-callback.ts
+│       │   ├── use-debounced-callback.ts
+│       │   └── use-is-mobile.ts        # Mobile detection
 │       ├── lib/
 │       │   ├── markdown-to-tiptap.ts   # MD → TipTap converter
 │       │   ├── citation-mark.ts        # TipTap citation extension

@@ -2,7 +2,7 @@
 
 > **Current Phase: 3 — Learn**
 >
-> **Current Version: 4.6.12**
+> **Current Version: 4.7.2**
 >
 > Last updated: February 2026
 
@@ -106,7 +106,7 @@
   - [x] Uses Claude via Convex action
 
 - [x] **Nugget's Notes (Real-Time AI)**
-  - [x] Two-model pipeline (Sonnet context + Haiku notes)
+  - [x] Two-step pipeline (context extraction + note generation, both Haiku 4.5)
   - [x] Context updates every ~2 min / 200 words
   - [x] Note generation every ~45s / 30 words
   - [x] Note bubbles UI with insert-to-editor button
@@ -140,7 +140,7 @@
 **Editor:** TipTap v3.14.0 with 15+ extensions
 **Diagrams:** Excalidraw 0.18.0 with React.lazy code-splitting
 **Drag/Resize:** interact.js 1.10.27 with aspect ratio constraints
-**AI:** Claude Sonnet 4.5 (notes, context, chat) + Haiku 4.5 (real-time bullets)
+**AI:** Claude Haiku 4.5 for all endpoints (centralized in `convex/config.ts`)
 **Storage:** Notes as TipTap JSON + plain text for search indexing
 **Prompts:** Centralized in `convex/prompts.ts` and `convex/studyToolPrompts.ts`
 
@@ -160,9 +160,9 @@
 - [x] **Quiz Generator** — multiple choice, configurable count (5/10/15/20), scoring + history
 - [x] **Concept Map** — visual hierarchical SVG mind map
 - [x] **ELI5 Explainer** — simple explanations with analogies + real-world examples
-- [x] **AI Chat** — persistent Nugget Chat with session-based history + clickable suggestions
+All 6 study tools use lecture-type-aware prompts and cache results in `studyToolResults` table.
 
-All study tools use lecture-type-aware prompts and cache results in `studyToolResults` table.
+Nugget Chat (persistent AI chat with session-based history + clickable suggestions) is a separate app-level component, not a study tool tab.
 
 ### Productivity & Gamification — COMPLETE
 
@@ -278,3 +278,19 @@ Before marking a phase complete:
 | 4.4.0 | Jan 2026 | AI study tools (7 tools) |
 | 4.5.0 | Jan 2026 | Glassmorphism UI refresh |
 | 4.6.0 | Feb 2026 | Delete/trash recordings, audio fixes |
+| 4.6.1 | Feb 2026 | Trash view with restore and permanent delete |
+| 4.6.2 | Feb 2026 | Sidebar alignment and metadata offset fixes |
+| 4.6.3 | Feb 2026 | Audio player first-click and playback fixes |
+| 4.6.4 | Feb 2026 | Fix Convex browser import warnings and audio CORS |
+| 4.6.5 | Feb 2026 | Remove Web Audio API from playback (CORS fix) |
+| 4.6.6 | Feb 2026 | Fix CSP blocking Clerk workers and Convex storage audio |
+| 4.6.8 | Feb 2026 | Fix race condition uploading empty audio blobs |
+| 4.6.9 | Feb 2026 | Fix Infinity duration on WebM playback |
+| 4.6.10 | Feb 2026 | Remove waveform from audio player |
+| 4.6.11 | Feb 2026 | Remove redundant Quick Notes from recording panel |
+| 4.6.12 | Feb 2026 | Fix Nugget to process all unprocessed transcript after stop |
+| 4.6.13 | Feb 2026 | Major documentation update |
+| 4.6.14 | Feb 2026 | Dual-input synthesis — feed user's notes into all AI prompts |
+| 4.7.0 | Feb 2026 | Lift Nugget Chat to app level with smarter context + markdown rendering |
+| 4.7.1 | Feb 2026 | Nugget Chat button visibility improvement |
+| 4.7.2 | Feb 2026 | Fix notes editor save cycle and resolve all TypeScript errors |

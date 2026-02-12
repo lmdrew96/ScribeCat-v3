@@ -21,10 +21,12 @@ The magic of Nugget's Notes is a two-model system that generates contextually-aw
 
 | Model | Role | Frequency | Purpose |
 |-------|------|-----------|---------|
-| **Sonnet 4.5** | Context Analyzer | Every ~2 min / 200 words | Extracts themes, current topic, definitions, lecture structure |
-| **Haiku 4.5** | Note Writer | Every ~45s / 30 words | Writes 1-3 bullet notes using Sonnet's context |
+| **Haiku 4.5** | Context Analyzer | Every ~2 min / 200 words | Extracts themes, current topic, definitions, lecture structure |
+| **Haiku 4.5** | Note Writer | Every ~45s / 30 words | Writes 1-3 bullet notes using extracted context |
 
-**Why this works:** Sonnet (smart but slower) builds understanding. Haiku (fast and cheap) uses that understanding to write quick notes. Result: contextually-aware notes generated every 45 seconds during a lecture.
+All AI endpoints use a centralized model config (`convex/config.ts` — `AI_MODEL`), currently set to Haiku 4.5. The two-step pipeline architecture remains: context extraction runs less frequently and feeds into the faster note generation step.
+
+**Why this works:** Context extraction builds understanding of the lecture. Note generation uses that understanding to write quick notes. Result: contextually-aware notes generated every 45 seconds during a lecture.
 
 ---
 
@@ -48,7 +50,7 @@ The magic of Nugget's Notes is a two-model system that generates contextually-aw
 | File | What It Does |
 |------|------------|
 | `convex/nuggetNotes.ts` | Haiku-powered real-time note generation (HTTP action) |
-| `convex/lectureContext.ts` | Sonnet-powered context extraction (HTTP action) |
+| `convex/lectureContext.ts` | Context extraction (HTTP action) |
 | `convex/nuggetChat.ts` | AI chat endpoint (HTTP action) |
 | `src/renderer/hooks/use-nugget-notes.ts` | Two-model pipeline orchestrator hook |
 | `src/renderer/components/nugget-notes-panel.tsx` | Note bubbles UI with insert button |
@@ -66,7 +68,7 @@ The magic of Nugget's Notes is a two-model system that generates contextually-aw
 **File: `convex/lectureContext.ts`**
 
 ```typescript
-// Sonnet-powered context extraction
+// Context extraction (runs every ~2 minutes during recording)
 // Called every ~2 minutes during recording
 // Input: Recent transcript (~3 min worth)
 // Output: { themes, currentTopic, definitions, structureHint }
@@ -91,7 +93,7 @@ Return ONLY valid JSON (no markdown, no explanation):
 ```typescript
 // Haiku-powered note generation
 // Called every ~45 seconds during recording
-// Input: Recent transcript (~100 words) + context from Sonnet
+// Input: Recent transcript (~100 words) + context from extraction step
 // Output: Array of 1-3 note strings
 ```
 
@@ -233,7 +235,7 @@ A floating button + drawer for AI chat. Port from v2's `ChatUI.ts`:
 - Streaming responses
 - Keyboard shortcuts (Escape to close, Enter to send)
 
-**Chat uses Sonnet** (not Haiku) for quality responses about content.
+**Chat uses the centralized `AI_MODEL`** (currently Haiku 4.5) from `convex/config.ts`.
 
 ### 7. Create Convex Action for Chat
 
@@ -302,7 +304,7 @@ Transcript chunk arrives (every ~30s from AssemblyAI)
        │
        ├──► Check: 2+ min AND 200+ words since last context update?
        │         │
-       │         YES ──► Call Sonnet (lectureContext action)
+       │         YES ──► Call lectureContext action
        │                      │
        │                      ▼
        │                 Update stored context
@@ -330,12 +332,11 @@ Add to Convex dashboard (should already exist from generateNotes):
 
 ---
 
-## Model Strings
+## Model Configuration
 
-- **Sonnet 4.5:** `claude-sonnet-4-5-20250929`
-- **Haiku 4.5:** `claude-haiku-4-5-20251001`
+All AI endpoints use **Haiku 4.5** (`claude-haiku-4-5-20251001`) via centralized `AI_MODEL` in `convex/config.ts`.
 
-(Note: v2 used older model strings — update to current)
+(Note: Originally designed as a two-model system with Sonnet for context + Haiku for notes, but all endpoints were unified to use the same model via `config.ts` for simplicity and cost control.)
 
 ---
 
@@ -359,7 +360,7 @@ Add to Convex dashboard (should already exist from generateNotes):
 
 ```
 convex/
-  lectureContext.ts      # Sonnet context extraction
+  lectureContext.ts      # Context extraction
   nuggetNotes.ts         # Haiku note generation  
   nuggetChat.ts          # Chat endpoint
 
