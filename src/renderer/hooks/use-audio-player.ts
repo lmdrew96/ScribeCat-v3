@@ -83,8 +83,9 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
         optionsRef.current?.onEnded?.();
       });
 
-      audio.addEventListener('error', (e) => {
-        console.error('Audio playback error:', e);
+      audio.addEventListener('error', () => {
+        const mediaError = audio.error;
+        console.error('Audio error:', mediaError?.code, mediaError?.message);
         optionsRef.current?.onError?.(new Error('Audio playback error'));
       });
 

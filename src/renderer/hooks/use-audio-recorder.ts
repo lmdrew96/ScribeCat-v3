@@ -201,8 +201,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       timerIntervalRef.current = undefined;
     }
 
-    // Clear chunks to free memory
-    chunksRef.current = [];
+    // Don't clear chunksRef here — onstop fires async after stop()
+    // and needs the chunks to build the final blob. Chunks are cleared
+    // in onstop (line 117) and at the start of the next recording.
 
     setIsRecording(false);
     setIsPaused(false);
@@ -345,9 +346,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
           timerIntervalRef.current = undefined;
         }
 
-        chunksRef.current = [];
-
-        console.log('🧹 Audio recorder unmount cleanup complete');
+        // Don't clear chunks — onstop may still fire and needs them for upload
       }
     };
   }, []);
