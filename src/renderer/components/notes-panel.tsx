@@ -269,7 +269,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
   };
 
   return (
-    <div className="flex h-full flex-col p-2 gap-2">
+    <div className="flex h-full flex-col p-4 gap-3">
       <EditorToolbar
         editor={editor}
         onGenerateNotes={handleGenerateNotes}
@@ -279,7 +279,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       />
 
       {/* Editor area */}
-      <div className="relative flex-1 rounded-lg bg-card min-h-0 overflow-auto">
+      <div className="relative flex-1 rounded-xl glass min-h-0 overflow-auto">
         <EditorContent editor={editor} className="h-full" />
 
         {!editor?.getText() && (

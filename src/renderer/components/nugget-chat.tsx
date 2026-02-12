@@ -213,7 +213,7 @@ export function NuggetChat({ transcript, notes, sessionId, convexUrl }: NuggetCh
       <Button
         variant="default"
         size="icon"
-        className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform glass-heavy border border-[var(--glass-border-strong)]"
         onClick={() => setIsOpen(true)}
         title="Chat with Nugget"
       >
@@ -234,9 +234,9 @@ export function NuggetChat({ transcript, notes, sessionId, convexUrl }: NuggetCh
           />
 
           {/* Drawer */}
-          <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-background border-l border-border shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md glass-heavy border-l border-[var(--glass-border)] shadow-xl flex flex-col animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--glass-border)]">
               <div className="flex items-center gap-2">
                 <Cat className="h-5 w-5 text-primary" />
                 <span className="font-semibold text-foreground">Chat with Nugget</span>
@@ -271,7 +271,7 @@ export function NuggetChat({ transcript, notes, sessionId, convexUrl }: NuggetCh
             </ScrollArea>
 
             {/* Context checkboxes */}
-            <div className="flex items-center gap-4 px-4 py-2 border-t border-border text-xs text-muted-foreground">
+            <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--glass-border)] text-xs text-muted-foreground">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -293,14 +293,14 @@ export function NuggetChat({ transcript, notes, sessionId, convexUrl }: NuggetCh
             </div>
 
             {/* Input */}
-            <div className="flex items-end gap-2 p-4 border-t border-border">
+            <div className="flex items-end gap-2 p-4 border-t border-[var(--glass-border)]">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Nugget about your lecture..."
-                className="flex-1 resize-none rounded-lg border border-border bg-muted px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[120px]"
+                className="flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] backdrop-blur-[var(--glass-blur-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[120px]"
                 rows={1}
                 disabled={isLoading}
               />
@@ -347,7 +347,7 @@ function SuggestionChip({ text, onClick }: { text: string; onClick: (text: strin
   return (
     <button
       type="button"
-      className="inline-flex px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs hover:bg-muted/80 cursor-pointer transition-colors"
+      className="inline-flex px-2.5 py-1 rounded-full glass-light text-muted-foreground text-xs hover:bg-[var(--glass-bg)] cursor-pointer transition-colors"
       onClick={() => onClick(text)}
     >
       {text}
@@ -365,7 +365,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
           isUser
             ? 'bg-primary text-primary-foreground rounded-br-md'
-            : 'bg-muted text-foreground rounded-bl-md'
+            : 'glass-light text-foreground rounded-bl-md'
         }`}
       >
         {!isUser && (

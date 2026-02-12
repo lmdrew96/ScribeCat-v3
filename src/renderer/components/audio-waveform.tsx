@@ -66,7 +66,7 @@ export function AudioWaveform({ isActive, audioLevel = 0 }: AudioWaveformProps) 
   }, [isActive, audioLevel]);
 
   return (
-    <div className="flex h-16 items-center justify-center rounded-lg bg-[var(--transcript-bg)] px-3">
+    <div className="flex h-[4.5rem] items-center justify-center rounded-xl glass-light px-4">
       <canvas
         ref={canvasRef}
         width={480}

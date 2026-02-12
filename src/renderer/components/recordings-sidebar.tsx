@@ -17,7 +17,7 @@ export function RecordingsSidebar({
   onCollapse,
 }: RecordingsSidebarProps) {
   return (
-    <div className="flex h-full flex-col bg-sidebar p-2">
+    <div className="flex h-full flex-col p-3">
       <div className="flex items-center justify-between mb-2 px-1">
         <h2 className="text-xs font-medium text-muted-foreground">Recordings</h2>
         {onCollapse && (
@@ -33,8 +33,10 @@ export function RecordingsSidebar({
               type="button"
               key={recording.id}
               onClick={() => onSelect(recording)}
-              className={`w-full rounded-md p-2 text-left transition-colors ${
-                selectedId === recording.id ? 'bg-sidebar-accent' : 'hover:bg-sidebar-accent/50'
+              className={`w-full rounded-lg p-3 text-left transition-all duration-200 ${
+                selectedId === recording.id
+                  ? 'glass bg-[var(--glass-bg)] border border-[var(--glass-border-strong)] shadow-[0_0_12px_var(--glass-glow)]'
+                  : 'hover:bg-[var(--glass-bg-light)]'
               }`}
             >
               <div className="mb-1 flex items-center gap-1.5">

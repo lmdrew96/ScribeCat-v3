@@ -112,7 +112,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
         </Button>
 
         <Card
-          className="flex-1 min-h-[80px] cursor-pointer p-3 transition-all hover:bg-secondary/30 relative"
+          className="flex-1 min-h-[80px] cursor-pointer p-3 transition-all hover:bg-[var(--glass-bg-light)] relative"
           style={{ perspective: '600px' }}
           onClick={() => setIsFlipped(!isFlipped)}
         >
@@ -150,7 +150,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
 
           {/* Progress badge */}
           {cardProgress && (
-            <span className="absolute top-1 right-1 text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="absolute top-1 right-1 text-[9px] px-1 py-0.5 rounded glass-light text-muted-foreground">
               {cardProgress.confidence}
             </span>
           )}

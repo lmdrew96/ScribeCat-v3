@@ -10,9 +10,9 @@ function AuthenticatedApp() {
   const [currentView, setCurrentView] = useState<'home' | 'study'>('home');
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="app-bg-orbs flex h-screen flex-col">
       <TopBar currentView={currentView} onViewChange={setCurrentView} />
-      <main className="flex-1 overflow-hidden">
+      <main className="relative z-10 flex-1 overflow-hidden">
         {currentView === 'home' ? <HomeView /> : <StudyView />}
       </main>
     </div>
@@ -23,13 +23,13 @@ export function App() {
   return (
     <>
       <AuthLoading>
-        <div className="flex h-screen items-center justify-center bg-background">
+        <div className="app-bg-orbs flex h-screen items-center justify-center">
           <div className="text-muted-foreground text-sm">Loading...</div>
         </div>
       </AuthLoading>
 
       <Unauthenticated>
-        <div className="flex h-screen items-center justify-center bg-background">
+        <div className="app-bg-orbs flex h-screen items-center justify-center">
           <SignIn />
         </div>
       </Unauthenticated>

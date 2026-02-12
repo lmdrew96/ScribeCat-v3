@@ -55,7 +55,7 @@ export function HomeView() {
         onValueChange={(v) => setActiveTab(v as 'notes' | 'recording')}
         className="flex h-full flex-col"
       >
-        <TabsList className="mx-2 mt-2 shrink-0">
+        <TabsList className="mx-3 mt-3 shrink-0">
           <TabsTrigger value="recording" className="gap-1.5">
             <Mic className="h-3.5 w-3.5" />
             Recording
@@ -85,7 +85,7 @@ export function HomeView() {
 
   return (
     <div
-      className="flex h-full select-none"
+      className="flex h-full select-none gap-3 p-3"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -96,7 +96,7 @@ export function HomeView() {
 
       {/* Drag handle */}
       <div
-        className="group flex w-1 cursor-col-resize items-center justify-center bg-border hover:bg-primary/30 transition-colors"
+        className="group flex w-1.5 cursor-col-resize items-center justify-center rounded-full glass-light hover:bg-[var(--glass-bg)] transition-colors"
         onMouseDown={handleMouseDown}
       >
         <GripVertical className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

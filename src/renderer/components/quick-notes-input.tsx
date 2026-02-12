@@ -22,12 +22,12 @@ export function QuickNotesInput({ value, onChange, isRecording }: QuickNotesInpu
   if (!isRecording) return null;
 
   return (
-    <div className="flex flex-col rounded-lg bg-card border border-border overflow-hidden">
+    <div className="flex flex-col rounded-xl glass overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors"
+        className="flex items-center justify-between px-4 py-2.5 hover:bg-[var(--glass-bg-light)] transition-colors"
       >
         <div className="flex items-center gap-2">
           <PenLine className="h-4 w-4 text-primary" />
@@ -47,7 +47,7 @@ export function QuickNotesInput({ value, onChange, isRecording }: QuickNotesInpu
 
       {/* Textarea */}
       {!isCollapsed && (
-        <div className="border-t border-border p-2">
+        <div className="border-t border-[var(--glass-border)] p-3">
           <textarea
             ref={textareaRef}
             value={value}

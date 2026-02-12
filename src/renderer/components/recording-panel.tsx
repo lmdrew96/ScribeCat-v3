@@ -326,7 +326,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   };
 
   return (
-    <div className="flex h-full flex-col p-2 gap-2">
+    <div className="flex h-full flex-col p-4 gap-3">
       {/* Live transcript - takes most space */}
       <div className="flex-[3] min-h-0 overflow-hidden">
         <LiveTranscript isRecording={isRecording} segments={segments} />
@@ -352,7 +352,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       <AudioWaveform isActive={isRecording && !isPaused} audioLevel={audioLevel} />
 
       {/* Recording controls - compact bottom bar */}
-      <div className="flex items-center gap-3 rounded-lg bg-card p-2">
+      <div className="flex items-center gap-4 rounded-xl glass p-3">
         {/* Device selector + Lecture type - only show when not recording */}
         {!isRecording && (
           <div className="flex-1 min-w-0 flex gap-2">
@@ -431,7 +431,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
 
       {/* Error display */}
       {transcriptionError && (
-        <div className="rounded-lg bg-destructive/10 p-2 text-xs text-destructive">
+        <div className="rounded-xl glass-light bg-destructive/10 p-3 text-xs text-destructive">
           Transcription error: {transcriptionError}
         </div>
       )}

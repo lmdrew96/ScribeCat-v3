@@ -205,7 +205,7 @@ export function EditorToolbar({
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5 shrink-0">
+      <div className="flex items-center gap-1 rounded-lg glass-light p-1 shrink-0">
         {/* Basic formatting */}
         <Button
           variant="ghost"
@@ -247,7 +247,7 @@ export function EditorToolbar({
           <Strikethrough className="h-3 w-3" />
         </Button>
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Headings */}
         <Button
@@ -278,7 +278,7 @@ export function EditorToolbar({
           <Heading3 className="h-3 w-3" />
         </Button>
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Lists & Blockquote */}
         <Button
@@ -309,7 +309,7 @@ export function EditorToolbar({
           <Quote className="h-3 w-3" />
         </Button>
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Text Alignment */}
         <Button
@@ -378,7 +378,7 @@ export function EditorToolbar({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5 shrink-0">
+      <div className="flex items-center gap-1 rounded-lg glass-light p-1 shrink-0">
         {/* Highlighter Colors */}
         {highlightColors.map((color) => (
           <Button
@@ -394,7 +394,7 @@ export function EditorToolbar({
           </Button>
         ))}
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Table, Link, Code, Image, TextBox */}
         <Button
@@ -500,7 +500,7 @@ export function EditorToolbar({
           <Code2 className="h-3 w-3" />
         </Button>
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Superscript & Subscript */}
         <Button
@@ -524,7 +524,7 @@ export function EditorToolbar({
           <SubscriptIcon className="h-3 w-3" />
         </Button>
 
-        <div className="mx-0.5 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
 
         {/* Undo & Redo */}
         <Button

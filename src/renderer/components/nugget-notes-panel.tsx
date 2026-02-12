@@ -34,12 +34,12 @@ export function NuggetNotesPanel({
   };
 
   return (
-    <div className="flex flex-col rounded-lg bg-card border border-border overflow-hidden">
+    <div className="flex flex-col rounded-xl glass overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors"
+        className="flex items-center justify-between px-4 py-2.5 hover:bg-[var(--glass-bg-light)] transition-colors"
       >
         <div className="flex items-center gap-2">
           <Cat className="h-4 w-4 text-primary" />
@@ -63,7 +63,7 @@ export function NuggetNotesPanel({
 
       {/* Content */}
       {!isCollapsed && (
-        <div className="border-t border-border">
+        <div className="border-t border-[var(--glass-border)]">
           {notes.length === 0 ? (
             <EmptyState isRecording={isRecording} isEnabled={isEnabled} />
           ) : (
@@ -139,7 +139,7 @@ function NoteBubble({
   formatTime: (seconds: number) => string;
 }) {
   return (
-    <div className="group flex items-start gap-2 rounded-md bg-muted/50 hover:bg-muted px-2.5 py-2 transition-colors">
+    <div className="group flex items-start gap-3 rounded-lg glass-light hover:bg-[var(--glass-bg)] px-3 py-2.5 transition-all">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-foreground leading-snug">{note.text}</p>
         <p className="text-xs text-muted-foreground mt-0.5">@ {formatTime(note.recordingTime)}</p>

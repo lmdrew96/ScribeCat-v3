@@ -142,12 +142,12 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
         />
       </div>
 
-      <ScrollArea className="rounded border border-border">
+      <ScrollArea className="rounded-lg border border-[var(--glass-border)]">
         <svg
           width="100%"
           height={Math.min(totalHeight, 250)}
           viewBox={`0 0 ${totalWidth} ${totalHeight}`}
-          className="bg-background"
+          className="bg-transparent"
           role="img"
           aria-label="Concept map showing relationships between lecture topics"
         >

@@ -166,7 +166,7 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
   );
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3">
+    <div className="flex flex-col gap-3 rounded-xl glass p-3">
       <div className="flex items-center gap-2">
         <FileAudio className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium text-foreground">Upload Audio</span>

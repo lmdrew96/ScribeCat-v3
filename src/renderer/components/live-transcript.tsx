@@ -20,7 +20,7 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
 
   if (!isRecording && segments.length === 0) {
     return (
-      <div className="flex h-full flex-col rounded-lg bg-[var(--transcript-bg)] p-2">
+      <div className="flex h-full flex-col rounded-xl glass p-3">
         <h3 className="mb-1 text-xs font-medium text-muted-foreground">Live Transcript</h3>
         <div className="flex flex-1 items-center justify-center">
           <p className="text-xs text-muted-foreground">Hit record to start transcribing</p>
@@ -30,7 +30,7 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg bg-[var(--transcript-bg)] p-2">
+    <div className="flex h-full flex-col rounded-xl glass p-3">
       <h3 className="mb-1 text-xs font-medium text-muted-foreground">
         Live Transcript
         {isRecording && (

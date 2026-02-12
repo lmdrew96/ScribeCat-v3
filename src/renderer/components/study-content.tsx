@@ -145,7 +145,7 @@ export function StudyContent({ recording }: StudyContentProps) {
 
       {/* Audio playback controls */}
       {recording.audioUrl && (
-        <div className="mb-3 rounded-lg bg-card p-2 space-y-2">
+        <div className="mb-4 rounded-xl glass p-3 space-y-3">
           <AudioWaveform isActive={isPlaying} audioLevel={audioLevel} />
 
           <div className="flex items-center gap-2">
@@ -171,19 +171,19 @@ export function StudyContent({ recording }: StudyContentProps) {
       )}
 
       <Tabs defaultValue="transcript" className="flex-1 min-h-0">
-        <TabsList className="mb-2 bg-secondary/50 h-7">
-          <TabsTrigger value="transcript" className="gap-1 text-xs h-6 px-2">
+        <TabsList className="mb-3 h-8">
+          <TabsTrigger value="transcript" className="gap-1.5 text-xs h-7 px-3">
             <Mic className="h-3 w-3" />
             Transcript
           </TabsTrigger>
-          <TabsTrigger value="notes" className="gap-1 text-xs h-6 px-2">
+          <TabsTrigger value="notes" className="gap-1.5 text-xs h-7 px-3">
             <FileText className="h-3 w-3" />
             Notes
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
-          <ScrollArea className="h-full rounded-lg bg-card p-3">
+          <ScrollArea className="h-full rounded-xl glass p-4">
             {recording.transcriptSegments && recording.transcriptSegments.length > 0 ? (
               <div className="space-y-2">
                 {recording.transcriptSegments
@@ -213,7 +213,7 @@ export function StudyContent({ recording }: StudyContentProps) {
         </TabsContent>
 
         <TabsContent value="notes" className="h-[calc(100%-2rem)] mt-0">
-          <ScrollArea className="h-full rounded-lg bg-card p-3">
+          <ScrollArea className="h-full rounded-xl glass p-4">
             {recording.notes ? (
               <div
                 ref={notesContainerRef}

@@ -52,7 +52,7 @@ export function Eli5Tool({ sessionId }: Eli5ToolProps) {
             <Card key={item.concept} className="overflow-hidden">
               <button
                 type="button"
-                className="flex items-center gap-2 w-full p-2.5 text-left hover:bg-secondary/30 transition-colors"
+                className="flex items-center gap-2 w-full p-2.5 text-left hover:bg-[var(--glass-bg-light)] transition-colors"
                 onClick={() => setExpandedIndex(isExpanded ? null : i)}
               >
                 {isExpanded ? (
@@ -69,13 +69,13 @@ export function Eli5Tool({ sessionId }: Eli5ToolProps) {
                   <p className="text-sm text-foreground/90 leading-relaxed">{item.explanation}</p>
 
                   {/* Analogy */}
-                  <div className="flex items-start gap-2 rounded-md bg-primary/5 p-2">
+                  <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
                     <p className="text-xs text-foreground/80 leading-relaxed">{item.analogy}</p>
                   </div>
 
                   {/* Real-world example */}
-                  <div className="flex items-start gap-2 rounded-md bg-muted p-2">
+                  <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       {item.realWorldExample}

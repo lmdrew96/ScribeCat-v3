@@ -211,7 +211,7 @@ export function QuizTool({ sessionId }: QuizToolProps) {
 
         {/* Explanation */}
         {state === 'review' && (
-          <div className="mt-2 pt-2 border-t border-border">
+          <div className="mt-2 pt-2 border-t border-[var(--glass-border)]">
             <p className="text-[10px] text-muted-foreground">{question.explanation}</p>
             <div className="flex justify-between items-center mt-1.5">
               <span className="text-[10px] text-muted-foreground">{question.topic}</span>

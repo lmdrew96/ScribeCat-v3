@@ -59,7 +59,7 @@ export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
             <Card key={concept.term} className="overflow-hidden">
               <button
                 type="button"
-                className="flex items-center gap-2 w-full p-2 text-left hover:bg-secondary/30 transition-colors"
+                className="flex items-center gap-2 w-full p-2 text-left hover:bg-[var(--glass-bg-light)] transition-colors"
                 onClick={() => setExpandedIndex(isExpanded ? null : i)}
               >
                 <span
@@ -81,7 +81,7 @@ export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
                       {concept.relatedTerms.map((term) => (
                         <span
                           key={term}
-                          className="inline-flex px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground"
+                          className="inline-flex px-1.5 py-0.5 rounded glass-light text-[10px] text-muted-foreground"
                         >
                           {term}
                         </span>

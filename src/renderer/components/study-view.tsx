@@ -80,11 +80,11 @@ export function StudyView() {
   }));
 
   return (
-    <div className="flex h-full relative">
+    <div className="flex h-full relative gap-3 p-3">
       {/* Mobile backdrop */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/40"
+          className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
           onKeyDown={() => {}}
           role="presentation"
@@ -95,8 +95,8 @@ export function StudyView() {
       {sidebarOpen && (
         <div
           className={cn(
-            'w-56 border-r border-border shrink-0',
-            isMobile && 'fixed left-0 top-16 bottom-0 z-30 bg-sidebar',
+            'w-60 rounded-xl glass shrink-0 overflow-hidden',
+            isMobile && 'fixed left-0 top-[4.5rem] bottom-0 z-30 glass-heavy rounded-l-none',
           )}
         >
           <RecordingsSidebar
@@ -109,7 +109,7 @@ export function StudyView() {
       )}
 
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 rounded-xl glass">
         {/* Collapse toggle when sidebar is hidden */}
         {!sidebarOpen && (
           <Button
@@ -124,10 +124,10 @@ export function StudyView() {
 
         {selectedRecording ? (
           <>
-            <div className="flex-1 overflow-auto p-3">
+            <div className="flex-1 overflow-auto p-5">
               <StudyContent recording={selectedRecording} />
             </div>
-            <div className="border-t border-border">
+            <div className="border-t border-[var(--glass-border)]">
               <StudyTools sessionId={selectedRecording.id as Id<'sessions'>} />
             </div>
           </>

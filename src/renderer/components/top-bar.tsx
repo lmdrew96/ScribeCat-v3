@@ -15,7 +15,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
 
   return (
     <>
-      <header className="relative flex h-16 items-center justify-between border-b border-border bg-card px-2 sm:px-4">
+      <header className="glass relative z-40 flex h-[4.5rem] items-center justify-between border-b border-[var(--glass-border)] px-3 sm:px-6">
         {/* Left side - Logo */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export function TopBar({ currentView, onViewChange }: TopBarProps) {
         {/* Right side - Streak + Settings */}
         <div className="flex items-center gap-2">
           {stats && stats.streak > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-1 text-sm font-medium text-orange-500">
+            <div className="glass-light flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-orange-500">
               <Flame className="h-3.5 w-3.5" />
               <span>{stats.streak}</span>
             </div>

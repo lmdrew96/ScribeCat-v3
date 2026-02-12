@@ -168,14 +168,14 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[600px] max-h-[90vh] w-[800px] max-w-[95vw] flex-col gap-0 overflow-hidden p-0 bg-card border-border">
-        <DialogHeader className="border-b border-border px-4 py-3">
+      <DialogContent className="flex h-[600px] max-h-[90vh] w-[800px] max-w-[95vw] flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-[var(--glass-border)] px-4 py-3">
           <DialogTitle className="text-base font-semibold text-foreground">Settings</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
           {/* Sidebar — horizontal strip on mobile, vertical sidebar on desktop */}
-          <nav className="flex w-full md:w-48 flex-row md:flex-col gap-1 border-b md:border-b-0 md:border-r border-border bg-background/50 p-2 overflow-x-auto md:overflow-x-visible shrink-0">
+          <nav className="flex w-full md:w-48 flex-row md:flex-col gap-1 border-b md:border-b-0 md:border-r border-[var(--glass-border)] glass-light p-2 overflow-x-auto md:overflow-x-visible shrink-0">
             {categories.map((category) => {
               const Icon = category.icon;
               return (
@@ -186,8 +186,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   className={cn(
                     'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors whitespace-nowrap',
                     activeCategory === category.id
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                      ? 'bg-[var(--glass-bg)] text-accent-foreground border border-[var(--glass-border-strong)] shadow-[0_0_12px_var(--glass-glow)]'
+                      : 'text-muted-foreground hover:bg-[var(--glass-bg-light)] hover:text-foreground',
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -198,7 +198,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </nav>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
             {/* Appearance */}
             {activeCategory === 'appearance' && (
               <div className="space-y-4">
@@ -213,8 +213,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         className={cn(
                           'relative flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
                           theme === themeOption.id
-                            ? 'border-accent bg-accent/10 ring-1 ring-accent'
-                            : 'border-border bg-background hover:border-muted-foreground/50',
+                            ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[0_0_12px_var(--glass-glow)]'
+                            : 'border-[var(--glass-border)] glass-light hover:bg-[var(--glass-bg)]',
                         )}
                       >
                         {theme === themeOption.id && (
@@ -267,7 +267,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     >
                       {isTesting ? 'Listening...' : 'Test Mic'}
                     </Button>
-                    <div className="flex h-6 flex-1 items-center gap-0.5 rounded bg-background px-2">
+                    <div className="flex h-6 flex-1 items-center gap-0.5 rounded glass-light px-2">
                       {Array.from({ length: 20 }).map((_, i) => {
                         const barKey = `mic-level-${String(i)}`;
                         return (
@@ -363,7 +363,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                 {/* Stats */}
                 {stats && (
-                  <div className="border-t border-border pt-4 space-y-3">
+                  <div className="border-t border-[var(--glass-border)] pt-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Flame className="h-4 w-4 text-orange-500" />
                       <span className="text-sm font-medium text-foreground">
@@ -412,7 +412,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 )}
 
                 {/* Achievements */}
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-[var(--glass-border)] pt-4">
                   <h3 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
                     <Award className="h-4 w-4" />
                     Achievements
@@ -426,8 +426,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           className={cn(
                             'flex items-center gap-2 rounded-md border p-2 text-xs',
                             unlocked
-                              ? 'border-accent/50 bg-accent/10'
-                              : 'border-border bg-background opacity-50',
+                              ? 'border-[var(--glass-border-strong)] glass-light shadow-[0_0_8px_var(--glass-glow)]'
+                              : 'border-[var(--glass-border)] glass-light opacity-50',
                           )}
                         >
                           {unlocked ? (
@@ -466,7 +466,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-border">
+                <div className="pt-4 border-t border-[var(--glass-border)]">
                   <Button variant="destructive" size="sm" onClick={() => signOut()}>
                     Sign Out
                   </Button>
@@ -528,7 +528,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-border">
+                <div className="pt-4 border-t border-[var(--glass-border)]">
                   <p className="text-xs text-muted-foreground">
                     Made with love for distracted minds everywhere.
                   </p>

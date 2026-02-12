@@ -32,10 +32,10 @@ export function StudyTools({ sessionId }: StudyToolsProps) {
   const [activeTab, setActiveTab] = useState<StudyToolType>('summary');
 
   return (
-    <div className="bg-card p-2">
+    <div className="glass p-3 rounded-t-xl">
       {/* Tab bar — horizontally scrollable */}
       <ScrollArea className="w-full">
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-2 mb-3">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -43,7 +43,7 @@ export function StudyTools({ sessionId }: StudyToolsProps) {
                 key={tab.type}
                 variant={activeTab === tab.type ? 'secondary' : 'ghost'}
                 size="sm"
-                className="gap-1 h-6 px-2 text-xs shrink-0"
+                className="gap-1.5 h-7 px-3 text-xs shrink-0"
                 onClick={() => setActiveTab(tab.type)}
               >
                 <Icon className="h-3 w-3" />
@@ -56,7 +56,7 @@ export function StudyTools({ sessionId }: StudyToolsProps) {
       </ScrollArea>
 
       {/* Tool content */}
-      <div className="min-h-[100px]">
+      <div className="min-h-[120px]">
         {activeTab === 'summary' && <SummaryTool sessionId={sessionId} />}
         {activeTab === 'keyConcepts' && <KeyConceptsTool sessionId={sessionId} />}
         {activeTab === 'flashcards' && <FlashcardTool sessionId={sessionId} />}
