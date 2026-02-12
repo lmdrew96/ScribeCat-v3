@@ -13,9 +13,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const [audioLevel, setAudioLevel] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Stabilize callbacks so load/play don't depend on options identity
@@ -23,18 +20,20 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   optionsRef.current = options;
 
   /**
-   * Update audio level visualization during playback
+   * Simulate audio level from playback state for waveform visualization.
+   * Real frequency analysis via createMediaElementSource requires CORS
+   * headers that Convex storage URLs don't provide, so we simulate instead.
    */
-  const updateAudioLevel = useCallback(() => {
-    if (!analyserRef.current) return;
-
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(dataArray);
-
-    const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-    setAudioLevel(average / 255); // Normalize to 0-1
-
-    animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+  const simulateAudioLevel = useCallback(() => {
+    if (!audioRef.current || audioRef.current.paused) {
+      setAudioLevel(0);
+      return;
+    }
+    // Generate a smooth pseudo-random level between 0.3–0.8
+    const t = performance.now() / 200;
+    const level = 0.45 + 0.25 * Math.sin(t) + 0.1 * Math.sin(t * 2.7);
+    setAudioLevel(level);
+    animationFrameRef.current = requestAnimationFrame(simulateAudioLevel);
   }, []);
 
   /**
@@ -55,12 +54,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
         audioRef.current.pause();
         audioRef.current = null;
       }
-      if (audioContextRef.current) {
-        await audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-      sourceRef.current = null;
-      analyserRef.current = null;
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
@@ -96,21 +89,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       });
 
       audioRef.current = audio;
-
-      // Set up audio context for visualization
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-
-      const source = audioContext.createMediaElementSource(audio);
-      sourceRef.current = source;
-
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyserRef.current = analyser;
-
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
-
       await audio.load();
     } catch (error) {
       console.error('Error loading audio:', error);
@@ -125,18 +103,14 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     if (!audioRef.current) return;
 
     try {
-      // Resume AudioContext if suspended (browser autoplay policy)
-      if (audioContextRef.current?.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
       await audioRef.current.play();
       setIsPlaying(true);
-      updateAudioLevel();
+      simulateAudioLevel();
     } catch (error) {
       console.error('Error playing audio:', error);
       optionsRef.current?.onError?.(error as Error);
     }
-  }, [updateAudioLevel]);
+  }, [simulateAudioLevel]);
 
   /**
    * Pause audio
@@ -184,11 +158,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
-      }
-
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
       }
 
       if (animationFrameRef.current) {
