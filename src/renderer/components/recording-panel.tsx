@@ -355,24 +355,20 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       <div className="flex items-center gap-4 rounded-xl glass p-3">
         {/* Device selector + Lecture type - only show when not recording */}
         {!isRecording && (
-          <div className="flex-1 min-w-0 flex flex-wrap gap-2">
-            <div className="flex-1 min-w-[120px]">
-              <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Select microphone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {devices.map((device) => (
-                    <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
-                      {device.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-32 shrink-0">
-              <LectureTypeSelect value={lectureType} onChange={setLectureType} />
-            </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select microphone" />
+              </SelectTrigger>
+              <SelectContent>
+                {devices.map((device) => (
+                  <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
+                    {device.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <LectureTypeSelect value={lectureType} onChange={setLectureType} />
           </div>
         )}
 
