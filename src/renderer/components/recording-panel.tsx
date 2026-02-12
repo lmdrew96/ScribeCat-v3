@@ -15,7 +15,7 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 
 import { useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useBreakReminder, useLogStudyTime } from '@/hooks/use-productivity';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSession, useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
 import { useMutation } from 'convex/react';
 import { Mic, Pause, Play, Square } from 'lucide-react';
@@ -34,6 +34,9 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   const { createSession, updateSession } = useSessions();
   const logStudyTime = useLogStudyTime();
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
+
+  // Reactively get session data (for user's notes in the editor)
+  const session = useSession(currentSessionId);
 
   // Lecture type state
   const [lectureType, setLectureType] = useState<LectureType>('general');
@@ -182,8 +185,13 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       // Check again if still active before async operation
       if (!nuggetEffectActiveRef.current) return;
 
-      // Process the transcript chunk with lecture type context
-      await nuggetNotes.processTranscriptChunk(fullTranscript, recordingTime, lectureType);
+      // Process the transcript chunk with lecture type context and user's notes
+      await nuggetNotes.processTranscriptChunk(
+        fullTranscript,
+        recordingTime,
+        lectureType,
+        session?.notesPlainText || undefined,
+      );
     };
 
     processForNugget();
@@ -191,7 +199,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     return () => {
       nuggetEffectActiveRef.current = false;
     };
-  }, [segments, recordingTime, nuggetNotes, lectureType]);
+  }, [segments, recordingTime, nuggetNotes, lectureType, session?.notesPlainText]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

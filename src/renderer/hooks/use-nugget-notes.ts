@@ -63,6 +63,7 @@ export interface UseNuggetNotesReturn {
     transcript: string,
     durationSeconds: number,
     lectureType?: LectureType,
+    userNotes?: string,
   ) => Promise<void>;
   clearNotes: () => void;
 }
@@ -106,7 +107,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
   // Call Haiku for context extraction
   const updateContext = useCallback(
-    async (transcript: string, lectureType?: LectureType): Promise<LectureContext> => {
+    async (
+      transcript: string,
+      lectureType?: LectureType,
+      userNotes?: string,
+    ): Promise<LectureContext> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return context;
 
@@ -123,6 +128,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             transcript,
             previousContext: context,
             lectureType: lectureType || 'general',
+            userNotes,
           }),
           signal: controller.signal,
         });
@@ -156,6 +162,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       currentContext: LectureContext,
       recordingTimeSeconds: number,
       lectureType?: LectureType,
+      userNotes?: string,
     ): Promise<NuggetNote[]> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return [];
@@ -174,6 +181,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             context: currentContext,
             recordingTimeSeconds,
             lectureType: lectureType || 'general',
+            userNotes,
           }),
           signal: controller.signal,
         });
@@ -245,6 +253,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       transcript: string,
       durationSeconds: number,
       lectureType?: LectureType,
+      userNotes?: string,
     ): Promise<void> => {
       if (!isEnabled || !isRecording) return;
 
@@ -268,13 +277,19 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
       // Check if we should update context (Haiku - every ~2 min)
       if (shouldUpdateContext(wordCount)) {
-        currentContext = await updateContext(transcript, lectureType);
+        currentContext = await updateContext(transcript, lectureType, userNotes);
       }
 
       // Check if we should generate notes (Haiku - every ~45s)
       if (shouldGenerateNotes(wordCount)) {
         const recentTranscript = getRecentTranscript();
-        await generateNotes(recentTranscript, currentContext, durationSeconds, lectureType);
+        await generateNotes(
+          recentTranscript,
+          currentContext,
+          durationSeconds,
+          lectureType,
+          userNotes,
+        );
       }
     },
     [

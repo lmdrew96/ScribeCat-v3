@@ -85,8 +85,16 @@ const CONTEXT_HINTS: Record<LectureType, string> = {
 
 // --- Note generation prompts ---
 
-export function getNoteGenerationPrompt(transcript: string, lectureType: LectureType): string {
+export function getNoteGenerationPrompt(
+  transcript: string,
+  lectureType: LectureType,
+  userNotes?: string,
+): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
+
+  const userNotesSection = userNotes?.trim()
+    ? `\nYOUR NOTES (taken during the lecture):\n${userNotes}\n\nUse these notes as context. Expand on what the student wrote, fill in gaps, and add details they missed. Do NOT simply repeat their notes — complement them.\n`
+    : '';
 
   return `You are an expert note-taking assistant. Given the following lecture transcript, create comprehensive, well-structured notes in markdown format.
 
@@ -97,7 +105,7 @@ FORMATTING GUIDELINES:
 2. Use **bold** for key terms and concepts
 3. Use *italics* for emphasis
 4. Keep notes concise but comprehensive
-
+${userNotesSection}
 TRANSCRIPT:
 ${transcript}
 
@@ -107,11 +115,16 @@ Generate well-structured markdown notes from this transcript.`;
 export function getNoteGenerationPromptWithCitations(
   segments: TranscriptSegment[],
   lectureType: LectureType,
+  userNotes?: string,
 ): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
 
   const finalSegments = segments.filter((s) => s.isFinal);
   const timestampedTranscript = finalSegments.map((s) => `[${s.timestamp}] ${s.text}`).join('\n');
+
+  const userNotesSection = userNotes?.trim()
+    ? `\nYOUR NOTES (taken during the lecture):\n${userNotes}\n\nUse these notes as context. Expand on what the student wrote, fill in gaps, and add details they missed. Do NOT simply repeat their notes — complement them.\n`
+    : '';
 
   return `You are an expert note-taking assistant. Given the following timestamped lecture transcript, create comprehensive, well-structured notes in markdown format.
 
@@ -128,7 +141,7 @@ Each transcript line is prefixed with a timestamp in milliseconds [XXXXX].
 For each key note or bullet point, include a citation reference to the most relevant transcript timestamp.
 Format citations as [cite:XXXXX] at the end of the line, where XXXXX is the timestamp number.
 Only use timestamps that appear in the transcript segments below.
-
+${userNotesSection}
 TIMESTAMPED TRANSCRIPT:
 ${timestampedTranscript}
 
@@ -141,17 +154,22 @@ export function getNuggetNotePrompt(
   transcript: string,
   context: LectureContext | undefined,
   lectureType: LectureType,
+  userNotes?: string,
 ): string {
   const style = NUGGET_STYLE[lectureType] || NUGGET_STYLE.general;
   const contextStr = context?.currentTopic
     ? `Topic: "${context.currentTopic}". Themes: ${context.themes?.join(', ') || 'general'}.`
     : 'Lecture in progress.';
 
+  const userNotesSection = userNotes?.trim()
+    ? `\nSTUDENT'S NOTES SO FAR:\n${userNotes.slice(-300)}\n\nAvoid duplicating points already in the student's notes. Focus on new information they may have missed.\n`
+    : '';
+
   return `Create 1-3 concise bullet notes from this lecture segment.
 ${style}
 
 CONTEXT: ${contextStr}
-
+${userNotesSection}
 TRANSCRIPT:
 "${transcript.slice(-500)}"
 
@@ -164,18 +182,23 @@ export function getContextExtractionPrompt(
   transcript: string,
   previousContext: LectureContext | undefined,
   lectureType: LectureType,
+  userNotes?: string,
 ): string {
   const hint = CONTEXT_HINTS[lectureType] || CONTEXT_HINTS.general;
   const prevContext = previousContext
     ? JSON.stringify(previousContext)
     : JSON.stringify({ themes: [], currentTopic: '', definitions: [], structureHint: '' });
 
+  const userNotesSection = userNotes?.trim()
+    ? `\nSTUDENT'S NOTES:\n${userNotes.slice(-500)}\n\nUse these as additional signal for understanding the lecture topic and structure.\n`
+    : '';
+
   return `Analyze this lecture transcript and extract structured context. Be very concise.
 ${hint}
 
 PREVIOUS CONTEXT:
 ${prevContext}
-
+${userNotesSection}
 RECENT TRANSCRIPT:
 "${transcript.slice(-1500)}"
 

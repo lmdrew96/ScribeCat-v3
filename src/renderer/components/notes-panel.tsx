@@ -221,6 +221,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
         transcriptSegments: session.transcriptSegments,
         sessionId: sessionId as string,
         lectureType: session.lectureType,
+        existingNotes: editor?.getText() || undefined,
       });
       console.log('Response data:', data);
 

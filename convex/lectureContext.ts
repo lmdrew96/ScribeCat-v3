@@ -31,7 +31,7 @@ const EMPTY_CONTEXT: LectureContext = {
 };
 
 export const extractLectureContext = httpAction(async (_ctx, request) => {
-  const { transcript, previousContext, lectureType } = await request.json();
+  const { transcript, previousContext, lectureType, userNotes } = await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -47,6 +47,7 @@ export const extractLectureContext = httpAction(async (_ctx, request) => {
     transcript,
     previousContext,
     (lectureType || 'general') as LectureType,
+    userNotes,
   );
 
   try {
