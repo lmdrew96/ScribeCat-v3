@@ -21,6 +21,8 @@ import type * as nuggetNotes from "../nuggetNotes.js";
 import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
 import type * as sessions from "../sessions.js";
+import type * as studyToolPrompts from "../studyToolPrompts.js";
+import type * as studyTools from "../studyTools.js";
 import type * as transcription from "../transcription.js";
 import type * as uploadImage from "../uploadImage.js";
 
@@ -44,6 +46,8 @@ declare const fullApi: ApiFromModules<{
   productivity: typeof productivity;
   prompts: typeof prompts;
   sessions: typeof sessions;
+  studyToolPrompts: typeof studyToolPrompts;
+  studyTools: typeof studyTools;
   transcription: typeof transcription;
   uploadImage: typeof uploadImage;
 }>;

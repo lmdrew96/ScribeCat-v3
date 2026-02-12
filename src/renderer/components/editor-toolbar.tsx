@@ -204,7 +204,7 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex items-center gap-1 flex-nowrap overflow-x-auto">
+    <div className="flex items-center gap-1 flex-wrap">
       <div className="flex items-center gap-0.5 rounded-md bg-secondary/50 p-0.5 shrink-0">
         {/* Basic formatting */}
         <Button
