@@ -85,17 +85,10 @@ const CONTEXT_HINTS: Record<LectureType, string> = {
 
 // --- Note generation prompts ---
 
-export function getNoteGenerationPrompt(
-  transcript: string,
-  lectureType: LectureType,
-  quickNotes?: string,
-): string {
+export function getNoteGenerationPrompt(transcript: string, lectureType: LectureType): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
-  const quickNotesSection = quickNotes?.trim()
-    ? `\nSTUDENT'S OWN NOTES (pay special attention — the student highlighted these as important):\n${quickNotes}\n`
-    : '';
 
-  return `You are an expert note-taking assistant. Given the following lecture transcript${quickNotes?.trim() ? " and the student's own notes" : ''}, create comprehensive, well-structured notes in markdown format.
+  return `You are an expert note-taking assistant. Given the following lecture transcript, create comprehensive, well-structured notes in markdown format.
 
 ${style}
 
@@ -104,7 +97,7 @@ FORMATTING GUIDELINES:
 2. Use **bold** for key terms and concepts
 3. Use *italics* for emphasis
 4. Keep notes concise but comprehensive
-${quickNotesSection}
+
 TRANSCRIPT:
 ${transcript}
 
@@ -114,17 +107,13 @@ Generate well-structured markdown notes from this transcript.`;
 export function getNoteGenerationPromptWithCitations(
   segments: TranscriptSegment[],
   lectureType: LectureType,
-  quickNotes?: string,
 ): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
-  const quickNotesSection = quickNotes?.trim()
-    ? `\nSTUDENT'S OWN NOTES (pay special attention — the student highlighted these as important):\n${quickNotes}\n`
-    : '';
 
   const finalSegments = segments.filter((s) => s.isFinal);
   const timestampedTranscript = finalSegments.map((s) => `[${s.timestamp}] ${s.text}`).join('\n');
 
-  return `You are an expert note-taking assistant. Given the following timestamped lecture transcript${quickNotes?.trim() ? " and the student's own notes" : ''}, create comprehensive, well-structured notes in markdown format.
+  return `You are an expert note-taking assistant. Given the following timestamped lecture transcript, create comprehensive, well-structured notes in markdown format.
 
 ${style}
 
@@ -139,7 +128,7 @@ Each transcript line is prefixed with a timestamp in milliseconds [XXXXX].
 For each key note or bullet point, include a citation reference to the most relevant transcript timestamp.
 Format citations as [cite:XXXXX] at the end of the line, where XXXXX is the timestamp number.
 Only use timestamps that appear in the transcript segments below.
-${quickNotesSection}
+
 TIMESTAMPED TRANSCRIPT:
 ${timestampedTranscript}
 
@@ -152,18 +141,16 @@ export function getNuggetNotePrompt(
   transcript: string,
   context: LectureContext | undefined,
   lectureType: LectureType,
-  quickNotes?: string,
 ): string {
   const style = NUGGET_STYLE[lectureType] || NUGGET_STYLE.general;
   const contextStr = context?.currentTopic
     ? `Topic: "${context.currentTopic}". Themes: ${context.themes?.join(', ') || 'general'}.`
     : 'Lecture in progress.';
-  const quickNotesHint = quickNotes?.trim() ? `\nSTUDENT NOTES: "${quickNotes.slice(-200)}"` : '';
 
   return `Create 1-3 concise bullet notes from this lecture segment.
 ${style}
 
-CONTEXT: ${contextStr}${quickNotesHint}
+CONTEXT: ${contextStr}
 
 TRANSCRIPT:
 "${transcript.slice(-500)}"

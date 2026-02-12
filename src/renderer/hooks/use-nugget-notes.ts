@@ -1,7 +1,7 @@
 /**
  * useNuggetNotes - React hook for real-time AI note generation
  * Orchestrates the two-model pipeline (Sonnet for context, Haiku for notes)
- * Now lecture-type-aware and can incorporate student's quick notes.
+ * Lecture-type-aware for context-specific note generation.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -62,7 +62,6 @@ export interface UseNuggetNotesReturn {
     transcript: string,
     durationSeconds: number,
     lectureType?: LectureType,
-    quickNotes?: string,
   ) => Promise<void>;
   clearNotes: () => void;
 }
@@ -155,7 +154,6 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       currentContext: LectureContext,
       recordingTimeSeconds: number,
       lectureType?: LectureType,
-      quickNotes?: string,
     ): Promise<NuggetNote[]> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return [];
@@ -174,7 +172,6 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             context: currentContext,
             recordingTimeSeconds,
             lectureType: lectureType || 'general',
-            quickNotes: quickNotes || '',
           }),
           signal: controller.signal,
         });
@@ -246,7 +243,6 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       transcript: string,
       durationSeconds: number,
       lectureType?: LectureType,
-      quickNotes?: string,
     ): Promise<void> => {
       if (!isEnabled || !isRecording) return;
 
@@ -276,13 +272,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       // Check if we should generate notes (Haiku - every ~45s)
       if (shouldGenerateNotes(wordCount)) {
         const recentTranscript = getRecentTranscript();
-        await generateNotes(
-          recentTranscript,
-          currentContext,
-          durationSeconds,
-          lectureType,
-          quickNotes,
-        );
+        await generateNotes(recentTranscript, currentContext, durationSeconds, lectureType);
       }
     },
     [

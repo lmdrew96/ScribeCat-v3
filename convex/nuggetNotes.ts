@@ -2,7 +2,7 @@
  * NuggetNotes - Haiku-powered note generation
  * Called every ~45 seconds during recording to generate 1-3 bullet notes.
  * Uses context from Sonnet for better understanding.
- * Now lecture-type-aware and can incorporate student's quick notes.
+ * Lecture-type-aware for context-specific note generation.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -31,8 +31,7 @@ export interface NuggetNote {
 }
 
 export const generateNuggetNotes = httpAction(async (_ctx, request) => {
-  const { transcript, context, recordingTimeSeconds, lectureType, quickNotes } =
-    await request.json();
+  const { transcript, context, recordingTimeSeconds, lectureType } = await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -48,7 +47,6 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     transcript,
     context,
     (lectureType || 'general') as LectureType,
-    quickNotes,
   );
 
   try {

@@ -2,7 +2,7 @@ import { AudioWaveform } from '@/components/audio-waveform';
 import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
-import { QuickNotesInput } from '@/components/quick-notes-input';
+
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
-import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+
 import { useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useBreakReminder, useLogStudyTime } from '@/hooks/use-productivity';
 import { useSessions } from '@/hooks/use-sessions';
@@ -35,9 +35,8 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   const logStudyTime = useLogStudyTime();
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
 
-  // Lecture type and quick notes state
+  // Lecture type state
   const [lectureType, setLectureType] = useState<LectureType>('general');
-  const [quickNotes, setQuickNotes] = useState('');
 
   // Nugget Notes hook for real-time AI note generation
   const nuggetNotes = useNuggetNotes();
@@ -132,29 +131,6 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
   const lastSavedTranscriptRef = useRef<string>('');
   const lastNuggetProcessRef = useRef<string>('');
 
-  // Debounced save for quick notes (2 second delay)
-  const saveQuickNotes = useCallback(
-    async (notes: string) => {
-      if (!currentSessionId) return;
-      try {
-        await updateSession({ id: currentSessionId, quickNotes: notes });
-      } catch (error) {
-        console.error('Error saving quick notes:', error);
-      }
-    },
-    [currentSessionId, updateSession],
-  );
-  const debouncedSaveQuickNotes = useDebouncedCallback(saveQuickNotes, 2000);
-
-  // Handle quick notes changes
-  const handleQuickNotesChange = useCallback(
-    (value: string) => {
-      setQuickNotes(value);
-      debouncedSaveQuickNotes(value);
-    },
-    [debouncedSaveQuickNotes],
-  );
-
   // Save transcript when we get new final segments (debounced by checking if content changed)
   useEffect(() => {
     const saveTranscript = async () => {
@@ -206,13 +182,8 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
       // Check again if still active before async operation
       if (!nuggetEffectActiveRef.current) return;
 
-      // Process the transcript chunk with lecture type and quick notes context
-      await nuggetNotes.processTranscriptChunk(
-        fullTranscript,
-        recordingTime,
-        lectureType,
-        quickNotes,
-      );
+      // Process the transcript chunk with lecture type context
+      await nuggetNotes.processTranscriptChunk(fullTranscript, recordingTime, lectureType);
     };
 
     processForNugget();
@@ -220,7 +191,7 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     return () => {
       nuggetEffectActiveRef.current = false;
     };
-  }, [segments, recordingTime, nuggetNotes, lectureType, quickNotes]);
+  }, [segments, recordingTime, nuggetNotes, lectureType]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -240,7 +211,6 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
 
       // Clear previous state for new recording
       resetTranscription();
-      setQuickNotes('');
       nuggetNotes.clearNotes();
       nuggetNotes.startRecording();
       lastNuggetProcessRef.current = '';
@@ -275,14 +245,13 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
     const finalTranscript = getFullTranscript();
     await nuggetNotes.stopRecording(finalTranscript);
 
-    // Update final session data including quick notes
+    // Update final session data
     if (currentSessionId) {
       await updateSession({
         id: currentSessionId,
         duration: recordingTime * 1000, // Convert to milliseconds
         transcript: getFullTranscript(),
         transcriptSegments: segments,
-        quickNotes,
       });
     }
 
@@ -339,13 +308,6 @@ export function RecordingPanel({ onSessionChange, onInsertNote }: RecordingPanel
         isEnabled={nuggetNotes.isEnabled}
         onInsertNote={handleInsertNote}
         onToggleEnabled={nuggetNotes.setEnabled}
-      />
-
-      {/* Quick Notes - user's own notes during recording */}
-      <QuickNotesInput
-        value={quickNotes}
-        onChange={handleQuickNotesChange}
-        isRecording={isRecording}
       />
 
       {/* Waveform visualizer - compact */}

@@ -23,7 +23,6 @@ export const generateNotesFromTranscript = action({
     ),
     sessionId: v.string(),
     lectureType: v.optional(v.string()),
-    quickNotes: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -37,12 +36,8 @@ export const generateNotesFromTranscript = action({
     // Use citation-aware prompt when segments are available
     const prompt =
       args.transcriptSegments && args.transcriptSegments.length > 0
-        ? getNoteGenerationPromptWithCitations(
-            args.transcriptSegments,
-            lectureType,
-            args.quickNotes,
-          )
-        : getNoteGenerationPrompt(args.transcript, lectureType, args.quickNotes);
+        ? getNoteGenerationPromptWithCitations(args.transcriptSegments, lectureType)
+        : getNoteGenerationPrompt(args.transcript, lectureType);
 
     const message = await anthropic.messages.create({
       model: AI_MODEL,

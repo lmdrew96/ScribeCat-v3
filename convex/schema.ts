@@ -9,7 +9,6 @@ export default defineSchema({
     lectureType: v.optional(v.string()),
     audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.string()),
-    quickNotes: v.optional(v.string()),
     transcriptSegments: v.optional(
       v.array(
         v.object({

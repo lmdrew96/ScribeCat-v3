@@ -74,7 +74,6 @@ export const update = mutation({
       ),
     ),
     lectureType: v.optional(v.string()),
-    quickNotes: v.optional(v.string()),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
     duration: v.optional(v.number()),
