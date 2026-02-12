@@ -18,6 +18,10 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
 
+  // Stabilize callbacks so load/play don't depend on options identity
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   /**
    * Update audio level visualization during playback
    */
@@ -34,72 +38,86 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   }, []);
 
   /**
-   * Load audio file
-   */
-  /**
    * Load audio from a URL (Convex storage URL or any audio URL)
    */
-  const load = useCallback(
-    async (audioUrl: string) => {
-      try {
-        if (!audioUrl) {
-          throw new Error('No audio URL provided');
-        }
-
-        // Create audio element directly from URL
-        const audio = new Audio();
-        audio.src = audioUrl;
-        audio.crossOrigin = 'anonymous';
-
-        // Set up event listeners
-        audio.addEventListener('loadedmetadata', () => {
-          setDuration(audio.duration);
-        });
-
-        audio.addEventListener('timeupdate', () => {
-          const time = audio.currentTime;
-          setCurrentTime(time);
-          options?.onTimeUpdate?.(time);
-        });
-
-        audio.addEventListener('ended', () => {
-          setIsPlaying(false);
-          if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-          }
-          setAudioLevel(0);
-          options?.onEnded?.();
-        });
-
-        audio.addEventListener('error', (e) => {
-          console.error('Audio playback error:', e);
-          options?.onError?.(new Error('Audio playback error'));
-        });
-
-        audioRef.current = audio;
-
-        // Set up audio context for visualization
-        const audioContext = new AudioContext();
-        audioContextRef.current = audioContext;
-
-        const source = audioContext.createMediaElementSource(audio);
-        sourceRef.current = source;
-
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        analyserRef.current = analyser;
-
-        source.connect(analyser);
-        analyser.connect(audioContext.destination);
-
-        await audio.load();
-      } catch (error) {
-        console.error('Error loading audio:', error);
-        options?.onError?.(error as Error);
+  const load = useCallback(async (audioUrl: string) => {
+    try {
+      if (!audioUrl) {
+        throw new Error('No audio URL provided');
       }
-    },
-    [options],
-  );
+
+      // Clean up previous resources
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (audioContextRef.current) {
+        await audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      sourceRef.current = null;
+      analyserRef.current = null;
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setAudioLevel(0);
+
+      // Create audio element directly from URL
+      const audio = new Audio();
+      audio.src = audioUrl;
+      audio.crossOrigin = 'anonymous';
+
+      // Set up event listeners
+      audio.addEventListener('loadedmetadata', () => {
+        setDuration(audio.duration);
+      });
+
+      audio.addEventListener('timeupdate', () => {
+        const time = audio.currentTime;
+        setCurrentTime(time);
+        optionsRef.current?.onTimeUpdate?.(time);
+      });
+
+      audio.addEventListener('ended', () => {
+        setIsPlaying(false);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        setAudioLevel(0);
+        optionsRef.current?.onEnded?.();
+      });
+
+      audio.addEventListener('error', (e) => {
+        console.error('Audio playback error:', e);
+        optionsRef.current?.onError?.(new Error('Audio playback error'));
+      });
+
+      audioRef.current = audio;
+
+      // Set up audio context for visualization
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+
+      const source = audioContext.createMediaElementSource(audio);
+      sourceRef.current = source;
+
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      await audio.load();
+    } catch (error) {
+      console.error('Error loading audio:', error);
+      optionsRef.current?.onError?.(error as Error);
+    }
+  }, []);
 
   /**
    * Play audio
@@ -108,14 +126,18 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     if (!audioRef.current) return;
 
     try {
+      // Resume AudioContext if suspended (browser autoplay policy)
+      if (audioContextRef.current?.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
       await audioRef.current.play();
       setIsPlaying(true);
       updateAudioLevel();
     } catch (error) {
       console.error('Error playing audio:', error);
-      options?.onError?.(error as Error);
+      optionsRef.current?.onError?.(error as Error);
     }
-  }, [options, updateAudioLevel]);
+  }, [updateAudioLevel]);
 
   /**
    * Pause audio

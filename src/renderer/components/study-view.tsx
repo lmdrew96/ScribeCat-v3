@@ -45,17 +45,17 @@ export function StudyView() {
   const isMobile = useIsMobile();
   const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
   const trashedSessions = useTrash();
-  const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   const handleDelete = useCallback(
     (recordingId: string) => {
       deleteSession({ id: recordingId as SessionId });
-      if (selectedRecording?.id === recordingId) {
-        setSelectedRecording(null);
+      if (selectedId === recordingId) {
+        setSelectedId(null);
       }
     },
-    [deleteSession, selectedRecording],
+    [deleteSession, selectedId],
   );
 
   const handleRestore = useCallback(
@@ -75,14 +75,14 @@ export function StudyView() {
   // Auto-close sidebar on mobile when selecting a recording
   const handleSelect = useCallback(
     (recording: Recording) => {
-      setSelectedRecording(recording);
+      setSelectedId(recording.id);
       if (isMobile) setSidebarOpen(false);
     },
     [isMobile],
   );
 
   // Resolve audio URL for the selected recording
-  const selectedSession = sessions.find((s) => s._id === selectedRecording?.id);
+  const selectedSession = sessions.find((s) => s._id === selectedId);
   const audioUrl = useQuery(
     api.audioStorage.getAudioUrl,
     selectedSession?.audioStorageId ? { storageId: selectedSession.audioStorageId } : 'skip',
@@ -101,10 +101,13 @@ export function StudyView() {
     transcript: session.transcript || '',
     notes: session.notes || '',
     audioStorageId: session.audioStorageId,
-    audioUrl: session._id === selectedRecording?.id ? audioUrl : undefined,
+    audioUrl: session._id === selectedId ? audioUrl : undefined,
     transcriptSegments: session.transcriptSegments,
     lectureType: session.lectureType,
   }));
+
+  // Derive selected recording from the live array so it always has the latest audioUrl
+  const selectedRecording = recordings.find((r) => r.id === selectedId) ?? null;
 
   const trashedRecordings: Recording[] = trashedSessions.map((session) => ({
     id: session._id,
