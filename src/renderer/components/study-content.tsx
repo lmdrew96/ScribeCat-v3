@@ -1,4 +1,3 @@
-import { AudioWaveform } from '@/components/audio-waveform';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,7 +31,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
 
-  const { isPlaying, currentTime, duration, audioLevel, load, togglePlay, seek } = useAudioPlayer({
+  const { isPlaying, currentTime, duration, load, togglePlay, seek } = useAudioPlayer({
     onTimeUpdate: (time) => {
       // Find the segment that corresponds to current playback time
       if (recording.transcriptSegments) {
@@ -146,9 +145,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
 
       {/* Audio playback controls */}
       {recording.audioUrl && (
-        <div className="mb-4 rounded-xl glass p-3 space-y-3">
-          <AudioWaveform isActive={isPlaying} audioLevel={audioLevel} />
-
+        <div className="mb-4 rounded-xl glass p-3">
           <div className="flex items-center gap-2">
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={togglePlay}>
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
