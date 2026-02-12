@@ -14,52 +14,93 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, Clock, FileAudio, MoreHorizontal, PanelLeftClose, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  FileAudio,
+  MoreHorizontal,
+  PanelLeftClose,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface RecordingsSidebarProps {
   recordings: Recording[];
+  trashedRecordings: Recording[];
   selectedId?: string;
   onSelect: (recording: Recording) => void;
   onDelete: (recordingId: string) => void;
+  onRestore: (recordingId: string) => void;
+  onPermanentDelete: (recordingId: string) => void;
   onCollapse?: () => void;
 }
 
+type ConfirmAction = {
+  type: 'delete' | 'permanent-delete';
+  recording: Recording;
+};
+
 export function RecordingsSidebar({
   recordings,
+  trashedRecordings,
   selectedId,
   onSelect,
   onDelete,
+  onRestore,
+  onPermanentDelete,
   onCollapse,
 }: RecordingsSidebarProps) {
-  const [deleteTarget, setDeleteTarget] = useState<Recording | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [viewingTrash, setViewingTrash] = useState(false);
+
+  const activeList = viewingTrash ? trashedRecordings : recordings;
 
   return (
     <>
       <div className="flex h-full flex-col p-3">
         <div className="flex items-center justify-between mb-2 px-1">
-          <h2 className="text-xs font-medium text-muted-foreground">Recordings</h2>
+          {viewingTrash ? (
+            <button
+              type="button"
+              onClick={() => setViewingTrash(false)}
+              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Trash
+            </button>
+          ) : (
+            <h2 className="text-xs font-medium text-muted-foreground">Recordings</h2>
+          )}
           {onCollapse && (
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCollapse}>
               <PanelLeftClose className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
+
         <ScrollArea className="flex-1">
           <div className="space-y-1">
-            {recordings.map((recording) => (
+            {activeList.length === 0 && (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                {viewingTrash ? 'Trash is empty' : 'No recordings yet'}
+              </p>
+            )}
+            {activeList.map((recording) => (
               <div key={recording.id} className="group relative">
                 <button
                   type="button"
-                  onClick={() => onSelect(recording)}
+                  onClick={() => !viewingTrash && onSelect(recording)}
                   className={`w-full rounded-lg p-3 text-left transition-all duration-200 ${
-                    selectedId === recording.id
+                    !viewingTrash && selectedId === recording.id
                       ? 'glass bg-[var(--glass-bg)] border border-[var(--glass-border-strong)] shadow-[0_0_12px_var(--glass-glow)]'
                       : 'hover:bg-[var(--glass-bg-light)]'
-                  }`}
+                  } ${viewingTrash ? 'opacity-60' : ''}`}
                 >
                   <div className="mb-1 flex items-center gap-1.5 pr-6">
                     <FileAudio className="h-3 w-3 text-primary shrink-0" />
@@ -93,16 +134,41 @@ export function RecordingsSidebar({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteTarget(recording);
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
+                      {viewingTrash ? (
+                        <>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRestore(recording.id);
+                            }}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Restore
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmAction({ type: 'permanent-delete', recording });
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete forever
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmAction({ type: 'delete', recording });
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -110,16 +176,42 @@ export function RecordingsSidebar({
             ))}
           </div>
         </ScrollArea>
+
+        {/* Trash toggle at bottom */}
+        {!viewingTrash && (
+          <button
+            type="button"
+            onClick={() => setViewingTrash(true)}
+            className="mt-2 flex items-center gap-1.5 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-[var(--glass-bg-light)]"
+          >
+            <Trash2 className="h-3 w-3" />
+            Trash
+            {trashedRecordings.length > 0 && (
+              <span className="ml-auto text-[10px] opacity-70">{trashedRecordings.length}</span>
+            )}
+          </button>
+        )}
       </div>
 
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      {/* Confirmation dialog for delete / permanent delete */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete recording?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmAction?.type === 'permanent-delete' ? 'Delete forever?' : 'Delete recording?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{deleteTarget?.title}&rdquo; will be moved to trash. You can restore it within
-              30 days.
+              {confirmAction?.type === 'permanent-delete' ? (
+                <>
+                  &ldquo;{confirmAction.recording.title}&rdquo; will be permanently deleted. This
+                  cannot be undone.
+                </>
+              ) : (
+                <>
+                  &ldquo;{confirmAction?.recording.title}&rdquo; will be moved to trash. You can
+                  restore it within 30 days.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -127,13 +219,16 @@ export function RecordingsSidebar({
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={() => {
-                if (deleteTarget) {
-                  onDelete(deleteTarget.id);
-                  setDeleteTarget(null);
+                if (!confirmAction) return;
+                if (confirmAction.type === 'permanent-delete') {
+                  onPermanentDelete(confirmAction.recording.id);
+                } else {
+                  onDelete(confirmAction.recording.id);
                 }
+                setConfirmAction(null);
               }}
             >
-              Delete
+              {confirmAction?.type === 'permanent-delete' ? 'Delete forever' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

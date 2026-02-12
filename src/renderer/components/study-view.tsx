@@ -5,7 +5,7 @@ import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools/index';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessions, useTrash } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
@@ -43,7 +43,8 @@ const formatDuration = (ms: number) => {
 
 export function StudyView() {
   const isMobile = useIsMobile();
-  const { sessions, deleteSession } = useSessions();
+  const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
+  const trashedSessions = useTrash();
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
@@ -55,6 +56,20 @@ export function StudyView() {
       }
     },
     [deleteSession, selectedRecording],
+  );
+
+  const handleRestore = useCallback(
+    (recordingId: string) => {
+      restoreSession({ id: recordingId as SessionId });
+    },
+    [restoreSession],
+  );
+
+  const handlePermanentDelete = useCallback(
+    (recordingId: string) => {
+      permanentDeleteSession({ id: recordingId as SessionId });
+    },
+    [permanentDeleteSession],
   );
 
   // Auto-close sidebar on mobile when selecting a recording
@@ -91,6 +106,20 @@ export function StudyView() {
     lectureType: session.lectureType,
   }));
 
+  const trashedRecordings: Recording[] = trashedSessions.map((session) => ({
+    id: session._id,
+    title: session.title,
+    date: new Date(session.createdAt).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    duration: formatDuration(session.duration),
+    transcript: session.transcript || '',
+    notes: session.notes || '',
+    lectureType: session.lectureType,
+  }));
+
   return (
     <div className="flex h-full relative gap-3 p-3">
       {/* Mobile backdrop */}
@@ -113,9 +142,12 @@ export function StudyView() {
         >
           <RecordingsSidebar
             recordings={recordings}
+            trashedRecordings={trashedRecordings}
             selectedId={selectedRecording?.id}
             onSelect={handleSelect}
             onDelete={handleDelete}
+            onRestore={handleRestore}
+            onPermanentDelete={handlePermanentDelete}
             onCollapse={() => setSidebarOpen(false)}
           />
         </div>
