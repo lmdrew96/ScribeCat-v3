@@ -69,7 +69,6 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       // Create audio element directly from URL
       const audio = new Audio();
       audio.src = audioUrl;
-      audio.crossOrigin = 'anonymous';
 
       // Set up event listeners
       audio.addEventListener('loadedmetadata', () => {

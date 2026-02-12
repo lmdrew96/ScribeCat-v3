@@ -13,26 +13,6 @@ async function requireAuth(ctx: {
   return identity.subject;
 }
 
-// ─── Achievement definitions ─────────────────────────────────
-
-export const ACHIEVEMENT_DEFINITIONS = [
-  { id: 'first-recording', name: 'First Steps', description: 'Complete your first recording' },
-  { id: '10-recordings', name: 'Getting Started', description: 'Complete 10 recordings' },
-  { id: '50-recordings', name: 'Dedicated Student', description: 'Complete 50 recordings' },
-  { id: '1-hour', name: 'Hour of Power', description: 'Study for 1 total hour' },
-  { id: '10-hours', name: 'Hitting Stride', description: 'Study for 10 total hours' },
-  { id: '50-hours', name: 'Study Machine', description: 'Study for 50 total hours' },
-  { id: '100-hours', name: 'Centurion', description: 'Study for 100 total hours' },
-  { id: '3-day-streak', name: 'On a Roll', description: 'Maintain a 3-day streak' },
-  { id: '7-day-streak', name: 'Week Warrior', description: 'Maintain a 7-day streak' },
-  { id: '14-day-streak', name: 'Fortnight Focus', description: 'Maintain a 14-day streak' },
-  { id: '30-day-streak', name: 'Unstoppable', description: 'Maintain a 30-day streak' },
-  { id: 'first-notes', name: 'Note Taker', description: 'Generate AI notes for the first time' },
-  { id: 'night-owl', name: 'Night Owl', description: 'Record a session after 10 PM' },
-  { id: 'early-bird', name: 'Early Bird', description: 'Record a session before 8 AM' },
-  { id: 'marathon', name: 'Marathon', description: 'Record a session over 1 hour long' },
-] as const;
-
 // ─── Settings ────────────────────────────────────────────────
 
 const DEFAULT_SETTINGS = {

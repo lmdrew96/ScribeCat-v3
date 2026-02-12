@@ -30,8 +30,8 @@ import {
   User,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { ACHIEVEMENT_DEFINITIONS } from '../../../convex/productivity';
 import packageJson from '../../../package.json';
+import { ACHIEVEMENT_DEFINITIONS } from '../../shared/achievements';
 
 interface SettingsModalProps {
   open: boolean;
