@@ -31,6 +31,7 @@ export interface Recording {
   audioStorageId?: string;
   transcriptSegments?: TranscriptSegment[];
   lectureType?: string;
+  nuggetNotes?: { text: string; recordingTime: number }[];
 }
 
 const formatDuration = (ms: number) => {
@@ -112,6 +113,7 @@ export function StudyView({ onSessionChange }: StudyViewProps) {
     audioUrl: session._id === selectedId ? audioUrl : undefined,
     transcriptSegments: session.transcriptSegments,
     lectureType: session.lectureType,
+    nuggetNotes: session.nuggetNotes,
   }));
 
   // Derive selected recording from the live array so it always has the latest audioUrl
@@ -129,6 +131,7 @@ export function StudyView({ onSessionChange }: StudyViewProps) {
     transcript: session.transcript || '',
     notes: session.notes || '',
     lectureType: session.lectureType,
+    nuggetNotes: session.nuggetNotes,
   }));
 
   return (

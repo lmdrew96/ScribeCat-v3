@@ -263,13 +263,17 @@ export function RecordingPanel({
     const finalTranscript = getFullTranscript();
     await nuggetNotes.stopRecording(finalTranscript);
 
-    // Update final session data
+    // Update final session data (including nugget notes)
     if (currentSessionId) {
       await updateSession({
         id: currentSessionId,
         duration: recordingTime * 1000, // Convert to milliseconds
         transcript: getFullTranscript(),
         transcriptSegments: segments,
+        nuggetNotes: nuggetNotes.notes.map((n) => ({
+          text: n.text,
+          recordingTime: n.recordingTime,
+        })),
       });
     }
 

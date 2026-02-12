@@ -76,6 +76,14 @@ export const update = mutation({
     lectureType: v.optional(v.string()),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
+    nuggetNotes: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          recordingTime: v.number(),
+        }),
+      ),
+    ),
     duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

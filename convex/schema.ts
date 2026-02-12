@@ -20,6 +20,14 @@ export default defineSchema({
     ),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
+    nuggetNotes: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          recordingTime: v.number(),
+        }),
+      ),
+    ),
     duration: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),

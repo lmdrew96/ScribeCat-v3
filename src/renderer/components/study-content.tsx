@@ -19,7 +19,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { FileText, Mic, Pause, Play } from 'lucide-react';
+import { Cat, FileText, Mic, Pause, Play } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface StudyContentProps {
@@ -178,6 +178,10 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
             <FileText className="h-3 w-3" />
             Notes
           </TabsTrigger>
+          <TabsTrigger value="nugget-notes" className="gap-1.5 text-xs h-7 px-3">
+            <Cat className="h-3 w-3" />
+            Nugget Notes
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
@@ -225,6 +229,40 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
               <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
                 No notes yet
               </p>
+            )}
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="nugget-notes" className="h-[calc(100%-2rem)] mt-0">
+          <ScrollArea className="h-full rounded-xl glass p-4">
+            {recording.nuggetNotes && recording.nuggetNotes.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {recording.nuggetNotes.map((note, index) => (
+                  <div
+                    key={`${note.recordingTime}-${index}`}
+                    className="flex items-start gap-3 rounded-lg glass-light px-3 py-2.5"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground leading-snug">{note.text}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => seek(note.recordingTime)}
+                      className="shrink-0 text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
+                    >
+                      @ {formatTime(note.recordingTime)}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Cat className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                <p className="text-sm text-muted-foreground">No Nugget notes for this session</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Nugget generates notes automatically during recording
+                </p>
+              </div>
             )}
           </ScrollArea>
         </TabsContent>
