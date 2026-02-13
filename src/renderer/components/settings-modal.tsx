@@ -520,7 +520,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   <button
                     type="button"
                     className="flex items-center gap-2 text-sm text-accent hover:underline"
-                    onClick={() => window.open('https://adhdesigns.co', '_blank')}
+                    onClick={() => window.open('https://adhdesigns.dev', '_blank')}
                   >
                     <Palette className="h-4 w-4" />
                     ADHDesigns
