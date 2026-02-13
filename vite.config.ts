@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react()],
   root: 'src/renderer',
-  base: './',
+  base: '/',
   publicDir: '../../public',
   envDir: '../../', // Load .env files from project root
   build: {

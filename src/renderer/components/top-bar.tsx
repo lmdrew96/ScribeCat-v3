@@ -1,18 +1,19 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
+import { useSessionContext } from '@/contexts/session-context';
 import { useStudyStats } from '@/hooks/use-productivity';
+import { Link, useRouterState } from '@tanstack/react-router';
 import { BookOpen, Cat, Flame, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 
-interface TopBarProps {
-  currentView: 'home' | 'study';
-  onViewChange: (view: 'home' | 'study') => void;
-  onOpenChat: () => void;
-}
-
-export function TopBar({ currentView, onViewChange, onOpenChat }: TopBarProps) {
+export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const stats = useStudyStats();
+  const { setChatOpen } = useSessionContext();
+
+  const currentPath = useRouterState({ select: (s) => s.location.pathname });
+  const isHome = currentPath === '/';
+  const isStudy = currentPath.startsWith('/study');
 
   return (
     <>
@@ -33,23 +34,17 @@ export function TopBar({ currentView, onViewChange, onOpenChat }: TopBarProps) {
 
         {/* Center - Navigation */}
         <nav className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1">
-          <Button
-            variant={currentView === 'home' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange('home')}
-            className="gap-2"
-          >
-            <Home className="h-4 w-4" />
-            <span className="hidden sm:inline">Home</span>
+          <Button variant={isHome ? 'secondary' : 'ghost'} size="sm" className="gap-2" asChild>
+            <Link to="/">
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
           </Button>
-          <Button
-            variant={currentView === 'study' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange('study')}
-            className="gap-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Study</span>
+          <Button variant={isStudy ? 'secondary' : 'ghost'} size="sm" className="gap-2" asChild>
+            <Link to="/study">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Study</span>
+            </Link>
           </Button>
         </nav>
 
@@ -65,7 +60,7 @@ export function TopBar({ currentView, onViewChange, onOpenChat }: TopBarProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-primary"
-            onClick={onOpenChat}
+            onClick={() => setChatOpen(true)}
             title="Chat with Nugget"
           >
             <Cat className="h-4 w-4" />

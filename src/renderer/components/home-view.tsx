@@ -3,8 +3,8 @@ import type React from 'react';
 import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSessionContext } from '@/contexts/session-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import type { NuggetNote } from '@/hooks/use-nugget-notes';
 import { cn } from '@/lib/utils';
 import { FileText, GripVertical, Mic } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,17 +15,8 @@ export interface NotesPanelRef {
   insertNote: (noteText: string) => void;
 }
 
-interface HomeViewProps {
-  onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
-  onNuggetNotesChange?: (notes: NuggetNote[]) => void;
-  onRecordingStateChange?: (isRecording: boolean) => void;
-}
-
-export function HomeView({
-  onSessionChange,
-  onNuggetNotesChange,
-  onRecordingStateChange,
-}: HomeViewProps) {
+export function HomeView() {
+  const { setActiveSessionId, setNuggetNotes, setIsRecording } = useSessionContext();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);
@@ -33,10 +24,19 @@ export function HomeView({
   const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
   const notesPanelRef = useRef<NotesPanelRef>(null);
 
-  // Notify parent when session changes
+  // Sync local session ID to shared context for NuggetChat
   useEffect(() => {
-    onSessionChange?.(currentSessionId);
-  }, [currentSessionId, onSessionChange]);
+    setActiveSessionId(currentSessionId);
+  }, [currentSessionId, setActiveSessionId]);
+
+  // Clear context on unmount (navigating away from home)
+  useEffect(() => {
+    return () => {
+      setActiveSessionId(null);
+      setNuggetNotes([]);
+      setIsRecording(false);
+    };
+  }, [setActiveSessionId, setNuggetNotes, setIsRecording]);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -89,8 +89,8 @@ export function HomeView({
           <RecordingPanel
             onSessionChange={setCurrentSessionId}
             onInsertNote={handleInsertNote}
-            onNuggetNotesChange={onNuggetNotesChange}
-            onRecordingStateChange={onRecordingStateChange}
+            onNuggetNotesChange={setNuggetNotes}
+            onRecordingStateChange={setIsRecording}
           />
         </TabsContent>
         <TabsContent
@@ -127,8 +127,8 @@ export function HomeView({
         <RecordingPanel
           onSessionChange={setCurrentSessionId}
           onInsertNote={handleInsertNote}
-          onNuggetNotesChange={onNuggetNotesChange}
-          onRecordingStateChange={onRecordingStateChange}
+          onNuggetNotesChange={setNuggetNotes}
+          onRecordingStateChange={setIsRecording}
         />
       </div>
     </div>

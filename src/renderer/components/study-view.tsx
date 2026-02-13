@@ -3,9 +3,11 @@ import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools/index';
 import { Button } from '@/components/ui/button';
+import { useSessionContext } from '@/contexts/session-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useSessions, useTrash } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
+import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -41,30 +43,39 @@ const formatDuration = (ms: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-interface StudyViewProps {
-  onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
-}
-
-export function StudyView({ onSessionChange }: StudyViewProps) {
+export function StudyView() {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { setActiveSessionId, setNuggetNotes } = useSessionContext();
   const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
   const trashedSessions = useTrash();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
-  // Notify parent when selected session changes
+  // Read session ID from route params (undefined when on /study)
+  const sessionMatch = useMatch({ from: '/study/$sessionId', shouldThrow: false });
+  const selectedId = sessionMatch?.params.sessionId ?? null;
+
+  // Sync selected session to context for NuggetChat
   useEffect(() => {
-    onSessionChange?.(selectedId as Id<'sessions'> | null);
-  }, [selectedId, onSessionChange]);
+    setActiveSessionId(selectedId as SessionId | null);
+    setNuggetNotes([]);
+  }, [selectedId, setActiveSessionId, setNuggetNotes]);
+
+  // Clear context on unmount
+  useEffect(() => {
+    return () => {
+      setActiveSessionId(null);
+    };
+  }, [setActiveSessionId]);
 
   const handleDelete = useCallback(
     (recordingId: string) => {
       deleteSession({ id: recordingId as SessionId });
       if (selectedId === recordingId) {
-        setSelectedId(null);
+        navigate({ to: '/study' });
       }
     },
-    [deleteSession, selectedId],
+    [deleteSession, selectedId, navigate],
   );
 
   const handleRestore = useCallback(
@@ -81,13 +92,13 @@ export function StudyView({ onSessionChange }: StudyViewProps) {
     [permanentDeleteSession],
   );
 
-  // Auto-close sidebar on mobile when selecting a recording
+  // Navigate to session route instead of local state
   const handleSelect = useCallback(
     (recording: Recording) => {
-      setSelectedId(recording.id);
+      navigate({ to: '/study/$sessionId', params: { sessionId: recording.id } });
       if (isMobile) setSidebarOpen(false);
     },
-    [isMobile],
+    [isMobile, navigate],
   );
 
   // Resolve audio URL for the selected recording
