@@ -1,8 +1,8 @@
 /**
  * Concept Map Tool — AI-generated visual concept hierarchy rendered as SVG
+ * Uses a tree layout: children positioned below their parent nodes.
  */
 
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ConceptMapResult } from '@/types/study-tools';
 import { useMemo } from 'react';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -13,7 +13,7 @@ interface ConceptMapToolProps {
   sessionId: Id<'sessions'>;
 }
 
-interface PositionedNode {
+interface LayoutNode {
   id: string;
   label: string;
   type: 'main' | 'sub' | 'detail';
@@ -23,77 +23,123 @@ interface PositionedNode {
   height: number;
 }
 
-const NODE_COLORS: Record<string, { fill: string; stroke: string; text: string }> = {
-  main: {
-    fill: 'hsl(var(--primary))',
-    stroke: 'hsl(var(--primary))',
-    text: 'hsl(var(--primary-foreground))',
-  },
-  sub: {
-    fill: 'hsl(var(--secondary))',
-    stroke: 'hsl(var(--border))',
-    text: 'hsl(var(--secondary-foreground))',
-  },
-  detail: {
-    fill: 'hsl(var(--muted))',
-    stroke: 'hsl(var(--border))',
-    text: 'hsl(var(--muted-foreground))',
-  },
-};
+// --- Layout constants ---
+const NODE_HEIGHT: Record<string, number> = { main: 44, sub: 38, detail: 34 };
+const FONT_SIZE: Record<string, number> = { main: 13, sub: 11, detail: 10 };
+const PAD_X = 20;
+const V_GAP = 52;
+const H_GAP = 20;
+const CANVAS_PAD = 24;
 
-function layoutNodes(data: ConceptMapResult): PositionedNode[] {
-  const mainNodes = data.nodes.filter((n) => n.type === 'main');
-  const subNodes = data.nodes.filter((n) => n.type === 'sub');
-  const detailNodes = data.nodes.filter((n) => n.type === 'detail');
-
-  const nodeWidth = 120;
-  const nodeHeight = 36;
-  const hGap = 40;
-  const vGap = 60;
-
-  const positioned: PositionedNode[] = [];
-
-  // Row 1: main nodes
-  const mainRowWidth = mainNodes.length * nodeWidth + (mainNodes.length - 1) * hGap;
-  const mainStartX = Math.max(0, (600 - mainRowWidth) / 2);
-  for (let i = 0; i < mainNodes.length; i++) {
-    positioned.push({
-      ...mainNodes[i],
-      x: mainStartX + i * (nodeWidth + hGap),
-      y: 20,
-      width: nodeWidth,
-      height: nodeHeight,
-    });
-  }
-
-  // Row 2: sub nodes
-  const subRowWidth = subNodes.length * nodeWidth + (subNodes.length - 1) * hGap;
-  const subStartX = Math.max(0, (600 - subRowWidth) / 2);
-  for (let i = 0; i < subNodes.length; i++) {
-    positioned.push({
-      ...subNodes[i],
-      x: subStartX + i * (nodeWidth + hGap),
-      y: 20 + nodeHeight + vGap,
-      width: nodeWidth,
-      height: nodeHeight,
-    });
-  }
-
-  // Row 3: detail nodes
-  const detailRowWidth = detailNodes.length * nodeWidth + (detailNodes.length - 1) * hGap;
-  const detailStartX = Math.max(0, (600 - detailRowWidth) / 2);
-  for (let i = 0; i < detailNodes.length; i++) {
-    positioned.push({
-      ...detailNodes[i],
-      x: detailStartX + i * (nodeWidth + hGap),
-      y: 20 + 2 * (nodeHeight + vGap),
-      width: nodeWidth,
-      height: nodeHeight,
-    });
-  }
-
-  return positioned;
+/** Approximate node width from label text */
+function measureWidth(label: string, type: string): number {
+  const fontSize = FONT_SIZE[type] || 11;
+  const charW = fontSize * 0.6;
+  return Math.max(100, Math.ceil(label.length * charW) + PAD_X * 2);
 }
+
+/** Build tree layout from concept map data */
+function layoutTree(data: ConceptMapResult): {
+  nodes: LayoutNode[];
+  width: number;
+  height: number;
+} {
+  if (data.nodes.length === 0) return { nodes: [], width: 400, height: 200 };
+
+  const nodeInfo = new Map(data.nodes.map((n) => [n.id, n]));
+
+  // Build parent → children adjacency (first edge wins for tree structure)
+  const childrenOf = new Map<string, string[]>();
+  const parentOf = new Map<string, string>();
+
+  for (const edge of data.edges) {
+    if (!nodeInfo.has(edge.from) || !nodeInfo.has(edge.to)) continue;
+    if (parentOf.has(edge.to)) continue; // already has a tree parent
+    if (!childrenOf.has(edge.from)) childrenOf.set(edge.from, []);
+    childrenOf.get(edge.from)!.push(edge.to);
+    parentOf.set(edge.to, edge.from);
+  }
+
+  // Roots = nodes with no parent
+  let roots = data.nodes.filter((n) => !parentOf.has(n.id));
+  if (roots.length === 0) roots = [data.nodes[0]];
+
+  // Memoized subtree width computation
+  const widthCache = new Map<string, number>();
+  function getSubtreeWidth(nodeId: string): number {
+    if (widthCache.has(nodeId)) return widthCache.get(nodeId)!;
+    const node = nodeInfo.get(nodeId);
+    if (!node) return 0;
+    const nodeW = measureWidth(node.label, node.type);
+    const children = childrenOf.get(nodeId) || [];
+    if (children.length === 0) {
+      widthCache.set(nodeId, nodeW);
+      return nodeW;
+    }
+    const childrenW =
+      children.reduce((sum, cid) => sum + getSubtreeWidth(cid), 0) + (children.length - 1) * H_GAP;
+    const w = Math.max(nodeW, childrenW);
+    widthCache.set(nodeId, w);
+    return w;
+  }
+
+  // Position nodes recursively
+  const positioned: LayoutNode[] = [];
+  const visited = new Set<string>();
+
+  function positionSubtree(nodeId: string, x: number, y: number, availW: number) {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+
+    const node = nodeInfo.get(nodeId);
+    if (!node) return;
+    const w = measureWidth(node.label, node.type);
+    const h = NODE_HEIGHT[node.type] || 38;
+
+    positioned.push({
+      id: node.id,
+      label: node.label,
+      type: node.type,
+      x: x + (availW - w) / 2,
+      y,
+      width: w,
+      height: h,
+    });
+
+    const children = childrenOf.get(nodeId) || [];
+    if (children.length === 0) return;
+
+    const childWidths = children.map((cid) => getSubtreeWidth(cid));
+    const totalChildW = childWidths.reduce((a, b) => a + b, 0) + (children.length - 1) * H_GAP;
+    let childX = x + (availW - totalChildW) / 2;
+
+    for (let i = 0; i < children.length; i++) {
+      positionSubtree(children[i], childX, y + h + V_GAP, childWidths[i]);
+      childX += childWidths[i] + H_GAP;
+    }
+  }
+
+  // Lay out roots side by side
+  const rootWidths = roots.map((r) => getSubtreeWidth(r.id));
+  const totalRootW = rootWidths.reduce((a, b) => a + b, 0) + (roots.length - 1) * H_GAP * 2;
+
+  let rx = CANVAS_PAD;
+  for (let i = 0; i < roots.length; i++) {
+    positionSubtree(roots[i].id, rx, CANVAS_PAD, rootWidths[i]);
+    rx += rootWidths[i] + H_GAP * 2;
+  }
+
+  const maxX = Math.max(...positioned.map((n) => n.x + n.width), 400);
+  const maxY = Math.max(...positioned.map((n) => n.y + n.height), 200);
+
+  return {
+    nodes: positioned,
+    width: Math.max(totalRootW + CANVAS_PAD * 2, maxX + CANVAS_PAD),
+    height: maxY + CANVAS_PAD,
+  };
+}
+
+// --- Component ---
 
 export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
   const { data, isGenerating, error, generate, hasData } = useStudyTool<ConceptMapResult>(
@@ -101,16 +147,9 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
     'conceptMap',
   );
 
-  const { nodes, totalWidth, totalHeight } = useMemo(() => {
-    if (!data) return { nodes: [], totalWidth: 600, totalHeight: 300 };
-    const positioned = layoutNodes(data);
-    const maxX = Math.max(...positioned.map((n) => n.x + n.width), 600);
-    const maxY = Math.max(...positioned.map((n) => n.y + n.height), 200);
-    return {
-      nodes: positioned,
-      totalWidth: maxX + 40,
-      totalHeight: maxY + 40,
-    };
+  const layout = useMemo(() => {
+    if (!data) return { nodes: [], width: 400, height: 200 };
+    return layoutTree(data);
   }, [data]);
 
   if (!data || isGenerating || error) {
@@ -126,7 +165,7 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
     );
   }
 
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const nodeMap = new Map(layout.nodes.map((n) => [n.id, n]));
 
   return (
     <div className="space-y-2">
@@ -142,12 +181,12 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
         />
       </div>
 
-      <ScrollArea className="rounded-lg border border-[var(--glass-border)]">
+      <div className="overflow-auto rounded-lg border border-[var(--glass-border)]">
         <svg
-          width="100%"
-          height={Math.min(totalHeight, 250)}
-          viewBox={`0 0 ${totalWidth} ${totalHeight}`}
-          className="bg-transparent"
+          width={layout.width}
+          height={layout.height}
+          viewBox={`0 0 ${layout.width} ${layout.height}`}
+          className="block"
           role="img"
           aria-label="Concept map showing relationships between lecture topics"
         >
@@ -168,16 +207,17 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                 <path
                   d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
                   fill="none"
-                  stroke="hsl(var(--border))"
-                  strokeWidth="1.5"
+                  stroke="hsl(var(--primary) / 0.35)"
+                  strokeWidth="2"
                 />
                 {edge.label && (
                   <text
                     x={(x1 + x2) / 2}
-                    y={midY - 4}
+                    y={midY - 6}
                     textAnchor="middle"
                     fill="hsl(var(--muted-foreground))"
-                    fontSize="8"
+                    fontSize="9"
+                    fontStyle="italic"
                   >
                     {edge.label}
                   </text>
@@ -187,36 +227,57 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
           })}
 
           {/* Nodes */}
-          {nodes.map((node) => {
-            const colors = NODE_COLORS[node.type] || NODE_COLORS.detail;
+          {layout.nodes.map((node) => {
+            const fontSize = FONT_SIZE[node.type] || 11;
+            const isMain = node.type === 'main';
+            const isSub = node.type === 'sub';
+            const rx = isMain ? node.height / 2 : 8;
+
             return (
               <g key={node.id}>
+                {/* Shadow for depth */}
+                <rect
+                  x={node.x + 1}
+                  y={node.y + 2}
+                  width={node.width}
+                  height={node.height}
+                  rx={rx}
+                  fill="hsl(var(--foreground) / 0.08)"
+                />
+                {/* Node background */}
                 <rect
                   x={node.x}
                   y={node.y}
                   width={node.width}
                   height={node.height}
-                  rx="6"
-                  fill={colors.fill}
-                  stroke={colors.stroke}
-                  strokeWidth="1"
+                  rx={rx}
+                  fill={isMain ? 'hsl(var(--primary))' : 'hsl(var(--card))'}
+                  stroke={isMain ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
+                  strokeWidth={isMain ? 0 : 1}
                 />
+                {/* Label */}
                 <text
                   x={node.x + node.width / 2}
                   y={node.y + node.height / 2 + 1}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill={colors.text}
-                  fontSize="9"
-                  fontWeight={node.type === 'main' ? 600 : 400}
+                  fill={
+                    isMain
+                      ? 'hsl(var(--primary-foreground))'
+                      : isSub
+                        ? 'hsl(var(--card-foreground))'
+                        : 'hsl(var(--muted-foreground))'
+                  }
+                  fontSize={fontSize}
+                  fontWeight={isMain ? 700 : isSub ? 500 : 400}
                 >
-                  {node.label.length > 16 ? `${node.label.slice(0, 14)}...` : node.label}
+                  {node.label}
                 </text>
               </g>
             );
           })}
         </svg>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
