@@ -207,7 +207,7 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                 <path
                   d={`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`}
                   fill="none"
-                  stroke="hsl(var(--primary) / 0.35)"
+                  stroke="color-mix(in srgb, var(--primary) 35%, transparent)"
                   strokeWidth="2"
                 />
                 {edge.label && (
@@ -215,7 +215,7 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                     x={(x1 + x2) / 2}
                     y={midY - 6}
                     textAnchor="middle"
-                    fill="hsl(var(--muted-foreground))"
+                    fill="var(--muted-foreground)"
                     fontSize="9"
                     fontStyle="italic"
                   >
@@ -242,7 +242,7 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                   width={node.width}
                   height={node.height}
                   rx={rx}
-                  fill="hsl(var(--foreground) / 0.08)"
+                  fill="color-mix(in srgb, var(--foreground) 8%, transparent)"
                 />
                 {/* Node background */}
                 <rect
@@ -251,8 +251,8 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                   width={node.width}
                   height={node.height}
                   rx={rx}
-                  fill={isMain ? 'hsl(var(--primary))' : 'hsl(var(--card))'}
-                  stroke={isMain ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
+                  fill={isMain ? 'var(--primary)' : 'var(--card)'}
+                  stroke={isMain ? 'var(--primary)' : 'var(--border)'}
                   strokeWidth={isMain ? 0 : 1}
                 />
                 {/* Label */}
@@ -263,10 +263,10 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
                   dominantBaseline="middle"
                   fill={
                     isMain
-                      ? 'hsl(var(--primary-foreground))'
+                      ? 'var(--primary-foreground)'
                       : isSub
-                        ? 'hsl(var(--card-foreground))'
-                        : 'hsl(var(--muted-foreground))'
+                        ? 'var(--card-foreground)'
+                        : 'var(--muted-foreground)'
                   }
                   fontSize={fontSize}
                   fontWeight={isMain ? 700 : isSub ? 500 : 400}
