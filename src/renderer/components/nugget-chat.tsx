@@ -5,7 +5,6 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMutation, useQuery } from 'convex/react';
 import { Cat, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -272,7 +271,7 @@ export function NuggetChat({
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <div className="flex-1 min-h-0 overflow-y-auto p-4" ref={scrollRef}>
               {messages.length === 0 ? (
                 <WelcomeMessage chatMode={chatMode} onSuggestionClick={sendMessage} />
               ) : (
@@ -283,7 +282,7 @@ export function NuggetChat({
                   {isLoading && <TypingIndicator />}
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Context checkboxes */}
             <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--glass-border)] text-xs text-muted-foreground">

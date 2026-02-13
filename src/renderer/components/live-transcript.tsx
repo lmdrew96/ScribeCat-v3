@@ -1,18 +1,28 @@
 import type { TranscriptSegment } from '@/hooks/use-transcription';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface LiveTranscriptProps {
   isRecording: boolean;
   segments: TranscriptSegment[];
 }
 
+const SCROLL_THRESHOLD = 80; // px from bottom to count as "near bottom"
+
 export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
 
-  // Auto-scroll to bottom when new segments arrive
+  // Track whether user is near the bottom
+  const handleScroll = useCallback(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD;
+  }, []);
+
+  // Auto-scroll only when user is near the bottom
   // biome-ignore lint/correctness/useExhaustiveDependencies: Need to scroll when segments changes
   useEffect(() => {
-    if (viewportRef.current) {
+    if (isNearBottomRef.current && viewportRef.current) {
       viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
   }, [segments]);
@@ -43,7 +53,11 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
         )}
       </h3>
       <div className="flex-1 min-h-0">
-        <div ref={viewportRef} className="h-full overflow-y-auto pr-2 space-y-2">
+        <div
+          ref={viewportRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto pr-2 space-y-2"
+        >
           {segments.map((segment, index) => (
             <div
               key={`${segment.timestamp}-${segment.text.substring(0, 20)}`}
