@@ -56,7 +56,7 @@ export function StudyTools({ sessionId }: StudyToolsProps) {
       </ScrollArea>
 
       {/* Tool content */}
-      <div className="min-h-[120px]">
+      <div className="min-h-[120px] max-h-[40vh] overflow-y-auto">
         {activeTab === 'summary' && <SummaryTool sessionId={sessionId} />}
         {activeTab === 'keyConcepts' && <KeyConceptsTool sessionId={sessionId} />}
         {activeTab === 'flashcards' && <FlashcardTool sessionId={sessionId} />}
