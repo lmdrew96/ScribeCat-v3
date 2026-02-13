@@ -35,7 +35,12 @@ export function GenerateButton({
     return (
       <div className="flex flex-col items-center justify-center py-6 gap-2">
         <p className="text-xs text-destructive">{error}</p>
-        <Button variant="secondary" size="sm" className="gap-1.5 h-7 text-xs" onClick={onGenerate}>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="gap-1.5 h-7 text-xs"
+          onClick={() => onGenerate()}
+        >
           <RefreshCw className="h-3 w-3" />
           Try Again
         </Button>
@@ -49,7 +54,12 @@ export function GenerateButton({
         {description && (
           <p className="text-xs text-muted-foreground text-center max-w-xs">{description}</p>
         )}
-        <Button variant="secondary" size="sm" className="gap-1.5 h-7 text-xs" onClick={onGenerate}>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="gap-1.5 h-7 text-xs"
+          onClick={() => onGenerate()}
+        >
           <Sparkles className="h-3 w-3" />
           {label || 'Generate'}
         </Button>
@@ -63,7 +73,7 @@ export function GenerateButton({
       variant="ghost"
       size="sm"
       className="gap-1 h-6 text-[10px] text-muted-foreground"
-      onClick={onGenerate}
+      onClick={() => onGenerate()}
     >
       <RefreshCw className="h-2.5 w-2.5" />
       Regenerate
