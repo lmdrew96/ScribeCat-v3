@@ -5,7 +5,7 @@ import { StudyTools } from '@/components/study-tools/index';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import { useSessions, useTrash } from '@/hooks/use-sessions';
+import { useSession, useSessions, useTrash } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
@@ -108,7 +108,11 @@ export function StudyView() {
     selectedSession?.audioStorageId ? { storageId: selectedSession.audioStorageId } : 'skip',
   );
 
-  // Convert Convex sessions to Recording format
+  // Fetch full session data with notes for the selected recording
+  // (sessions.get joins notes from the separate sessionNotes table)
+  const selectedSessionWithNotes = useSession(selectedId as SessionId | null);
+
+  // Convert Convex sessions to Recording format (notes loaded separately for selected only)
   const recordings: Recording[] = sessions.map((session) => ({
     id: session._id,
     title: session.title,
@@ -119,7 +123,7 @@ export function StudyView() {
     }),
     duration: formatDuration(session.duration),
     transcript: session.transcript || '',
-    notes: session.notes || '',
+    notes: '',
     audioStorageId: session.audioStorageId,
     audioUrl: session._id === selectedId ? audioUrl : undefined,
     transcriptSegments: session.transcriptSegments,
@@ -127,8 +131,11 @@ export function StudyView() {
     nuggetNotes: session.nuggetNotes,
   }));
 
-  // Derive selected recording from the live array so it always has the latest audioUrl
-  const selectedRecording = recordings.find((r) => r.id === selectedId) ?? null;
+  // Build selected recording with notes from joined query
+  const baseRecording = recordings.find((r) => r.id === selectedId);
+  const selectedRecording = baseRecording
+    ? { ...baseRecording, notes: selectedSessionWithNotes?.notes || '' }
+    : null;
 
   const trashedRecordings: Recording[] = trashedSessions.map((session) => ({
     id: session._id,
@@ -140,7 +147,7 @@ export function StudyView() {
     }),
     duration: formatDuration(session.duration),
     transcript: session.transcript || '',
-    notes: session.notes || '',
+    notes: '',
     lectureType: session.lectureType,
     nuggetNotes: session.nuggetNotes,
   }));

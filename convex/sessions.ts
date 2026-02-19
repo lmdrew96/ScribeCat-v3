@@ -28,11 +28,24 @@ export const list = query({
   },
 });
 
-// Get a single session by ID
+// Get a single session by ID (joins notes from sessionNotes table)
 export const get = query({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const session = await ctx.db.get(args.id);
+    if (!session) return null;
+
+    // Join notes from separate table (fallback to legacy fields during migration)
+    const notesDoc = await ctx.db
+      .query('sessionNotes')
+      .withIndex('by_session', (q) => q.eq('sessionId', args.id))
+      .unique();
+
+    return {
+      ...session,
+      notes: notesDoc?.content ?? session.notes,
+      notesPlainText: notesDoc?.plainText ?? session.notesPlainText,
+    };
   },
 });
 
@@ -57,7 +70,7 @@ export const create = mutation({
   },
 });
 
-// Update session fields
+// Update session fields (notes are routed to sessionNotes table)
 export const update = mutation({
   args: {
     id: v.id('sessions'),
@@ -87,10 +100,35 @@ export const update = mutation({
     duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const { id, ...updates } = args;
+    const userId = await requireAuth(ctx);
+    const { id, notes, notesPlainText, ...otherUpdates } = args;
+
+    // Route notes to separate sessionNotes table
+    if (notes !== undefined || notesPlainText !== undefined) {
+      const existing = await ctx.db
+        .query('sessionNotes')
+        .withIndex('by_session', (q) => q.eq('sessionId', id))
+        .unique();
+
+      if (existing) {
+        const notesPatch: Record<string, string | number> = { updatedAt: Date.now() };
+        if (notes !== undefined) notesPatch.content = notes;
+        if (notesPlainText !== undefined) notesPatch.plainText = notesPlainText;
+        await ctx.db.patch(existing._id, notesPatch);
+      } else {
+        await ctx.db.insert('sessionNotes', {
+          sessionId: id,
+          userId,
+          content: notes,
+          plainText: notesPlainText,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    // Patch session with non-notes fields only
     const filteredUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([_, value]) => value !== undefined),
+      Object.entries(otherUpdates).filter(([_, value]) => value !== undefined),
     );
 
     return await ctx.db.patch(id, {
@@ -153,11 +191,21 @@ export const appendTranscriptSegment = mutation({
   },
 });
 
-// Permanently delete a session
+// Permanently delete a session (cascades to sessionNotes)
 export const permanentDelete = mutation({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+
+    // Cascade-delete associated sessionNotes
+    const notesDoc = await ctx.db
+      .query('sessionNotes')
+      .withIndex('by_session', (q) => q.eq('sessionId', args.id))
+      .unique();
+    if (notesDoc) {
+      await ctx.db.delete(notesDoc._id);
+    }
+
     return await ctx.db.delete(args.id);
   },
 });
@@ -175,7 +223,7 @@ export const listDeleted = query({
   },
 });
 
-// Clean up old deleted sessions (called by cron job)
+// Clean up old deleted sessions (called by cron job, cascades to sessionNotes)
 export const cleanupOldDeleted = internalMutation({
   args: {},
   handler: async (ctx) => {
@@ -189,6 +237,15 @@ export const cleanupOldDeleted = internalMutation({
     let deletedCount = 0;
     for (const session of oldDeletedSessions) {
       if (session.deletedAt && session.deletedAt < thirtyDaysAgo) {
+        // Cascade-delete associated sessionNotes
+        const notesDoc = await ctx.db
+          .query('sessionNotes')
+          .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+          .unique();
+        if (notesDoc) {
+          await ctx.db.delete(notesDoc._id);
+        }
+
         await ctx.db.delete(session._id);
         deletedCount++;
       }
@@ -196,5 +253,47 @@ export const cleanupOldDeleted = internalMutation({
 
     console.log(`Cleaned up ${deletedCount} sessions older than 30 days`);
     return { deletedCount };
+  },
+});
+
+// One-time migration: move notes from sessions to sessionNotes table.
+// Run from Convex dashboard after deploying the schema change.
+export const migrateNotesToSeparateTable = internalMutation({
+  args: { batchSize: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.batchSize ?? 50;
+    const allSessions = await ctx.db.query('sessions').collect();
+
+    let migratedCount = 0;
+    for (const session of allSessions) {
+      if (migratedCount >= limit) break;
+      if (!session.notes && !session.notesPlainText) continue;
+
+      // Skip if already migrated
+      const existing = await ctx.db
+        .query('sessionNotes')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .unique();
+      if (existing) continue;
+
+      await ctx.db.insert('sessionNotes', {
+        sessionId: session._id,
+        userId: session.userId,
+        content: session.notes,
+        plainText: session.notesPlainText,
+        updatedAt: session.updatedAt,
+      });
+
+      // Clear notes from session document to reclaim space
+      await ctx.db.patch(session._id, {
+        notes: undefined,
+        notesPlainText: undefined,
+      });
+
+      migratedCount++;
+    }
+
+    console.log(`Migrated ${migratedCount} sessions (batch limit: ${limit})`);
+    return { migratedCount, done: migratedCount < limit };
   },
 });

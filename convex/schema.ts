@@ -42,6 +42,17 @@ export default defineSchema({
       filterFields: ['userId', 'isDeleted'],
     }),
 
+  // Session notes (separated from sessions to avoid 1MB document limit)
+  sessionNotes: defineTable({
+    sessionId: v.id('sessions'),
+    userId: v.string(),
+    content: v.optional(v.string()),
+    plainText: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index('by_session', ['sessionId'])
+    .index('by_user', ['userId']),
+
   // User settings
   userSettings: defineTable({
     userId: v.string(),
