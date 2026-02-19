@@ -41,10 +41,27 @@ export const get = query({
       .withIndex('by_session', (q) => q.eq('sessionId', args.id))
       .unique();
 
+    // Resolve notes: prefer content (TipTap JSON), fall back to wrapping plainText
+    let notes = notesDoc?.content ?? session.notes;
+    const notesPlainText = notesDoc?.plainText ?? session.notesPlainText;
+
+    if (!notes && notesPlainText) {
+      // Content was lost but plainText survived — wrap it as minimal TipTap JSON
+      const paragraphs = notesPlainText.split('\n').filter(Boolean);
+      const tiptapDoc = {
+        type: 'doc',
+        content: paragraphs.map((text: string) => ({
+          type: 'paragraph',
+          content: [{ type: 'text', text }],
+        })),
+      };
+      notes = JSON.stringify(tiptapDoc);
+    }
+
     return {
       ...session,
-      notes: notesDoc?.content ?? session.notes,
-      notesPlainText: notesDoc?.plainText ?? session.notesPlainText,
+      notes,
+      notesPlainText,
     };
   },
 });
@@ -295,5 +312,34 @@ export const migrateNotesToSeparateTable = internalMutation({
 
     console.log(`Migrated ${migratedCount} sessions (batch limit: ${limit})`);
     return { migratedCount, done: migratedCount < limit };
+  },
+});
+
+// Repair sessionNotes rows where content is missing but plainText exists.
+// Wraps plainText as minimal TipTap JSON so notes render in the editor.
+export const repairSessionNotes = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const allNotes = await ctx.db.query('sessionNotes').collect();
+
+    let repairedCount = 0;
+    for (const doc of allNotes) {
+      if (doc.content || !doc.plainText) continue;
+
+      const paragraphs = doc.plainText.split('\n').filter(Boolean);
+      const tiptapDoc = {
+        type: 'doc',
+        content: paragraphs.map((text: string) => ({
+          type: 'paragraph',
+          content: [{ type: 'text', text }],
+        })),
+      };
+
+      await ctx.db.patch(doc._id, { content: JSON.stringify(tiptapDoc) });
+      repairedCount++;
+    }
+
+    console.log(`Repaired ${repairedCount} sessionNotes rows`);
+    return { repairedCount };
   },
 });
