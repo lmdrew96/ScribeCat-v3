@@ -5,7 +5,13 @@ import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { CitationMark } from '@/lib/citation-mark';
+import { DraggableImage } from '@/lib/draggable-image-extension';
+import { ExcalidrawNode } from '@/lib/excalidraw-extension';
+import { FontSize } from '@/lib/font-size-extension';
+import { TextBox } from '@/lib/textbox-extension';
 import CodeBlock from '@tiptap/extension-code-block';
+import Color from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import Subscript from '@tiptap/extension-subscript';
@@ -65,7 +71,13 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
         HTMLAttributes: { class: 'text-primary underline cursor-pointer' },
       }),
       CodeBlock,
+      Color,
       TextStyle,
+      FontFamily,
+      FontSize,
+      DraggableImage,
+      TextBox,
+      ExcalidrawNode,
       CitationMark,
     ],
     [],
