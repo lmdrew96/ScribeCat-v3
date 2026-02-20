@@ -365,16 +365,16 @@ Structure notes with these priorities:
 
 ### Testing Checklist
 
-- [ ] Can select lecture type before recording
-- [ ] Lecture type persists on the session
-- [ ] STEM notes emphasize formulas and definitions
-- [ ] Humanities notes emphasize arguments and quotes
-- [ ] Discussion notes capture key points and disagreements
-- [ ] Lab notes produce step-by-step procedures
-- [ ] Review notes highlight exam-relevant material
-- [ ] General still works as the default
-- [ ] Nugget Notes adapt their output style to lecture type
-- [ ] Lecture type visible in Study View session info
+- [x] Can select lecture type before recording
+- [x] Lecture type persists on the session
+- [x] STEM notes emphasize formulas and definitions
+- [x] Humanities notes emphasize arguments and quotes
+- [x] Discussion notes capture key points and disagreements
+- [x] Lab notes produce step-by-step procedures
+- [x] Review notes highlight exam-relevant material
+- [x] General still works as the default
+- [x] Nugget Notes adapt their output style to lecture type
+- [x] Lecture type visible in Study View session info
 
 ---
 
@@ -685,14 +685,14 @@ This can be done via TipTap's `addNodeView` or via CSS + `title` attribute for t
 
 ### Testing Checklist
 
-- [ ] AI generates notes with `[cite:XXXXX]` references
-- [ ] Citations appear as subtle visual marks in the editor
-- [ ] Hovering a citation shows timestamp + transcript snippet
-- [ ] Clicking a citation in study view seeks audio to that timestamp
-- [ ] Citations survive save/load cycle (TipTap JSON round-trip)
-- [ ] Notes without citations still work fine
-- [ ] Citation marks don't break copy/paste or export
-- [ ] Works when transcript segments are unavailable (graceful fallback)
+- [x] AI generates notes with `[cite:XXXXX]` references
+- [x] Citations appear as subtle visual marks in the editor
+- [x] Hovering a citation shows timestamp + transcript snippet
+- [x] Clicking a citation in study view seeks audio to that timestamp
+- [x] Citations survive save/load cycle (TipTap JSON round-trip)
+- [x] Notes without citations still work fine
+- [x] Citation marks don't break copy/paste or export
+- [x] Works when transcript segments are unavailable (graceful fallback)
 
 ---
 

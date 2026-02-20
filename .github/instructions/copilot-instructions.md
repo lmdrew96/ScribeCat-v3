@@ -6,7 +6,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app**.
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.7.2 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
+**Current Version:** 4.9.1 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
 
 ---
 
@@ -29,6 +29,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app**.
 | **Auth** | Clerk + Convex | @udel.edu restriction, JWT integration |
 | **Rich Text** | TipTap 3.14 | 15+ extensions, ProseMirror-based |
 | **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
+| **Routing** | TanStack Router 1.x | URL-based routing with type-safe params |
 | **Drag/Resize** | interact.js 1.10 | For editor objects |
 | **Transcription** | AssemblyAI | Real-time WebSocket STT |
 | **AI** | Anthropic Claude | Haiku 4.5 (all endpoints, centralized in `convex/config.ts`) |
@@ -64,7 +65,9 @@ ScribeCat-v3/
 ├── src/renderer/              # React app
 │   ├── App.tsx               # Root with Clerk auth gates
 │   ├── index.tsx             # Entry point (Clerk + Convex providers)
-│   ├── components/           # UI components
+│   ├── router.tsx            # TanStack Router config (routes + type registration)
+│   ├── contexts/             # React contexts (session-context.tsx)
+│   ├── components/           # UI components (incl. app-layout.tsx root layout)
 │   ├── hooks/                # Custom React hooks
 │   ├── lib/                  # Utilities + TipTap extensions
 │   ├── types/                # TypeScript types
@@ -113,6 +116,6 @@ pnpm lint:fix         # Auto-fix
 
 ## Git Workflow
 
-Commit format: `v4.7.2: Brief description of change`
+Commit format: `v4.9.1: Brief description of change`
 
 Version bumping: Patch = bug fixes, Minor = new features, Major = breaking changes

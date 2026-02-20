@@ -22,6 +22,14 @@ export interface TranscriptSegment {
   isFinal: boolean;
 }
 
+export interface SessionSummary {
+  id: string;
+  title: string;
+  date: string;
+  duration: string;
+  lectureType?: string;
+}
+
 export interface Recording {
   id: string;
   title: string;
@@ -94,26 +102,23 @@ export function StudyView() {
 
   // Navigate to session route instead of local state
   const handleSelect = useCallback(
-    (recording: Recording) => {
+    (recording: SessionSummary) => {
       navigate({ to: '/study/$sessionId', params: { sessionId: recording.id } });
       if (isMobile) setSidebarOpen(false);
     },
     [isMobile, navigate],
   );
 
-  // Resolve audio URL for the selected recording
-  const selectedSession = sessions.find((s) => s._id === selectedId);
+  // Fetch full session data for the selected recording only
+  // (sessions.get joins notes from the separate sessionNotes table)
+  const fullSession = useSession(selectedId as SessionId | null);
   const audioUrl = useQuery(
     api.audioStorage.getAudioUrl,
-    selectedSession?.audioStorageId ? { storageId: selectedSession.audioStorageId } : 'skip',
+    fullSession?.audioStorageId ? { storageId: fullSession.audioStorageId } : 'skip',
   );
 
-  // Fetch full session data with notes for the selected recording
-  // (sessions.get joins notes from the separate sessionNotes table)
-  const selectedSessionWithNotes = useSession(selectedId as SessionId | null);
-
-  // Convert Convex sessions to Recording format (notes loaded separately for selected only)
-  const recordings: Recording[] = sessions.map((session) => ({
+  // Sidebar gets lightweight metadata only — no transcript/notes/segments
+  const sidebarRecordings: SessionSummary[] = sessions.map((session) => ({
     id: session._id,
     title: session.title,
     date: new Date(session.createdAt).toLocaleDateString('en-US', {
@@ -122,35 +127,41 @@ export function StudyView() {
       year: 'numeric',
     }),
     duration: formatDuration(session.duration),
-    transcript: session.transcript || '',
-    notes: '',
-    audioStorageId: session.audioStorageId,
-    audioUrl: session._id === selectedId ? audioUrl : undefined,
-    transcriptSegments: session.transcriptSegments,
     lectureType: session.lectureType,
-    nuggetNotes: session.nuggetNotes,
   }));
 
-  // Build selected recording with notes from joined query
-  const baseRecording = recordings.find((r) => r.id === selectedId);
-  const selectedRecording = baseRecording
-    ? { ...baseRecording, notes: selectedSessionWithNotes?.notes || '' }
+  const trashedRecordings: SessionSummary[] = trashedSessions.map((session) => ({
+    id: session._id,
+    title: session.title,
+    date: new Date(session.createdAt).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    duration: formatDuration(session.duration),
+    lectureType: session.lectureType,
+  }));
+
+  // Build full Recording for StudyContent from sessions.get result
+  const selectedRecording: Recording | null = fullSession
+    ? {
+        id: fullSession._id,
+        title: fullSession.title,
+        date: new Date(fullSession.createdAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        duration: formatDuration(fullSession.duration),
+        transcript: fullSession.transcript || '',
+        notes: fullSession.notes || '',
+        audioUrl: audioUrl,
+        audioStorageId: fullSession.audioStorageId,
+        transcriptSegments: fullSession.transcriptSegments,
+        lectureType: fullSession.lectureType,
+        nuggetNotes: fullSession.nuggetNotes,
+      }
     : null;
-
-  const trashedRecordings: Recording[] = trashedSessions.map((session) => ({
-    id: session._id,
-    title: session.title,
-    date: new Date(session.createdAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    duration: formatDuration(session.duration),
-    transcript: session.transcript || '',
-    notes: '',
-    lectureType: session.lectureType,
-    nuggetNotes: session.nuggetNotes,
-  }));
 
   return (
     <div className="flex h-full relative gap-3 p-3">
@@ -173,7 +184,7 @@ export function StudyView() {
           )}
         >
           <RecordingsSidebar
-            recordings={recordings}
+            recordings={sidebarRecordings}
             trashedRecordings={trashedRecordings}
             selectedId={selectedRecording?.id}
             onSelect={handleSelect}

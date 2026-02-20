@@ -6,7 +6,7 @@
 
 ---
 
-## Current Status: v4.7 — Phase 3 (Learn)
+## Current Status: v4.9.1 — Phase 3 (Learn)
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -125,6 +125,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 | **Auth** | Clerk + Convex integration | |
 | **Rich Text** | TipTap | 3.14 |
 | **Diagrams** | Excalidraw | 0.18 |
+| **Routing** | TanStack Router | 1.x |
 | **Drag/Resize** | interact.js | 1.10 |
 | **Transcription** | AssemblyAI | Real-time WebSocket |
 | **AI** | Anthropic Claude (Haiku 4.5, all endpoints) | |
@@ -161,7 +162,11 @@ ScribeCat-v3/
 │   └── renderer/             # React app
 │       ├── App.tsx           # Root with Clerk auth gates
 │       ├── index.tsx         # Entry point (Clerk + Convex providers)
+│       ├── router.tsx        # TanStack Router config (routes + type registration)
+│       ├── contexts/
+│       │   └── session-context.tsx   # App-wide session/recording/chat state
 │       ├── components/
+│       │   ├── app-layout.tsx        # Root layout (TopBar + Outlet + NuggetChat)
 │       │   ├── home-view.tsx         # Recording mode
 │       │   ├── study-view.tsx        # Study mode
 │       │   ├── recording-panel.tsx   # Audio recording + transcript
@@ -203,7 +208,9 @@ ScribeCat-v3/
 │           └── globals.css           # Tailwind + theme CSS
 ├── public/                    # Static assets
 ├── docs/                      # Documentation
-├── .github/agents/            # GitHub Copilot agent configs
+├── .github/                   # GitHub config
+│   ├── agents/               # Copilot agent configs (Brainstorm, Explain Error)
+│   └── instructions/         # Copilot instructions
 └── biome.json                 # Linting/formatting config
 ```
 

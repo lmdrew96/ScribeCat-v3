@@ -56,7 +56,7 @@ All AI endpoints use a centralized model config (`convex/config.ts` — `AI_MODE
 | `src/renderer/components/nugget-notes-panel.tsx` | Note bubbles UI with insert button |
 | `src/renderer/components/nugget-chat.tsx` | AI chat drawer with persistent history |
 | `src/renderer/components/recording-panel.tsx` | Hosts Nugget Notes panel |
-| `src/renderer/components/study-content.tsx` | Hosts Nugget Chat |
+| `src/renderer/components/app-layout.tsx` | Hosts Nugget Chat (app-level, always visible) |
 | `convex/schema.ts` | `chatHistory` table for persistent chat |
 
 ---
@@ -111,7 +111,7 @@ Output ONLY bullet points (no intro, no explanation). Each must start with "- ":
 
 ### 2. Create Nugget Notes Hook
 
-**File: `src/renderer/hooks/useNuggetNotes.ts`**
+**File: `src/renderer/hooks/use-nugget-notes.ts`**
 
 This hook orchestrates the two-model pipeline. Port logic from `NuggetNotesOrchestrator.ts`:
 
@@ -366,7 +366,7 @@ convex/
 
 src/renderer/
   hooks/
-    useNuggetNotes.ts    # Orchestrator hook
+    use-nugget-notes.ts      # Orchestrator hook
   components/
     nugget-notes-panel.tsx   # Note bubbles UI
     nugget-chat.tsx          # Chat drawer
@@ -380,7 +380,7 @@ src/renderer/
 src/renderer/components/
   recording-panel.tsx    # Add Nugget Notes panel
   notes-panel.tsx        # Export/share insertion logic
-  study-view.tsx         # Add floating chat button
+  app-layout.tsx         # Hosts Nugget Chat (app-level)
 ```
 
 ---

@@ -28,6 +28,28 @@ export const list = query({
   },
 });
 
+// Lightweight list — metadata only (strips transcript, segments, notes, nuggetNotes)
+export const listMetadata = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_user_deleted', (q) => q.eq('userId', userId).eq('isDeleted', false))
+      .order('desc')
+      .collect();
+    return sessions.map((s) => ({
+      _id: s._id,
+      _creationTime: s._creationTime,
+      title: s.title,
+      createdAt: s.createdAt,
+      duration: s.duration,
+      lectureType: s.lectureType,
+      audioStorageId: s.audioStorageId,
+    }));
+  },
+});
+
 // Get a single session by ID (joins notes from sessionNotes table)
 export const get = query({
   args: { id: v.id('sessions') },
@@ -237,6 +259,27 @@ export const listDeleted = query({
       .withIndex('by_user_deleted', (q) => q.eq('userId', userId).eq('isDeleted', true))
       .order('desc')
       .collect();
+  },
+});
+
+// Lightweight trash list — metadata only
+export const listDeletedMetadata = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_user_deleted', (q) => q.eq('userId', userId).eq('isDeleted', true))
+      .order('desc')
+      .collect();
+    return sessions.map((s) => ({
+      _id: s._id,
+      _creationTime: s._creationTime,
+      title: s.title,
+      createdAt: s.createdAt,
+      duration: s.duration,
+      lectureType: s.lectureType,
+    }));
   },
 });
 

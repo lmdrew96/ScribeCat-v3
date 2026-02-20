@@ -1,4 +1,4 @@
-import type { Recording } from '@/components/study-view';
+import type { SessionSummary } from '@/components/study-view';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,10 +31,10 @@ import {
 import { useState } from 'react';
 
 interface RecordingsSidebarProps {
-  recordings: Recording[];
-  trashedRecordings: Recording[];
+  recordings: SessionSummary[];
+  trashedRecordings: SessionSummary[];
   selectedId?: string;
-  onSelect: (recording: Recording) => void;
+  onSelect: (recording: SessionSummary) => void;
   onDelete: (recordingId: string) => void;
   onRestore: (recordingId: string) => void;
   onPermanentDelete: (recordingId: string) => void;
@@ -43,7 +43,7 @@ interface RecordingsSidebarProps {
 
 type ConfirmAction = {
   type: 'delete' | 'permanent-delete';
-  recording: Recording;
+  recording: SessionSummary;
 };
 
 export function RecordingsSidebar({

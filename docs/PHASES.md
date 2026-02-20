@@ -2,7 +2,7 @@
 
 > **Current Phase: 3 — Learn**
 >
-> **Current Version: 4.7.2**
+> **Current Version: 4.9.1**
 >
 > Last updated: February 2026
 
@@ -294,3 +294,15 @@ Before marking a phase complete:
 | 4.7.0 | Feb 2026 | Lift Nugget Chat to app level with smarter context + markdown rendering |
 | 4.7.1 | Feb 2026 | Nugget Chat button visibility improvement |
 | 4.7.2 | Feb 2026 | Fix notes editor save cycle and resolve all TypeScript errors |
+| 4.7.3 | Feb 2026 | Major documentation update — sync all docs with actual project state |
+| 4.8.0 | Feb 2026 | Persist nugget notes and add Nugget Notes tab in study mode |
+| 4.8.1 | Feb 2026 | Fix notes and nugget notes not saving after recording stops |
+| 4.8.2 | Feb 2026 | Move Nugget Chat button from floating overlay to header |
+| 4.8.3 | Feb 2026 | Fix circular structure JSON error in study tool generation |
+| 4.8.4 | Feb 2026 | Fix Nugget Chat scrolling and transcript auto-scroll snapping |
+| 4.8.5 | Feb 2026 | Cap study tools content area at 40vh with scroll overflow |
+| 4.8.6 | Feb 2026 | Rewrite concept map with tree layout and theme-safe colors |
+| 4.8.7 | Feb 2026 | Fix concept map SVG colors — use raw CSS vars, not hsl() wrappers |
+| 4.8.8 | Feb 2026 | Add collapse/expand toggle to study tools card |
+| 4.9.0 | Feb 2026 | Add URL-based routing with TanStack Router |
+| 4.9.1 | Feb 2026 | Fix ADHDesigns link to use .dev domain |

@@ -7,7 +7,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
  * userId is now derived from the JWT token on the backend.
  */
 export function useSessions() {
-  const sessions = useQuery(api.sessions.list);
+  const sessions = useQuery(api.sessions.listMetadata);
   const createSession = useMutation(api.sessions.create);
   const updateSession = useMutation(api.sessions.update);
   const deleteSession = useMutation(api.sessions.softDelete);
@@ -45,6 +45,6 @@ export function useTranscriptAppend() {
  * userId is now derived from the JWT token on the backend.
  */
 export function useTrash() {
-  const deletedSessions = useQuery(api.sessions.listDeleted);
+  const deletedSessions = useQuery(api.sessions.listDeletedMetadata);
   return deletedSessions || [];
 }

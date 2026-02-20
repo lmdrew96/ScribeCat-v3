@@ -1,5 +1,11 @@
 # Claude Code Instructions for ScribeCat v3
 
+## Project Overview
+
+This is a Vite + React + Convex + TypeScript project using pnpm. After modifying dependencies or moving packages between deps/devDeps, always run `pnpm install` to regenerate the lockfile before committing.
+
+---
+
 ## About This Project
 
 ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** deployed on Vercel.
@@ -8,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.7.2 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
+**Current Version:** 4.9.1 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -47,6 +53,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 | **Auth** | Clerk + Convex | @udel.edu restriction, JWT integration |
 | **Rich Text** | TipTap 3.14 | 15+ extensions, ProseMirror-based |
 | **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
+| **Routing** | TanStack Router 1.x | URL-based routing with type-safe params |
 | **Drag/Resize** | interact.js 1.10 | For editor objects |
 | **Transcription** | AssemblyAI | Real-time WebSocket STT |
 | **AI** | Anthropic Claude | Haiku 4.5 (all endpoints, centralized in `convex/config.ts`) |
@@ -84,7 +91,11 @@ ScribeCat-v3/
 │   └── renderer/             # React app
 │       ├── App.tsx           # Root with Clerk auth gates
 │       ├── index.tsx         # Entry point (Clerk + Convex providers)
+│       ├── router.tsx        # TanStack Router config (routes + type registration)
+│       ├── contexts/
+│       │   └── session-context.tsx   # App-wide session/recording/chat state
 │       ├── components/
+│       │   ├── app-layout.tsx        # Root layout (TopBar + Outlet + NuggetChat)
 │       │   ├── home-view.tsx         # Recording mode (main view)
 │       │   ├── study-view.tsx        # Study mode (sessions + tools)
 │       │   ├── recording-panel.tsx   # Audio recording + transcript + nugget notes
@@ -135,9 +146,13 @@ ScribeCat-v3/
 │           └── globals.css           # Tailwind imports + 6 theme definitions
 ├── public/                    # Static assets
 ├── docs/                      # Documentation
+│   ├── README.md             # Project README (features, setup, tech stack)
 │   ├── PHASES.md             # Phase implementation guide
 │   ├── NOTION-INSPIRED-FEATURES.md
 │   └── nugget-integration-handoff.md
+├── .github/                   # GitHub config
+│   ├── agents/               # Copilot agent configs (Brainstorm, Explain Error)
+│   └── instructions/         # Copilot instructions
 ├── biome.json                 # Biome linting/formatting config
 ├── vite.config.ts             # Vite build config
 ├── tsconfig.json              # TypeScript strict config
@@ -365,6 +380,14 @@ BAD:  "You might want to consider building the project..."
 
 ---
 
+## Build & Quality
+
+After every implementation, run `pnpm build` and fix any TypeScript/Biome errors before committing. Never commit code that doesn't compile clean.
+
+When editing a file, always check if removed imports/exports/fields are used elsewhere in the codebase before deleting them. Use Grep to verify no other references exist.
+
+---
+
 ## Build Commands
 
 ```bash
@@ -468,19 +491,40 @@ function process(data: unknown) {
 
 ### Commit Format
 ```
-v4.7.2: Brief description of change
+v4.9.1: Brief description of change
 ```
 
 ### Version Bumping
-- **Patch** (4.7.2 -> 4.7.3): Bug fixes
-- **Minor** (4.7.2 -> 4.8.0): New features
-- **Major** (4.7.2 -> 5.0.0): Breaking changes / phase completion
+- **Patch** (4.9.1 -> 4.9.2): Bug fixes
+- **Minor** (4.9.1 -> 4.10.0): New features
+- **Major** (4.9.1 -> 5.0.0): Breaking changes / phase completion
 
 ### Before Committing
 1. `pnpm clean && pnpm build` passes
 2. Test the feature manually
 3. Update version in package.json
 4. Commit with version in message
+
+### After Completing Changes
+After completing all changes, always commit and push to main unless explicitly told otherwise. Use conventional commit messages with version bumps when appropriate (e.g., `v4.10.0: Add flashcard spaced repetition`).
+
+---
+
+## Communication
+
+When fixing bugs, carefully re-read the user's request to understand the exact domain (e.g., "input modality" vs "error type", "code work" vs "content"). If ambiguous, ask for clarification before implementing.
+
+---
+
+## Documentation
+
+When updating documentation or performing audits, always check ALL subdirectories (especially `docs/`, `docs/subdirs/`) in a single pass. Do not wait for the user to remind you about missed directories.
+
+---
+
+## Styling & Theming
+
+When implementing CSS changes involving colors or theming, never wrap raw hex values in `hsl()` — check the existing pattern in `src/renderer/styles/globals.css` for how CSS variables and color values are used in the project before applying changes.
 
 ---
 
