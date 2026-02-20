@@ -18,6 +18,7 @@ import {
 
 import { api, internal } from './_generated/api';
 import type { LectureType } from './prompts';
+import { awardXpHelper } from './studyQuest';
 
 // ─── Auth helper ─────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ export const saveToolResult = internalMutation({
     }
 
     const now = Date.now();
-    return await ctx.db.insert('studyToolResults', {
+    const id = await ctx.db.insert('studyToolResults', {
       userId: args.userId,
       sessionId: args.sessionId,
       toolType: args.toolType,
@@ -161,6 +162,11 @@ export const saveToolResult = internalMutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Award XP for first-time tool generation (not regeneration)
+    await awardXpHelper(ctx, args.userId, 10, 'tool_use', `Generated ${args.toolType}`);
+
+    return id;
   },
 });
 

@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { awardXpHelper } from './studyQuest';
 
 // ─── Auth helper ─────────────────────────────────────────────
 
@@ -230,6 +231,24 @@ export const logStudyTime = mutation({
         newUnlocks.push(id);
       }
     }
+
+    // ─── Award XP to cat companion ────────────────────────────
+    let xpAmount = Math.round(args.durationMinutes * 2) + 25; // 2 XP/min + session bonus
+    const newMinutes = existing
+      ? existing.studyMinutes + args.durationMinutes
+      : args.durationMinutes;
+    const goalJustMet =
+      newMinutes >= goalMinutes && (existing ? existing.studyMinutes < goalMinutes : false);
+    if (goalJustMet) xpAmount += 50;
+    xpAmount += newUnlocks.length * 30;
+
+    await awardXpHelper(
+      ctx,
+      userId,
+      xpAmount,
+      'study_session',
+      `${Math.round(args.durationMinutes)}min session`,
+    );
 
     return { newUnlocks };
   },

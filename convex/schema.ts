@@ -84,6 +84,25 @@ export default defineSchema({
     .index('by_user', ['userId'])
     .index('by_user_achievement', ['userId', 'achievementId']),
 
+  // Cat companion (StudyQuest — one row per user)
+  catCompanion: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    totalXp: v.number(),
+    level: v.number(),
+    mood: v.string(),
+    lastActivityAt: v.number(),
+    lastXpGains: v.array(
+      v.object({
+        amount: v.number(),
+        source: v.string(),
+        label: v.string(),
+        timestamp: v.number(),
+      }),
+    ),
+    createdAt: v.number(),
+  }).index('by_user', ['userId']),
+
   // AI study tool cached results (one row per tool per session)
   studyToolResults: defineTable({
     userId: v.string(),

@@ -1,4 +1,5 @@
 import { NuggetChat } from '@/components/nugget-chat';
+import { StudyQuestWidget } from '@/components/study-quest/study-quest-widget';
 import { TopBar } from '@/components/top-bar';
 import { useSessionContext } from '@/contexts/session-context';
 import { useSession } from '@/hooks/use-sessions';
@@ -28,6 +29,7 @@ export function AppLayout() {
         isOpen={chatOpen}
         onOpenChange={setChatOpen}
       />
+      <StudyQuestWidget />
     </div>
   );
 }
