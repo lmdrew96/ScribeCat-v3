@@ -88,6 +88,7 @@ export default defineSchema({
   catCompanion: defineTable({
     userId: v.string(),
     name: v.string(),
+    variant: v.string(),
     totalXp: v.number(),
     level: v.number(),
     mood: v.string(),

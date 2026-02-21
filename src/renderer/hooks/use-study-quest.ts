@@ -1,3 +1,4 @@
+import type { CatVariant } from '@/components/study-quest/cat-sprites';
 import { useSessionContext } from '@/contexts/session-context';
 import { useMutation, useQuery } from 'convex/react';
 import { useMemo } from 'react';
@@ -33,6 +34,7 @@ export function useStudyQuest() {
   const catState = useQuery(api.studyQuest.getCatState);
   const adoptCat = useMutation(api.studyQuest.adoptCat);
   const renameCat = useMutation(api.studyQuest.renameCat);
+  const changeVariant = useMutation(api.studyQuest.changeVariant);
   const { isRecording } = useSessionContext();
 
   const mood = useMemo((): CatMood => {
@@ -53,6 +55,7 @@ export function useStudyQuest() {
     isAdopted: catState !== null && catState !== undefined,
     isLoading: catState === undefined,
     name: catState?.name ?? 'Nugget',
+    variant: (catState?.variant ?? 'grey') as CatVariant,
     totalXp: catState?.totalXp ?? 0,
     level: xp.level,
     xpProgress: xp,
@@ -60,5 +63,6 @@ export function useStudyQuest() {
     recentGains: catState?.lastXpGains ?? [],
     adoptCat,
     renameCat,
+    changeVariant,
   };
 }

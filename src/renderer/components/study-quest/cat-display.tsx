@@ -1,57 +1,45 @@
 import { useEffect, useState } from 'react';
-import { CAT_SPRITES, type CatMood, MOOD_FRAME_DURATION, pixelsToBoxShadow } from './cat-sprites';
+import type { CatMood, CatVariant } from './cat-sprites';
+import { MOOD_TO_SPRITE, SPRITE_CONFIG, getSpriteUrl } from './cat-sprites';
 
 interface CatDisplayProps {
   mood: CatMood;
+  variant: CatVariant;
   size: 'small' | 'large';
 }
 
-const SCALE = { small: 3, large: 5 } as const;
-const GRID_SIZE = 16;
+/** Display size in px for each size variant */
+const DISPLAY_SIZE = { small: 48, large: 80 } as const;
 
-export function CatDisplay({ mood, size }: CatDisplayProps) {
+export function CatDisplay({ mood, variant, size }: CatDisplayProps) {
   const [frame, setFrame] = useState(0);
-  const scale = SCALE[size];
 
+  const animation = MOOD_TO_SPRITE[mood];
+  const config = SPRITE_CONFIG[animation];
+  const displaySize = DISPLAY_SIZE[size];
+
+  // Reset frame and start animation loop when animation changes
   useEffect(() => {
     setFrame(0);
-    const interval = MOOD_FRAME_DURATION[mood];
-    const timer = setInterval(() => setFrame((f) => (f + 1) % 2), interval);
+    const timer = setInterval(() => {
+      setFrame((f) => (f + 1) % config.frameCount);
+    }, config.frameDuration);
     return () => clearInterval(timer);
-  }, [mood]);
+  }, [config.frameCount, config.frameDuration]);
 
-  const sprites = CAT_SPRITES[mood];
-  const boxShadow = pixelsToBoxShadow(sprites[frame], scale);
-
-  const moodClass =
-    mood === 'excited'
-      ? 'cat-mood-excited'
-      : mood === 'sleepy'
-        ? 'cat-mood-sleepy'
-        : mood === 'studying'
-          ? 'cat-mood-studying'
-          : 'cat-mood-idle';
+  const spriteUrl = getSpriteUrl(variant, animation);
 
   return (
     <div
-      className={moodClass}
       style={{
-        width: GRID_SIZE * scale,
-        height: GRID_SIZE * scale,
-        position: 'relative',
+        width: displaySize,
+        height: displaySize,
+        backgroundImage: `url(${spriteUrl})`,
+        backgroundPosition: `${-frame * displaySize}px 0`,
+        backgroundSize: `auto ${displaySize}px`,
+        backgroundRepeat: 'no-repeat',
+        imageRendering: 'pixelated',
       }}
-    >
-      <div
-        className="cat-sprite"
-        style={{
-          width: scale,
-          height: scale,
-          boxShadow,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-        }}
-      />
-    </div>
+    />
   );
 }

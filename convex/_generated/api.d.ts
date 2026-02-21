@@ -25,8 +25,8 @@ import type * as studyQuest from "../studyQuest.js";
 import type * as studyToolPrompts from "../studyToolPrompts.js";
 import type * as studyTools from "../studyTools.js";
 import type * as transcription from "../transcription.js";
-import type * as xpUtils from "../xpUtils.js";
 import type * as uploadImage from "../uploadImage.js";
+import type * as xpUtils from "../xpUtils.js";
 
 import type {
   ApiFromModules,

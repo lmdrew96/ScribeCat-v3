@@ -36,7 +36,10 @@ export const getCatState = query({
 // ─── Mutations ───────────────────────────────────────────────
 
 export const adoptCat = mutation({
-  args: { name: v.optional(v.string()) },
+  args: {
+    name: v.optional(v.string()),
+    variant: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     const existing = await ctx.db
@@ -48,6 +51,7 @@ export const adoptCat = mutation({
     await ctx.db.insert('catCompanion', {
       userId,
       name: args.name ?? 'Nugget',
+      variant: args.variant ?? 'grey',
       totalXp: 0,
       level: 1,
       mood: 'idle',
@@ -55,6 +59,19 @@ export const adoptCat = mutation({
       lastXpGains: [],
       createdAt: Date.now(),
     });
+  },
+});
+
+export const changeVariant = mutation({
+  args: { variant: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const cat = await ctx.db
+      .query('catCompanion')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    if (!cat) throw new ConvexError('No cat found');
+    await ctx.db.patch(cat._id, { variant: args.variant });
   },
 });
 
