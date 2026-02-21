@@ -182,13 +182,10 @@ export function RecordingsSidebar({
           <button
             type="button"
             onClick={() => setViewingTrash(true)}
-            className="mt-2 flex items-center gap-1.5 px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-[var(--glass-bg-light)]"
+            className="mt-2 flex items-center justify-center h-7 w-7 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-[var(--glass-bg-light)] ml-auto"
+            title={`Trash${trashedRecordings.length > 0 ? ` (${trashedRecordings.length})` : ''}`}
           >
-            <Trash2 className="h-3 w-3" />
-            Trash
-            {trashedRecordings.length > 0 && (
-              <span className="ml-auto text-[10px] opacity-70">{trashedRecordings.length}</span>
-            )}
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
