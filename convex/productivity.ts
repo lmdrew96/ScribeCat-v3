@@ -1,18 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { requireAuth } from './auth-helpers';
 import { awardXpHelper } from './studyQuest';
-
-// ─── Auth helper ─────────────────────────────────────────────
-
-async function requireAuth(ctx: {
-  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new ConvexError('Not authenticated');
-  }
-  return identity.subject;
-}
 
 // ─── Settings ────────────────────────────────────────────────
 

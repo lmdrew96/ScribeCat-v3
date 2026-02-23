@@ -5,19 +5,8 @@
 import { ConvexError, v } from 'convex/values';
 import type { MutationCtx } from './_generated/server';
 import { internalMutation, mutation, query } from './_generated/server';
+import { requireAuth } from './auth-helpers';
 import { levelFromXp } from './xpUtils';
-
-// ─── Auth helper ─────────────────────────────────────────────
-
-async function requireAuth(ctx: {
-  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new ConvexError('Not authenticated');
-  }
-  return identity.subject;
-}
 
 // ─── Queries ─────────────────────────────────────────────────
 

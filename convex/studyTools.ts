@@ -17,20 +17,9 @@ import {
 } from './studyToolPrompts';
 
 import { api, internal } from './_generated/api';
+import { requireAuth } from './auth-helpers';
 import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
-
-// ─── Auth helper ─────────────────────────────────────────────
-
-async function requireAuth(ctx: {
-  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new ConvexError('Not authenticated');
-  }
-  return identity.subject;
-}
 
 // ─── Helpers ─────────────────────────────────────────────────
 

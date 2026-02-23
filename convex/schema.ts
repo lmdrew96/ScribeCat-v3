@@ -157,4 +157,42 @@ export default defineSchema({
     ),
     updatedAt: v.number(),
   }).index('by_user_session', ['userId', 'sessionId']),
+
+  // User profiles (public identity for social features)
+  userProfiles: defineTable({
+    userId: v.string(),
+    username: v.string(),
+    displayName: v.string(),
+    avatarUrl: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_username', ['username'])
+    .searchIndex('search_username', {
+      searchField: 'username',
+      filterFields: [],
+    }),
+
+  // Friend requests + accepted friendships (one row per relationship)
+  friendships: defineTable({
+    requesterId: v.string(),
+    receiverId: v.string(),
+    status: v.string(), // 'pending' | 'accepted' | 'declined' | 'cancelled'
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_requester', ['requesterId', 'status'])
+    .index('by_receiver', ['receiverId', 'status'])
+    .index('by_pair', ['requesterId', 'receiverId']),
+
+  // Blocked users (asymmetric, separate from friendships)
+  blocks: defineTable({
+    blockerId: v.string(),
+    blockedId: v.string(),
+    createdAt: v.number(),
+  })
+    .index('by_blocker', ['blockerId'])
+    .index('by_blocked', ['blockedId'])
+    .index('by_pair', ['blockerId', 'blockedId']),
 });

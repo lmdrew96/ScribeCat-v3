@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAchievements, useStudySettings, useStudyStats } from '@/hooks/use-productivity';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { cn } from '@/lib/utils';
 import { useClerk, useUser } from '@clerk/clerk-react';
 import {
@@ -74,6 +75,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { profile } = useUserProfile();
 
   // Study settings from Convex
   const { settings, updateSettings } = useStudySettings();
@@ -454,6 +456,29 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {/* Account */}
             {activeCategory === 'account' && (
               <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm text-foreground">Username</Label>
+                  {profile ? (
+                    <p className="text-sm text-accent font-medium">@{profile.username}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Visit the{' '}
+                      <button
+                        type="button"
+                        className="text-accent hover:underline"
+                        onClick={() => {
+                          onOpenChange(false);
+                          window.location.hash = '';
+                          window.location.pathname = '/friends';
+                        }}
+                      >
+                        Friends page
+                      </button>{' '}
+                      to set up your @username
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-sm text-foreground">Name</Label>
                   <p className="text-sm text-muted-foreground">{user?.fullName ?? 'Student'}</p>

@@ -1,19 +1,22 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
+import { useFriends } from '@/hooks/use-friends';
 import { useStudyStats } from '@/hooks/use-productivity';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { BookOpen, Cat, Flame, Home, Settings } from 'lucide-react';
+import { BookOpen, Cat, Flame, Home, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 
 export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const stats = useStudyStats();
   const { setChatOpen } = useSessionContext();
+  const { pendingCount } = useFriends();
 
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isHome = currentPath === '/';
   const isStudy = currentPath.startsWith('/study');
+  const isFriends = currentPath === '/friends';
 
   return (
     <>
@@ -44,6 +47,22 @@ export function TopBar() {
             <Link to="/study">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Study</span>
+            </Link>
+          </Button>
+          <Button
+            variant={isFriends ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 relative"
+            asChild
+          >
+            <Link to="/friends">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Friends</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                  {pendingCount}
+                </span>
+              )}
             </Link>
           </Button>
         </nav>

@@ -1,0 +1,75 @@
+import { CatDisplay } from '@/components/study-quest/cat-display';
+import type { CatVariant } from '@/components/study-quest/cat-sprites';
+import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
+
+interface UserCardProps {
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  catVariant?: string | null;
+  catLevel?: number | null;
+  action?: ReactNode;
+  subtitle?: string;
+  className?: string;
+}
+
+export function UserCard({
+  username,
+  displayName,
+  avatarUrl,
+  catVariant,
+  catLevel,
+  action,
+  subtitle,
+  className,
+}: UserCardProps) {
+  // Get initials for avatar fallback
+  const initials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-3 rounded-lg border border-[var(--glass-border)] glass-light p-3 transition-colors hover:bg-[var(--glass-bg)]',
+        className,
+      )}
+    >
+      {/* Avatar or cat sprite */}
+      <div className="relative shrink-0">
+        {catVariant ? (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light">
+            <CatDisplay mood="idle" variant={catVariant as CatVariant} size="small" />
+          </div>
+        ) : avatarUrl ? (
+          <img src={avatarUrl} alt={displayName} className="h-10 w-10 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--glass-bg)] text-sm font-medium text-foreground">
+            {initials}
+          </div>
+        )}
+        {catLevel != null && (
+          <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">
+            {catLevel}
+          </span>
+        )}
+      </div>
+
+      {/* Name + username */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          @{username}
+          {subtitle && <span className="ml-1.5">{subtitle}</span>}
+        </p>
+      </div>
+
+      {/* Action slot */}
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}

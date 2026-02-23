@@ -1,4 +1,5 @@
 import { AppLayout } from '@/components/app-layout';
+import { FriendsView } from '@/components/friends/friends-view';
 import { HomeView } from '@/components/home-view';
 import { StudyView } from '@/components/study-view';
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
@@ -25,7 +26,18 @@ const studySessionRoute = createRoute({
   component: StudyView,
 });
 
-const routeTree = rootRoute.addChildren([homeRoute, studyIndexRoute, studySessionRoute]);
+const friendsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/friends',
+  component: FriendsView,
+});
+
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  studyIndexRoute,
+  studySessionRoute,
+  friendsRoute,
+]);
 
 export const router = createRouter({ routeTree });
 

@@ -1,19 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
-
-/**
- * Helper to get the authenticated user's ID from the JWT token.
- * Throws if not authenticated.
- */
-async function requireAuth(ctx: {
-  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new ConvexError('Not authenticated');
-  }
-  return identity.subject;
-}
+import { requireAuth } from './auth-helpers';
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({
