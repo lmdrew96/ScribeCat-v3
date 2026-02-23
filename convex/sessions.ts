@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
-import { requireAuth } from './auth-helpers';
+import { requireAuth } from './authHelpers';
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({

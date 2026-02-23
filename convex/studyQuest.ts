@@ -5,7 +5,7 @@
 import { ConvexError, v } from 'convex/values';
 import type { MutationCtx } from './_generated/server';
 import { internalMutation, mutation, query } from './_generated/server';
-import { requireAuth } from './auth-helpers';
+import { requireAuth } from './authHelpers';
 import { levelFromXp } from './xpUtils';
 
 // ─── Queries ─────────────────────────────────────────────────

@@ -17,7 +17,7 @@ import {
 } from './studyToolPrompts';
 
 import { api, internal } from './_generated/api';
-import { requireAuth } from './auth-helpers';
+import { requireAuth } from './authHelpers';
 import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
 
