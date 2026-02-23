@@ -379,22 +379,24 @@ export function RecordingPanel({
                 ))}
               </SelectContent>
             </Select>
-            <LectureTypeSelect value={lectureType} onChange={setLectureType} />
-            {courses.length > 0 && (
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select course (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No course</SelectItem>
-                  {courses.map((course) => (
-                    <SelectItem key={course} value={course} className="text-xs">
-                      {course}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex gap-2">
+              <LectureTypeSelect value={lectureType} onChange={setLectureType} />
+              {courses.length > 0 && (
+                <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                  <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectValue placeholder="Select course (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No course</SelectItem>
+                    {courses.map((course) => (
+                      <SelectItem key={course} value={course} className="text-xs">
+                        {course}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <Input
               value={sessionTitle}
               onChange={(e) => setSessionTitle(e.target.value)}
