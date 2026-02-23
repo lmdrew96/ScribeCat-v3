@@ -386,50 +386,94 @@ export function EditorToolbar({
         </SelectContent>
       </Select>
 
-      {/* Font Colors */}
-      <div className="flex items-center gap-1 rounded-lg glass-light p-1 shrink-0">
-        {fontColors.map((color) => (
-          <Button
-            key={color.name}
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => editor.chain().focus().setColor(color.value).run()}
-            data-active={editor.isActive('textStyle', { color: color.value })}
-            title={`Font ${color.name}`}
-          >
-            <Type className="h-3 w-3" style={{ color: color.value }} />
-          </Button>
-        ))}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={() => editor.chain().focus().unsetColor().run()}
-          title="Reset color"
-        >
-          <Type className="h-3 w-3 opacity-50" />
-        </Button>
-      </div>
+      {/* Font Color Dropdown */}
+      <Select
+        value={
+          fontColors.find((c) => editor.isActive('textStyle', { color: c.value }))?.value ?? 'unset'
+        }
+        onValueChange={(value) => {
+          if (value === 'unset') {
+            editor.chain().focus().unsetColor().run();
+          } else {
+            editor.chain().focus().setColor(value).run();
+          }
+        }}
+      >
+        <SelectTrigger className="h-7 w-24 text-xs shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Type
+              className="h-3 w-3"
+              style={{
+                color: fontColors.find((c) => editor.isActive('textStyle', { color: c.value }))
+                  ?.value,
+              }}
+            />
+            <span>Color</span>
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          {fontColors.map((color) => (
+            <SelectItem key={color.name} value={color.value}>
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ backgroundColor: color.value }}
+                />
+                <span>{color.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+          <SelectItem value="unset">
+            <span className="text-muted-foreground">Reset</span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Highlight Color Dropdown */}
+      <Select
+        value={
+          highlightColors.find((c) => editor.isActive('highlight', { color: c.value }))?.value ??
+          'unset'
+        }
+        onValueChange={(value) => {
+          if (value === 'unset') {
+            editor.chain().focus().unsetHighlight().run();
+          } else {
+            editor.chain().focus().toggleHighlight({ color: value }).run();
+          }
+        }}
+      >
+        <SelectTrigger className="h-7 w-28 text-xs shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Highlighter
+              className="h-3 w-3"
+              style={{
+                color: highlightColors.find((c) => editor.isActive('highlight', { color: c.value }))
+                  ?.value,
+              }}
+            />
+            <span>Highlight</span>
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          {highlightColors.map((color) => (
+            <SelectItem key={color.name} value={color.value}>
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded-full border border-border"
+                  style={{ backgroundColor: color.value }}
+                />
+                <span>{color.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+          <SelectItem value="unset">
+            <span className="text-muted-foreground">Remove</span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       <div className="flex items-center gap-1 rounded-lg glass-light p-1 shrink-0">
-        {/* Highlighter Colors */}
-        {highlightColors.map((color) => (
-          <Button
-            key={color.name}
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => editor.chain().focus().toggleHighlight({ color: color.value }).run()}
-            data-active={editor.isActive('highlight', { color: color.value })}
-            title={`Highlight ${color.name}`}
-          >
-            <Highlighter className="h-3 w-3" style={{ color: color.value }} />
-          </Button>
-        ))}
-
-        <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
-
         {/* Table, Link, Code, Image, TextBox */}
         <Button
           variant="ghost"

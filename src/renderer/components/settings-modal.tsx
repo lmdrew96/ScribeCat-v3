@@ -88,6 +88,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [dailyGoalHours, setDailyGoalHours] = useState('2');
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState('0');
   const [weeklyGoal, setWeeklyGoal] = useState('10');
+  const [nuggetNotesEnabled, setNuggetNotesEnabled] = useState(true);
 
   // Audio settings (local only)
   const [showWaveform, setShowWaveform] = useState(true);
@@ -104,6 +105,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setDailyGoalHours(String(hours));
     setDailyGoalMinutes(String(mins));
     setWeeklyGoal(String(Math.floor(settings.weeklyGoalMinutes / 60)));
+    setNuggetNotesEnabled(settings.nuggetNotesEnabled ?? true);
   }, [settings]);
 
   // Save settings to Convex
@@ -174,7 +176,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[600px] max-h-[90vh] w-[60vw] max-w-[95vw] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-[600px] max-h-[90vh] w-[60vw] sm:max-w-none max-w-[95vw] flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="border-b border-[var(--glass-border)] px-4 py-3">
           <DialogTitle className="text-base font-semibold text-foreground">Settings</DialogTitle>
         </DialogHeader>
@@ -376,10 +378,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     </p>
                   </div>
                   <Switch
-                    checked={
-                      settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true
-                    }
-                    onCheckedChange={(checked) => saveSettings({ nuggetNotesEnabled: checked })}
+                    checked={nuggetNotesEnabled}
+                    onCheckedChange={(checked) => {
+                      setNuggetNotesEnabled(checked);
+                      saveSettings({ nuggetNotesEnabled: checked });
+                    }}
                   />
                 </div>
 
