@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.11.2 | **Current Phase:** 3 (Learn) — AI study tools + StudyQuest complete, 50-min lecture test remaining
+**Current Version:** 4.11.3 | **Current Phase:** 4 (Connect) — Phases 1-3 complete
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 

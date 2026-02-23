@@ -6,13 +6,13 @@
 
 ---
 
-## Current Status: v4.11.2 — Phase 3 (Learn)
+## Current Status: v4.11.3 — Phase 4 (Connect)
 
 | Phase | Name | Status |
 |-------|------|--------|
 | **1** | **Capture** — Recording + Live Transcription | Complete |
 | **2** | **Process** — Notes Editor + AI Generation | Complete |
-| **3** | **Learn** — Study Tools + StudyQuest | Nearly Complete (50-min lecture test remaining) |
+| **3** | **Learn** — Study Tools + StudyQuest | Complete |
 | **4** | **Connect** — Social + Study Rooms + Games | Not Started |
 
 See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
