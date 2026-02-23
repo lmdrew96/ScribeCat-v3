@@ -10,9 +10,12 @@
 
 import type * as ai from "../ai.js";
 import type * as audioStorage from "../audioStorage.js";
+import type * as authHelpers from "../authHelpers.js";
+import type * as blocks from "../blocks.js";
 import type * as citations from "../citations.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
+import type * as friends from "../friends.js";
 import type * as generateNotes from "../generateNotes.js";
 import type * as http from "../http.js";
 import type * as lectureContext from "../lectureContext.js";
@@ -26,6 +29,7 @@ import type * as studyToolPrompts from "../studyToolPrompts.js";
 import type * as studyTools from "../studyTools.js";
 import type * as transcription from "../transcription.js";
 import type * as uploadImage from "../uploadImage.js";
+import type * as userProfiles from "../userProfiles.js";
 import type * as xpUtils from "../xpUtils.js";
 
 import type {
@@ -37,9 +41,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   audioStorage: typeof audioStorage;
+  authHelpers: typeof authHelpers;
+  blocks: typeof blocks;
   citations: typeof citations;
   config: typeof config;
   crons: typeof crons;
+  friends: typeof friends;
   generateNotes: typeof generateNotes;
   http: typeof http;
   lectureContext: typeof lectureContext;
@@ -53,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   studyTools: typeof studyTools;
   transcription: typeof transcription;
   uploadImage: typeof uploadImage;
+  userProfiles: typeof userProfiles;
   xpUtils: typeof xpUtils;
 }>;
 

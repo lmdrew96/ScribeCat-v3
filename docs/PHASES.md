@@ -2,7 +2,7 @@
 
 > **Current Phase: 4 — Connect**
 >
-> **Current Version: 4.11.2**
+> **Current Version: 4.12.1**
 >
 > Last updated: February 2026
 
@@ -15,7 +15,7 @@
 | 1 | **Capture** | Recording + live transcription | Complete |
 | 2 | **Process** | Notes editor + AI generation | Complete |
 | 3 | **Learn** | Study tools + StudyQuest | Complete |
-| 4 | **Connect** | Social + Study Rooms + Games | Not Started |
+| 4 | **Connect** | Social + Study Rooms + Games | In Progress |
 
 ---
 
@@ -207,16 +207,22 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 
 ---
 
-## Phase 4: Connect — NOT STARTED
+## Phase 4: Connect — IN PROGRESS
 
 **Goal:** Social features and collaborative study
 
-### Friends System
+### Friends System — COMPLETE
 
-- [ ] Search users by @username
-- [ ] Send/accept/decline friend requests
-- [ ] Friends list with online presence
-- [ ] Block/remove friends
+- [x] User profiles with unique @usernames (permanent, 3-20 chars)
+- [x] Search users by @username (search index, min 2 chars)
+- [x] Send/accept/decline/cancel friend requests
+- [x] Friends list with cat companion info
+- [x] Block/unblock users (removes existing friendships)
+- [x] Username setup modal (real-time validation + availability check)
+- [x] `/friends` route with Friends, Requests, Search tabs
+- [x] Pending request badge in TopBar navigation
+- [x] Username display in Settings > Account
+- [x] Shared auth helpers (`convex/authHelpers.ts`)
 
 ### Messaging
 
@@ -255,6 +261,13 @@ Both games:
 - [ ] Browser extension for course list
 - [ ] Organize sessions by course
 - [ ] Import course info
+
+### Technical Notes
+
+**Friends System:** 3 new tables (`userProfiles`, `friendships`, `blocks`) with compound indexes for bidirectional queries
+**Auth Helpers:** Shared `convex/authHelpers.ts` (extracted from 4 files) — `requireAuth()` + `requireAuthWithProfile()`
+**Username Search:** Convex `searchIndex` on `username` field for prefix matching
+**Convex Module Naming:** Filenames cannot contain hyphens — use camelCase (e.g., `authHelpers.ts`, not `auth-helpers.ts`)
 
 ---
 
@@ -318,3 +331,7 @@ Before marking a phase complete:
 | 4.11.0 | Feb 2026 | StudyQuest cat companion with XP and leveling system |
 | 4.11.1 | Feb 2026 | Replace CSS pixel art with real sprite sheets from v2 |
 | 4.11.2 | Feb 2026 | Fix trash button hidden behind StudyQuest widget |
+| 4.11.3 | Feb 2026 | Update docs with StudyQuest completion and new project structure |
+| 4.11.4 | Feb 2026 | Mark Phase 3 complete, advance to Phase 4 |
+| 4.12.0 | Feb 2026 | Friends system — user profiles, friend requests, search, blocks |
+| 4.12.1 | Feb 2026 | Fix Convex module naming (auth-helpers → authHelpers) |

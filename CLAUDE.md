@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.11.3 | **Current Phase:** 4 (Connect) — Phases 1-3 complete
+**Current Version:** 4.12.1 | **Current Phase:** 4 (Connect) — Friends system complete, messaging next
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -67,7 +67,8 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (9 tables)
+│   ├── schema.ts             # Database schema (12 tables)
+│   ├── authHelpers.ts        # Shared auth helpers (requireAuth, requireAuthWithProfile)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
 │   ├── generateNotes.ts      # AI note generation (HTTP action)
@@ -85,6 +86,9 @@ ScribeCat-v3/
 │   ├── productivity.ts       # Goals, streaks, achievements
 │   ├── studyQuest.ts         # Cat companion queries/mutations
 │   ├── xpUtils.ts            # XP/level math functions
+│   ├── userProfiles.ts       # User profiles + username search
+│   ├── friends.ts            # Friend requests + friend list
+│   ├── blocks.ts             # Block/unblock users
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   ├── auth.config.ts        # Clerk JWT config
@@ -130,6 +134,13 @@ ScribeCat-v3/
 │       │   │   ├── cat-sprites.ts          # Sprite config, mood mapping, variant list
 │       │   │   ├── xp-progress.tsx         # Level badge + XP bar + recent gains
 │       │   │   └── cat-name-editor.tsx     # Inline-editable cat name
+│       │   ├── friends/              # Friends system (Phase 4)
+│       │   │   ├── friends-view.tsx         # Main /friends page with tabs
+│       │   │   ├── friends-list.tsx         # Friends tab content
+│       │   │   ├── friend-requests.tsx      # Requests tab (incoming + sent)
+│       │   │   ├── user-search.tsx          # Search tab with username lookup
+│       │   │   ├── user-card.tsx            # Reusable user display card
+│       │   │   └── username-setup-modal.tsx # First-time @username creation
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # MediaRecorder wrapper
@@ -139,6 +150,8 @@ ScribeCat-v3/
 │       │   ├── use-sessions.ts         # Session CRUD hook
 │       │   ├── use-productivity.ts     # Goals + streaks + achievements
 │       │   ├── use-study-quest.ts     # Cat companion state + mood + actions
+│       │   ├── use-user-profile.ts    # User profile + username setup
+│       │   ├── use-friends.ts         # Friends queries + mutations
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
@@ -150,7 +163,8 @@ ScribeCat-v3/
 │       │   ├── font-size-extension.ts
 │       │   └── utils.ts               # cn() helper
 │       ├── types/
-│       │   └── study-tools.ts
+│       │   ├── study-tools.ts
+│       │   └── friends.ts
 │       └── styles/
 │           └── globals.css           # Tailwind imports + 6 theme definitions
 ├── public/                    # Static assets
@@ -174,7 +188,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-9 tables in `convex/schema.ts`:
+12 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -187,6 +201,9 @@ ScribeCat-v3/
 | `quizAttempts` | Quiz answer history and scores |
 | `chatHistory` | Persistent per-session Nugget Chat messages |
 | `catCompanion` | StudyQuest cat (name, variant, XP, level, mood, recent gains) |
+| `userProfiles` | Public identity (@username, display name, avatar) |
+| `friendships` | Friend requests + accepted friends (status, requester/receiver) |
+| `blocks` | Blocked users (asymmetric, persists independently) |
 
 ---
 
@@ -497,6 +514,7 @@ function process(data: unknown) {
 - Components: `PascalCase.tsx` (but file names are `kebab-case.tsx`)
 - Hooks: `use-kebab-case.ts`
 - Utils: `camelCase.ts`
+- Convex files: `camelCase.ts` (Convex does NOT allow hyphens in module paths — only alphanumeric, underscores, periods)
 - Convex functions: `camelCase`
 
 ### Before **Every** Commit

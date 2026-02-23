@@ -6,14 +6,14 @@
 
 ---
 
-## Current Status: v4.11.3 — Phase 4 (Connect)
+## Current Status: v4.12.1 — Phase 4 (Connect)
 
 | Phase | Name | Status |
 |-------|------|--------|
 | **1** | **Capture** — Recording + Live Transcription | Complete |
 | **2** | **Process** — Notes Editor + AI Generation | Complete |
 | **3** | **Learn** — Study Tools + StudyQuest | Complete |
-| **4** | **Connect** — Social + Study Rooms + Games | Not Started |
+| **4** | **Connect** — Social + Study Rooms + Games | In Progress |
 
 See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 
@@ -59,6 +59,14 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - XP earned from study time, session completion, daily goals, tool use, achievements
 - Level up system with quadratic XP curve
 - Floating widget with adopt flow, variant picker, and name editor
+
+### Friends System (Phase 4)
+- User profiles with unique @usernames
+- Friend requests (send, accept, decline, cancel)
+- Friends list with cat companion info
+- User search by username
+- Block/unblock users (removes existing friendships)
+- Pending request badge in navigation
 
 ### UI
 - 6 themes with glassmorphism effects (frosted glass panels, gradient backgrounds, glow accents)
@@ -146,7 +154,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend
-│   ├── schema.ts             # Database schema (9 tables)
+│   ├── schema.ts             # Database schema (12 tables)
 │   ├── sessions.ts           # Session CRUD
 │   ├── ai.ts                 # AI note generation (Convex action)
 │   ├── generateNotes.ts      # AI note generation (HTTP action)
@@ -164,6 +172,10 @@ ScribeCat-v3/
 │   ├── productivity.ts       # Goals, streaks, achievements
 │   ├── studyQuest.ts         # Cat companion queries/mutations
 │   ├── xpUtils.ts            # XP/level math functions
+│   ├── authHelpers.ts        # Shared auth helpers
+│   ├── userProfiles.ts       # User profiles + username search
+│   ├── friends.ts            # Friend requests + friend list
+│   ├── blocks.ts             # Block/unblock users
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   └── auth.config.ts        # Clerk auth config
@@ -199,6 +211,13 @@ ScribeCat-v3/
 │       │   │   ├── cat-sprites.ts          # Sprite config + mood mapping
 │       │   │   ├── xp-progress.tsx         # XP bar + recent gains
 │       │   │   └── cat-name-editor.tsx     # Inline name editor
+│       │   ├── friends/              # Friends system
+│       │   │   ├── friends-view.tsx         # Main /friends page
+│       │   │   ├── friends-list.tsx         # Friends tab
+│       │   │   ├── friend-requests.tsx      # Requests tab
+│       │   │   ├── user-search.tsx          # Search tab
+│       │   │   ├── user-card.tsx            # Reusable user card
+│       │   │   └── username-setup-modal.tsx # Username creation
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # Audio recording logic
@@ -208,6 +227,8 @@ ScribeCat-v3/
 │       │   ├── use-sessions.ts         # Session CRUD hook
 │       │   ├── use-productivity.ts     # Goals + streaks
 │       │   ├── use-study-quest.ts     # Cat companion state + actions
+│       │   ├── use-user-profile.ts     # User profile state + actions
+│       │   ├── use-friends.ts          # Friends + search hooks
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts        # Mobile detection
 │       ├── lib/
@@ -219,7 +240,8 @@ ScribeCat-v3/
 │       │   ├── font-size-extension.ts
 │       │   └── utils.ts
 │       ├── types/
-│       │   └── study-tools.ts
+│       │   ├── study-tools.ts
+│       │   └── friends.ts             # Friend system types
 │       └── styles/
 │           └── globals.css           # Tailwind + theme CSS
 ├── public/                    # Static assets
