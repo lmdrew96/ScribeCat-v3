@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.9.1 | **Current Phase:** 3 (Learn) — AI study tools complete, StudyQuest pending
+**Current Version:** 4.11.2 | **Current Phase:** 3 (Learn) — AI study tools + StudyQuest complete, 50-min lecture test remaining
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -67,7 +67,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (8 tables)
+│   ├── schema.ts             # Database schema (9 tables)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
 │   ├── generateNotes.ts      # AI note generation (HTTP action)
@@ -83,6 +83,8 @@ ScribeCat-v3/
 │   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
+│   ├── studyQuest.ts         # Cat companion queries/mutations
+│   ├── xpUtils.ts            # XP/level math functions
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   ├── auth.config.ts        # Clerk JWT config
@@ -122,6 +124,12 @@ ScribeCat-v3/
 │       │   │   ├── eli5-tool.tsx
 │       │   │   ├── generate-button.tsx
 │       │   │   └── use-study-tool.ts # Shared hook for tool generation
+│       │   ├── study-quest/          # StudyQuest cat companion
+│       │   │   ├── study-quest-widget.tsx  # Floating widget (adopt, collapsed, expanded)
+│       │   │   ├── cat-display.tsx         # Sprite sheet animation renderer
+│       │   │   ├── cat-sprites.ts          # Sprite config, mood mapping, variant list
+│       │   │   ├── xp-progress.tsx         # Level badge + XP bar + recent gains
+│       │   │   └── cat-name-editor.tsx     # Inline-editable cat name
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # MediaRecorder wrapper
@@ -130,6 +138,7 @@ ScribeCat-v3/
 │       │   ├── use-nugget-notes.ts     # Two-model AI pipeline orchestrator
 │       │   ├── use-sessions.ts         # Session CRUD hook
 │       │   ├── use-productivity.ts     # Goals + streaks + achievements
+│       │   ├── use-study-quest.ts     # Cat companion state + mood + actions
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
@@ -145,6 +154,7 @@ ScribeCat-v3/
 │       └── styles/
 │           └── globals.css           # Tailwind imports + 6 theme definitions
 ├── public/                    # Static assets
+│   └── cats/                 # 11 cat variant sprite sheets (32×32 pixel art)
 ├── docs/                      # Documentation
 │   ├── README.md             # Project README (features, setup, tech stack)
 │   ├── PHASES.md             # Phase implementation guide
@@ -164,7 +174,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-8 tables in `convex/schema.ts`:
+9 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -176,6 +186,7 @@ ScribeCat-v3/
 | `flashcardProgress` | Spaced repetition tracking per card |
 | `quizAttempts` | Quiz answer history and scores |
 | `chatHistory` | Persistent per-session Nugget Chat messages |
+| `catCompanion` | StudyQuest cat (name, variant, XP, level, mood, recent gains) |
 
 ---
 
@@ -333,6 +344,39 @@ Separate app-level AI chat (`src/renderer/components/nugget-chat.tsx`):
 - Persistent per-session chat history (stored in `chatHistory` table)
 - Context-aware (transcript + notes)
 - Backend: `convex/nuggetChat.ts`
+
+---
+
+## StudyQuest (Cat Companion)
+
+Tamagotchi-style pixel art cat with XP/leveling tied to study activity.
+
+### Architecture
+| Layer | File | Role |
+|-------|------|------|
+| **XP Math** | `convex/xpUtils.ts` + `src/shared/xp-utils.ts` | Quadratic curve: `50 * L * (L+1)` |
+| **Backend** | `convex/studyQuest.ts` | Queries, mutations, `awardXpHelper` |
+| **XP Integration** | `convex/productivity.ts`, `convex/studyTools.ts` | Award XP on study time, tool use |
+| **Hook** | `src/renderer/hooks/use-study-quest.ts` | State, mood resolution, actions |
+| **Sprites** | `src/renderer/components/study-quest/cat-sprites.ts` | Config, mood→animation mapping |
+| **Renderer** | `src/renderer/components/study-quest/cat-display.tsx` | Sprite sheet animation via `background-position` |
+| **Widget** | `src/renderer/components/study-quest/study-quest-widget.tsx` | Floating bottom-left UI |
+
+### XP Sources
+| Source | Amount |
+|--------|--------|
+| Study time | 2 XP/min |
+| Session complete | +25 XP |
+| Daily goal met | +50 XP |
+| Study tool use | +10 XP |
+| Achievement unlock | +30 XP |
+
+### Cat Variants
+11 variants with 8 sprite animations each (32×32 frames in horizontal PNG strips):
+- bengal, black, demon, egypt, grey, siamese, tricolor, vampire, white, wizard, xmas
+
+### Mood System
+Priority-based client-side resolution: excited > happy > studying > sleepy > idle. Derived from `isRecording`, `lastActivityAt`, stored mood, and current hour.
 
 ---
 

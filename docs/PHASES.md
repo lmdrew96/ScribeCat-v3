@@ -2,7 +2,7 @@
 
 > **Current Phase: 3 — Learn**
 >
-> **Current Version: 4.9.1**
+> **Current Version: 4.11.2**
 >
 > Last updated: February 2026
 
@@ -171,14 +171,16 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 - [x] Break reminders (configurable intervals)
 - [x] Achievements (14 achievements with unlock tracking)
 
-### StudyQuest (JRPG) — NOT STARTED
+### StudyQuest (Cat Companion) — COMPLETE
 
-**MVP (Tamagotchi-first):**
-- [ ] Cat companion with pixel art sprites
-- [ ] Cat reacts to study activity (happy, sleepy, etc.)
-- [ ] XP earned from study time
-- [ ] Level up system
-- [ ] Simple idle animations
+**MVP (Tamagotchi-style):**
+- [x] Cat companion with pixel art sprite sheets (11 variants from ScribeCat v2)
+- [x] Cat reacts to study activity (idle, happy, studying, sleepy, excited moods)
+- [x] XP earned from study time, session completion, goals, tools, achievements
+- [x] Level up system (quadratic XP curve)
+- [x] Sprite sheet animations (idle, idle2, sitting, sleep, run, jump, attack, hurt)
+- [x] Floating widget (bottom-left) with adopt flow, variant picker, name editor
+- [x] XP progress bar with recent gains feed
 
 **Future (post-MVP):**
 - [ ] JRPG exploration
@@ -187,7 +189,7 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 
 ### Remaining for Phase 3 Completion
 
-- [ ] StudyQuest cat companion (MVP Tamagotchi)
+- [x] StudyQuest cat companion (MVP Tamagotchi)
 - [ ] Real-world test: 50+ minute lecture recording without issues
 
 ### Technical Notes
@@ -197,6 +199,9 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 **Caching:** Results stored in `studyToolResults` table, keyed by session + tool type
 **Spaced Repetition:** `flashcardProgress` table tracks per-card confidence + next review
 **Quiz History:** `quizAttempts` table stores full answer history per session
+**StudyQuest:** Cat companion in `src/renderer/components/study-quest/`, backend in `convex/studyQuest.ts`
+**Sprites:** 11 cat variants × 8 animations as 32×32 sprite sheets in `public/cats/`
+**XP System:** `convex/xpUtils.ts` (shared math), `catCompanion` table, XP awarded from `productivity.ts` and `studyTools.ts`
 
 ---
 
@@ -306,3 +311,8 @@ Before marking a phase complete:
 | 4.8.8 | Feb 2026 | Add collapse/expand toggle to study tools card |
 | 4.9.0 | Feb 2026 | Add URL-based routing with TanStack Router |
 | 4.9.1 | Feb 2026 | Fix ADHDesigns link to use .dev domain |
+| 4.10.0 | Feb 2026 | Lightweight sidebar queries and doc sync |
+| 4.10.3 | Feb 2026 | Lightweight sidebar queries and doc sync (patches) |
+| 4.11.0 | Feb 2026 | StudyQuest cat companion with XP and leveling system |
+| 4.11.1 | Feb 2026 | Replace CSS pixel art with real sprite sheets from v2 |
+| 4.11.2 | Feb 2026 | Fix trash button hidden behind StudyQuest widget |

@@ -6,13 +6,13 @@
 
 ---
 
-## Current Status: v4.9.1 — Phase 3 (Learn)
+## Current Status: v4.11.2 — Phase 3 (Learn)
 
 | Phase | Name | Status |
 |-------|------|--------|
 | **1** | **Capture** — Recording + Live Transcription | Complete |
 | **2** | **Process** — Notes Editor + AI Generation | Complete |
-| **3** | **Learn** — Study Tools + Productivity | In Progress (AI tools done, StudyQuest pending) |
+| **3** | **Learn** — Study Tools + StudyQuest | Nearly Complete (50-min lecture test remaining) |
 | **4** | **Connect** — Social + Study Rooms + Games | Not Started |
 
 See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
@@ -52,6 +52,13 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - Streak tracking
 - Break reminders (configurable intervals)
 - 14 achievements
+
+### StudyQuest Cat Companion (Phase 3)
+- Tamagotchi-style pixel art cat companion (11 variants with sprite sheet animations)
+- Cat mood reacts to study activity (idle, happy, studying, sleepy, excited)
+- XP earned from study time, session completion, daily goals, tool use, achievements
+- Level up system with quadratic XP curve
+- Floating widget with adopt flow, variant picker, and name editor
 
 ### UI
 - 6 themes with glassmorphism effects (frosted glass panels, gradient backgrounds, glow accents)
@@ -139,7 +146,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend
-│   ├── schema.ts             # Database schema (8 tables)
+│   ├── schema.ts             # Database schema (9 tables)
 │   ├── sessions.ts           # Session CRUD
 │   ├── ai.ts                 # AI note generation (Convex action)
 │   ├── generateNotes.ts      # AI note generation (HTTP action)
@@ -155,6 +162,8 @@ ScribeCat-v3/
 │   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
+│   ├── studyQuest.ts         # Cat companion queries/mutations
+│   ├── xpUtils.ts            # XP/level math functions
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   └── auth.config.ts        # Clerk auth config
@@ -184,6 +193,12 @@ ScribeCat-v3/
 │       │   ├── file-upload-transcribe.tsx # File upload
 │       │   ├── theme-provider.tsx    # Theme context
 │       │   ├── study-tools/          # 6 AI study tool components
+│       │   ├── study-quest/          # StudyQuest cat companion
+│       │   │   ├── study-quest-widget.tsx  # Floating widget
+│       │   │   ├── cat-display.tsx         # Sprite sheet renderer
+│       │   │   ├── cat-sprites.ts          # Sprite config + mood mapping
+│       │   │   ├── xp-progress.tsx         # XP bar + recent gains
+│       │   │   └── cat-name-editor.tsx     # Inline name editor
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # Audio recording logic
@@ -192,6 +207,7 @@ ScribeCat-v3/
 │       │   ├── use-nugget-notes.ts     # Two-model AI pipeline
 │       │   ├── use-sessions.ts         # Session CRUD hook
 │       │   ├── use-productivity.ts     # Goals + streaks
+│       │   ├── use-study-quest.ts     # Cat companion state + actions
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts        # Mobile detection
 │       ├── lib/
@@ -207,6 +223,7 @@ ScribeCat-v3/
 │       └── styles/
 │           └── globals.css           # Tailwind + theme CSS
 ├── public/                    # Static assets
+│   └── cats/                 # 11 cat variant sprite sheets (32×32 frames)
 ├── docs/                      # Documentation
 ├── .github/                   # GitHub config
 │   ├── agents/               # Copilot agent configs (Brainstorm, Explain Error)
