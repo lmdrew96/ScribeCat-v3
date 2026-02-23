@@ -21,8 +21,8 @@ import {
   BookOpen,
   Bug,
   Check,
+  Clock,
   ExternalLink,
-  Flame,
   Github,
   Info,
   Lock,
@@ -107,6 +107,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   }, [settings]);
 
   // Save settings to Convex
+  const [newCourse, setNewCourse] = useState('');
+
   const saveSettings = useCallback(
     (updates: {
       breakReminders?: boolean;
@@ -114,6 +116,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       dailyGoalMinutes?: number;
       weeklyGoalMinutes?: number;
       theme?: string;
+      courses?: string[];
+      nuggetNotesEnabled?: boolean;
     }) => {
       void updateSettings(updates);
     },
@@ -170,7 +174,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[600px] max-h-[90vh] w-[800px] max-w-[95vw] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-[600px] max-h-[90vh] w-[60vw] max-w-[95vw] flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="border-b border-[var(--glass-border)] px-4 py-3">
           <DialogTitle className="text-base font-semibold text-foreground">Settings</DialogTitle>
         </DialogHeader>
@@ -363,13 +367,103 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </div>
                 </div>
 
+                {/* Nugget's Notes */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm text-foreground">Nugget&apos;s Notes</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Auto-generate AI notes during recording
+                    </p>
+                  </div>
+                  <Switch
+                    checked={
+                      settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true
+                    }
+                    onCheckedChange={(checked) => saveSettings({ nuggetNotesEnabled: checked })}
+                  />
+                </div>
+
+                {/* Courses */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-foreground">Courses</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Add your courses to quickly label recordings
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newCourse}
+                      onChange={(e) => setNewCourse(e.target.value)}
+                      placeholder="e.g. CISC 108"
+                      className="flex-1 bg-background border-border"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newCourse.trim()) {
+                          e.preventDefault();
+                          const current =
+                            settings && '_id' in settings ? (settings.courses ?? []) : [];
+                          if (!current.includes(newCourse.trim())) {
+                            saveSettings({
+                              courses: [...current, newCourse.trim()],
+                            });
+                          }
+                          setNewCourse('');
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        if (!newCourse.trim()) return;
+                        const current =
+                          settings && '_id' in settings ? (settings.courses ?? []) : [];
+                        if (!current.includes(newCourse.trim())) {
+                          saveSettings({
+                            courses: [...current, newCourse.trim()],
+                          });
+                        }
+                        setNewCourse('');
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {((settings && '_id' in settings ? settings.courses : undefined) ?? []).length >
+                    0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {((settings && '_id' in settings ? settings.courses : undefined) ?? []).map(
+                        (course) => (
+                          <span
+                            key={course}
+                            className="inline-flex items-center gap-1 rounded-full glass-light px-2.5 py-1 text-xs text-foreground"
+                          >
+                            {course}
+                            <button
+                              type="button"
+                              className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                              onClick={() => {
+                                const current =
+                                  settings && '_id' in settings ? (settings.courses ?? []) : [];
+                                saveSettings({
+                                  courses: current.filter((c) => c !== course),
+                                });
+                              }}
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Stats */}
                 {stats && (
                   <div className="border-t border-[var(--glass-border)] pt-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-orange-500" />
+                      <Clock className="h-4 w-4 text-primary" />
                       <span className="text-sm font-medium text-foreground">
-                        {stats.streak > 0 ? `${stats.streak}-day streak` : 'No active streak'}
+                        {formatMinutes(stats.totalMinutes)} all-time
                       </span>
                     </div>
 

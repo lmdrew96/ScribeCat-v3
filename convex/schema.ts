@@ -61,6 +61,8 @@ export default defineSchema({
     breakIntervalMinutes: v.number(),
     dailyGoalMinutes: v.number(),
     weeklyGoalMinutes: v.number(),
+    courses: v.optional(v.array(v.string())),
+    nuggetNotesEnabled: v.optional(v.boolean()),
   }).index('by_user', ['userId']),
 
   // Daily study stats (one row per user per day)

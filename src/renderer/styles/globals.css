@@ -85,6 +85,13 @@
   --sidebar-accent-foreground: #dbd5e2;
   --sidebar-border: #5d4d6e;
   --sidebar-ring: #244952;
+
+  /* Font colors for editor */
+  --font-color-1: #dbd5e2;
+  --font-color-2: #dea549;
+  --font-color-3: #96d080;
+  --font-color-4: #c45c5c;
+  --font-color-5: #8cbdb9;
 }
 
 @theme inline {
@@ -336,6 +343,12 @@
   --app-bg-via: #f8f4ff;
   --app-bg-to: #e4ffde;
   --orb-opacity: 0.25;
+
+  --font-color-1: #4a4458;
+  --font-color-2: #d4a5d2;
+  --font-color-3: #81c784;
+  --font-color-4: #e57373;
+  --font-color-5: #7d6b8a;
 }
 
 /* Void Kitty Theme */
@@ -392,6 +405,12 @@
   --app-bg-via: #050f0b;
   --app-bg-to: #0d1a14;
   --orb-opacity: 0.2;
+
+  --font-color-1: #e0e0e0;
+  --font-color-2: #00f2ff;
+  --font-color-3: #99ff85;
+  --font-color-4: #ff5252;
+  --font-color-5: #b580ff;
 }
 
 /* Chaos Cat Theme */
@@ -448,6 +467,12 @@
   --app-bg-via: #2d1235;
   --app-bg-to: #0d0520;
   --orb-opacity: 0.25;
+
+  --font-color-1: #ffffff;
+  --font-color-2: #1fe1fd;
+  --font-color-3: #76ff03;
+  --font-color-4: #ff1744;
+  --font-color-5: #ff5ee0;
 }
 
 /* High Contrast Dark Theme */
@@ -504,6 +529,12 @@
   --app-bg-via: #0a0a0a;
   --app-bg-to: #000000;
   --orb-opacity: 0;
+
+  --font-color-1: #ffffff;
+  --font-color-2: #00ffff;
+  --font-color-3: #00ff00;
+  --font-color-4: #ff0000;
+  --font-color-5: #ffff00;
 }
 
 /* High Contrast Light Theme */
@@ -560,12 +591,19 @@
   --app-bg-via: #f8f8f8;
   --app-bg-to: #f0f0f0;
   --orb-opacity: 0;
+
+  --font-color-1: #000000;
+  --font-color-2: #006600;
+  --font-color-3: #0000cc;
+  --font-color-4: #cc0000;
+  --font-color-5: #663399;
 }
 
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none;
   min-height: 100%;
+  font-size: 12px;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {

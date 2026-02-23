@@ -33,6 +33,8 @@ interface UseNuggetNotesConfig {
   contextIntervalMs?: number;
   /** Convex URL for API calls */
   convexUrl?: string;
+  /** Initial enabled state from user settings (default: true) */
+  initialEnabled?: boolean;
 }
 
 const DEFAULT_CONFIG: Required<UseNuggetNotesConfig> = {
@@ -41,6 +43,7 @@ const DEFAULT_CONFIG: Required<UseNuggetNotesConfig> = {
   minWordsForContext: 200,
   contextIntervalMs: 120000,
   convexUrl: import.meta.env.VITE_CONVEX_URL || '',
+  initialEnabled: true,
 };
 
 const EMPTY_CONTEXT: LectureContext = {
@@ -76,7 +79,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   // State
   const [notes, setNotes] = useState<NuggetNote[]>([]);
   const [context, setContext] = useState<LectureContext>(EMPTY_CONTEXT);
-  const [isEnabled, setIsEnabled] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(cfg.initialEnabled);
+  useEffect(() => {
+    setIsEnabled(cfg.initialEnabled);
+  }, [cfg.initialEnabled]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 

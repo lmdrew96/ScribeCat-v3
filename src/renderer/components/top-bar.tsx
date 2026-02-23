@@ -2,14 +2,12 @@ import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
 import { useFriends } from '@/hooks/use-friends';
-import { useStudyStats } from '@/hooks/use-productivity';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { BookOpen, Cat, Flame, Home, Settings, Users } from 'lucide-react';
+import { BookOpen, Cat, Home, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 
 export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const stats = useStudyStats();
   const { setChatOpen } = useSessionContext();
   const { pendingCount } = useFriends();
 
@@ -67,14 +65,8 @@ export function TopBar() {
           </Button>
         </nav>
 
-        {/* Right side - Streak + Settings */}
+        {/* Right side - Settings */}
         <div className="flex items-center gap-2">
-          {stats && stats.streak > 0 && (
-            <div className="glass-light flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-orange-500">
-              <Flame className="h-3.5 w-3.5" />
-              <span>{stats.streak}</span>
-            </div>
-          )}
           <Button
             variant="ghost"
             size="icon"

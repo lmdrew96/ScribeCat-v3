@@ -11,6 +11,8 @@ const DEFAULT_SETTINGS = {
   breakIntervalMinutes: 25,
   dailyGoalMinutes: 120,
   weeklyGoalMinutes: 600,
+  courses: [] as string[],
+  nuggetNotesEnabled: true,
 };
 
 export const getSettings = query({
@@ -32,6 +34,8 @@ export const updateSettings = mutation({
     breakIntervalMinutes: v.optional(v.number()),
     dailyGoalMinutes: v.optional(v.number()),
     weeklyGoalMinutes: v.optional(v.number()),
+    courses: v.optional(v.array(v.string())),
+    nuggetNotesEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);

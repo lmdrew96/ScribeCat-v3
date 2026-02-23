@@ -37,14 +37,52 @@ export function useLogStudyTime() {
   return logStudyTime;
 }
 
+const WELLNESS_MESSAGES = [
+  {
+    title: 'Deep Breaths',
+    description: 'Inhale for 4 seconds, hold for 4, exhale for 4. Repeat 3 times.',
+  },
+  {
+    title: 'Stretch Your Neck',
+    description:
+      'Slowly tilt your head to each side, holding for 10 seconds. Roll your shoulders back.',
+  },
+  {
+    title: 'Sit Up Straight',
+    description: 'Uncross your legs, feet flat on the floor. Pull your shoulders back and down.',
+  },
+  {
+    title: 'Hydration Check',
+    description: 'Take a big sip of water. Your brain needs it to focus.',
+  },
+  {
+    title: 'Rest Your Eyes',
+    description: 'Look at something 20 feet away for 20 seconds. Blink a few times.',
+  },
+  {
+    title: 'Wiggle Break',
+    description: 'Stand up, shake out your hands, roll your ankles. Get the blood flowing.',
+  },
+  {
+    title: 'Jaw Check',
+    description:
+      'Unclench your jaw. Let your tongue drop from the roof of your mouth. Relax your face.',
+  },
+  {
+    title: 'Hand Stretch',
+    description: 'Spread your fingers wide, hold for 5 seconds. Make fists, hold for 5. Repeat.',
+  },
+];
+
 /**
  * Hook for break reminders during recording.
- * Fires a Sonner toast at the configured interval.
+ * Fires rotating wellness-focused Sonner toasts at the configured interval.
  */
 export function useBreakReminder(isRecording: boolean) {
   const settings = useQuery(api.productivity.getSettings);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const snoozeRef = useRef(false);
+  const messageIndexRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== undefined) {
@@ -66,15 +104,16 @@ export function useBreakReminder(isRecording: boolean) {
         return;
       }
 
-      toast.info('Time for a break!', {
-        description: "You've been studying hard. Stretch, hydrate, rest your eyes.",
+      const message = WELLNESS_MESSAGES[messageIndexRef.current % WELLNESS_MESSAGES.length];
+      messageIndexRef.current++;
+
+      toast.info(message.title, {
+        description: message.description,
         duration: 10000,
         action: {
           label: 'Snooze 5 min',
           onClick: () => {
             snoozeRef.current = true;
-            // The next interval tick will skip, effectively adding ~interval delay
-            // For a true 5-min snooze, we'd need a separate timer
           },
         },
       });

@@ -4,6 +4,7 @@ import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 
 import { type NuggetNote, useNuggetNotes } from '@/hooks/use-nugget-notes';
-import { useBreakReminder, useLogStudyTime } from '@/hooks/use-productivity';
+import { useBreakReminder, useLogStudyTime, useStudySettings } from '@/hooks/use-productivity';
 import { useSession, useSessions } from '@/hooks/use-sessions';
 import { useTranscription } from '@/hooks/use-transcription';
 import { useMutation } from 'convex/react';
@@ -48,8 +49,16 @@ export function RecordingPanel({
   // Lecture type state
   const [lectureType, setLectureType] = useState<LectureType>('general');
 
-  // Nugget Notes hook for real-time AI note generation
-  const nuggetNotes = useNuggetNotes();
+  // Course + title state
+  const { settings } = useStudySettings();
+  const courses = settings && '_id' in settings ? (settings.courses ?? []) : [];
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [sessionTitle, setSessionTitle] = useState('');
+
+  // Nugget Notes: read persistent setting for initial enabled state
+  const nuggetNotesInitialEnabled =
+    settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true;
+  const nuggetNotes = useNuggetNotes({ initialEnabled: nuggetNotesInitialEnabled });
 
   // Handle inserting a note into the editor
   const handleInsertNote = useCallback(
@@ -226,9 +235,13 @@ export function RecordingPanel({
 
   const handleRecord = async () => {
     try {
-      // Create a new session with lecture type
+      // Build session title: custom title > course prefix + timestamp > timestamp
+      const course = selectedCourse && selectedCourse !== 'none' ? selectedCourse : '';
+      const defaultTitle = course
+        ? `${course} - ${new Date().toLocaleString()}`
+        : `Recording ${new Date().toLocaleString()}`;
       const sessionId = await createSession({
-        title: `Recording ${new Date().toLocaleString()}`,
+        title: sessionTitle.trim() || defaultTitle,
         lectureType,
       });
 
@@ -316,6 +329,9 @@ export function RecordingPanel({
     lastSavedTranscriptRef.current = '';
     lastNuggetProcessRef.current = '';
 
+    // Reset title for next recording
+    setSessionTitle('');
+
     // Reset recorder but keep transcription visible
     // NOTE: Do NOT clear currentSessionId here — notes must remain
     // editable/saveable until a new recording starts
@@ -364,6 +380,31 @@ export function RecordingPanel({
               </SelectContent>
             </Select>
             <LectureTypeSelect value={lectureType} onChange={setLectureType} />
+            {courses.length > 0 && (
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger className="w-full h-8 text-xs">
+                  <SelectValue placeholder="Select course (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No course</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course} value={course} className="text-xs">
+                      {course}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Input
+              value={sessionTitle}
+              onChange={(e) => setSessionTitle(e.target.value)}
+              placeholder={
+                selectedCourse && selectedCourse !== 'none'
+                  ? `${selectedCourse} — Recording title...`
+                  : 'Recording title (optional)'
+              }
+              className="h-8 text-xs bg-background border-border"
+            />
           </div>
         )}
 
