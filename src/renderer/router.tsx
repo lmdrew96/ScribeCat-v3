@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/app-layout';
 import { FriendsView } from '@/components/friends/friends-view';
 import { HomeView } from '@/components/home-view';
 import { MessagesView } from '@/components/messages/messages-view';
+import { StudyRoomsView } from '@/components/rooms/study-rooms-view';
 import { SharedSessionView } from '@/components/shared-session-view';
 import { StudyView } from '@/components/study-view';
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
@@ -46,6 +47,18 @@ const conversationRoute = createRoute({
   component: MessagesView,
 });
 
+const roomsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/rooms',
+  component: StudyRoomsView,
+});
+
+const roomRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/rooms/$roomId',
+  component: StudyRoomsView,
+});
+
 const sharedSessionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/shared/$sessionId',
@@ -59,6 +72,8 @@ const routeTree = rootRoute.addChildren([
   friendsRoute,
   messagesRoute,
   conversationRoute,
+  roomsRoute,
+  roomRoute,
   sharedSessionRoute,
 ]);
 

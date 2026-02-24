@@ -239,4 +239,36 @@ export default defineSchema({
     .index('by_shared_with', ['sharedWithUserId'])
     .index('by_session', ['sessionId'])
     .index('by_owner_session_user', ['ownerId', 'sessionId', 'sharedWithUserId']),
+
+  // Study rooms (ephemeral group study sessions)
+  studyRooms: defineTable({
+    name: v.string(),
+    hostUserId: v.string(),
+    pinnedSessionId: v.optional(v.id('sessions')),
+    pinnedSessionOwnerId: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  }).index('by_active', ['isActive']),
+
+  // Study room members (one row per participant)
+  studyRoomMembers: defineTable({
+    roomId: v.id('studyRooms'),
+    userId: v.string(),
+    role: v.string(), // 'host' | 'member'
+    hasJoined: v.boolean(), // false = invited but hasn't opened room yet
+    lastSeenAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_room', ['roomId'])
+    .index('by_user', ['userId'])
+    .index('by_room_user', ['roomId', 'userId']),
+
+  // Study room chat messages
+  studyRoomMessages: defineTable({
+    roomId: v.id('studyRooms'),
+    senderId: v.string(),
+    content: v.string(),
+    messageType: v.string(), // 'text' | 'system'
+    createdAt: v.number(),
+  }).index('by_room', ['roomId', 'createdAt']),
 });
