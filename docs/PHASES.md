@@ -2,7 +2,7 @@
 
 > **Current Phase: 4 — Connect**
 >
-> **Current Version: 4.12.1**
+> **Current Version: 4.15.0**
 >
 > Last updated: February 2026
 
@@ -224,27 +224,31 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 - [x] Username display in Settings > Account
 - [x] Shared auth helpers (`convex/authHelpers.ts`)
 
-### Messaging
+### Messaging — COMPLETE
 
-- [ ] Inbox view
-- [ ] Direct messages
-- [ ] Unread indicators
-- [ ] Notifications
+- [x] Inbox view (two-panel: conversation list + active thread)
+- [x] Direct messages between friends (1-on-1)
+- [x] Unread indicators (per-conversation blue dot + TopBar badge)
+- [x] Real-time updates via Convex auto-subscriptions
+- [x] Session share messages (special card with View/Copy buttons)
 
-### Session Sharing
+### Session Sharing — COMPLETE
 
-- [ ] Share session with friend
-- [ ] View (read-only) OR copy to library
-- [ ] Share via direct send or link
+- [x] Share session with friend (auto-sends DM notification)
+- [x] View shared session (read-only with StudyContent + StudyTools)
+- [x] Copy to library (deep-copy session + notes, reuse audio file)
+- [x] Share modal from study view (toggle share per friend)
+- [x] Unshare to revoke access
 
-### Study Rooms (Simplified)
+### Study Rooms — COMPLETE
 
-- [ ] Create room (name, optional password)
-- [ ] Invite friends (direct or link)
-- [ ] Room text chat
-- [ ] Participant list + presence
-- [ ] Share screen OR share session (read-only)
-- [ ] Launch games from room
+- [x] Create room (name + invite friends)
+- [x] Invite friends directly (friends-only, no password/link)
+- [x] Room text chat (real-time with system messages for join/leave/pin)
+- [x] Participant list with presence (heartbeat-based, green/grey dots)
+- [x] Pin session for shared viewing (host pins own session, read-only for all)
+- [x] Pending room badge in TopBar for unjoined invites
+- [x] Host close / member leave functionality
 
 ### Multiplayer Games
 
@@ -268,6 +272,9 @@ Both games:
 **Auth Helpers:** Shared `convex/authHelpers.ts` (extracted from 4 files) — `requireAuth()` + `requireAuthWithProfile()`
 **Username Search:** Convex `searchIndex` on `username` field for prefix matching
 **Convex Module Naming:** Filenames cannot contain hyphens — use camelCase (e.g., `authHelpers.ts`, not `auth-helpers.ts`)
+**Messaging:** 4 new tables (`conversations`, `messages`, `conversationReads`, `sharedSessions`). Sorted participantIds for conversation dedup. Individual message rows (not array-in-doc) for scalability. `conversationReads` table for per-user unread tracking.
+**Session Sharing:** Share record + auto-DM notification. `copyToLibrary` deep-copies session + sessionNotes, references same `audioStorageId` (no file duplication).
+**Study Rooms:** 3 new tables (`studyRooms`, `studyRoomMembers`, `studyRoomMessages`). Ephemeral rooms closed by host. Heartbeat presence (30s mutation, 60s online threshold). Pinned sessions reuse `StudyContent` + `StudyTools` for read-only viewing.
 
 ---
 
@@ -335,3 +342,8 @@ Before marking a phase complete:
 | 4.11.4 | Feb 2026 | Mark Phase 3 complete, advance to Phase 4 |
 | 4.12.0 | Feb 2026 | Friends system — user profiles, friend requests, search, blocks |
 | 4.12.1 | Feb 2026 | Fix Convex module naming (auth-helpers → authHelpers) |
+| 4.13.0 | Feb 2026 | Session titles, courses, font colors, wellness breaks, settings improvements |
+| 4.13.1 | Feb 2026 | Fix settings modal width, Nugget Notes toggle, font color/highlight dropdowns |
+| 4.13.2 | Feb 2026 | Put session type and course selection on same line |
+| 4.14.0 | Feb 2026 | Direct messaging and session sharing |
+| 4.15.0 | Feb 2026 | Study rooms — group study with shared sessions and chat |
