@@ -1,4 +1,5 @@
 import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
+import { ShareSessionModal } from '@/components/messages/share-session-modal';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools/index';
@@ -58,6 +59,7 @@ export function StudyView() {
   const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
   const trashedSessions = useTrash();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [shareSessionId, setShareSessionId] = useState<string | null>(null);
 
   // Read session ID from route params (undefined when on /study)
   const sessionMatch = useMatch({ from: '/study/$sessionId', shouldThrow: false });
@@ -191,6 +193,7 @@ export function StudyView() {
             onDelete={handleDelete}
             onRestore={handleRestore}
             onPermanentDelete={handlePermanentDelete}
+            onShare={(id) => setShareSessionId(id)}
             onCollapse={() => setSidebarOpen(false)}
           />
         </div>
@@ -233,6 +236,12 @@ export function StudyView() {
           </div>
         )}
       </div>
+
+      <ShareSessionModal
+        open={!!shareSessionId}
+        onOpenChange={(open) => !open && setShareSessionId(null)}
+        sessionId={shareSessionId as Id<'sessions'> | null}
+      />
     </div>
   );
 }

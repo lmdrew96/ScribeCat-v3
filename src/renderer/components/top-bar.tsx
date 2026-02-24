@@ -2,19 +2,22 @@ import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
 import { useFriends } from '@/hooks/use-friends';
+import { useUnreadCount } from '@/hooks/use-messaging';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { BookOpen, Cat, Home, Settings, Users } from 'lucide-react';
+import { BookOpen, Cat, Home, MessageSquare, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 
 export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { setChatOpen } = useSessionContext();
   const { pendingCount } = useFriends();
+  const unreadCount = useUnreadCount();
 
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isHome = currentPath === '/';
   const isStudy = currentPath.startsWith('/study');
   const isFriends = currentPath === '/friends';
+  const isMessages = currentPath.startsWith('/messages');
 
   return (
     <>
@@ -59,6 +62,22 @@ export function TopBar() {
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
                   {pendingCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+          <Button
+            variant={isMessages ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 relative"
+            asChild
+          >
+            <Link to="/messages">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Messages</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                  {unreadCount}
                 </span>
               )}
             </Link>

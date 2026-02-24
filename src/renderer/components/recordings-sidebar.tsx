@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   PanelLeftClose,
   RotateCcw,
+  Share2,
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -38,6 +39,7 @@ interface RecordingsSidebarProps {
   onDelete: (recordingId: string) => void;
   onRestore: (recordingId: string) => void;
   onPermanentDelete: (recordingId: string) => void;
+  onShare?: (recordingId: string) => void;
   onCollapse?: () => void;
 }
 
@@ -53,6 +55,7 @@ export function RecordingsSidebar({
   onSelect,
   onDelete,
   onRestore,
+  onShare,
   onPermanentDelete,
   onCollapse,
 }: RecordingsSidebarProps) {
@@ -158,16 +161,30 @@ export function RecordingsSidebar({
                           </DropdownMenuItem>
                         </>
                       ) : (
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmAction({ type: 'delete', recording });
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <>
+                          {onShare && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onShare(recording.id);
+                              }}
+                            >
+                              <Share2 className="h-3.5 w-3.5" />
+                              Share
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmAction({ type: 'delete', recording });
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

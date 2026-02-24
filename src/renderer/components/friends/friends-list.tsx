@@ -18,11 +18,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFriends } from '@/hooks/use-friends';
-import { MoreHorizontal, ShieldOff, UserMinus, Users } from 'lucide-react';
+import { useStartConversation } from '@/hooks/use-messaging';
+import { useNavigate } from '@tanstack/react-router';
+import { MessageSquare, MoreHorizontal, ShieldOff, UserMinus, Users } from 'lucide-react';
 import { UserCard } from './user-card';
 
 export function FriendsList() {
   const { friends, removeFriend, blockUser, isLoading } = useFriends();
+  const startConversation = useStartConversation();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -61,6 +65,10 @@ export function FriendsList() {
             <FriendActions
               userId={friend.userId}
               displayName={friend.displayName}
+              onMessage={async () => {
+                const conversationId = await startConversation({ otherUserId: friend.userId });
+                navigate({ to: '/messages/$conversationId', params: { conversationId } });
+              }}
               onRemove={() => void removeFriend({ friendUserId: friend.userId })}
               onBlock={() => void blockUser({ blockedId: friend.userId })}
             />
@@ -73,11 +81,13 @@ export function FriendsList() {
 
 function FriendActions({
   displayName,
+  onMessage,
   onRemove,
   onBlock,
 }: {
   userId: string;
   displayName: string;
+  onMessage: () => void;
   onRemove: () => void;
   onBlock: () => void;
 }) {
@@ -90,6 +100,11 @@ function FriendActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onMessage}>
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Message
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <AlertDialogTrigger asChild>
             <DropdownMenuItem className="text-destructive">
               <UserMinus className="mr-2 h-4 w-4" />

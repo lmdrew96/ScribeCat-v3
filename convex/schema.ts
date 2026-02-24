@@ -197,4 +197,46 @@ export default defineSchema({
     .index('by_blocker', ['blockerId'])
     .index('by_blocked', ['blockedId'])
     .index('by_pair', ['blockerId', 'blockedId']),
+
+  // Direct message conversations (one row per DM pair)
+  conversations: defineTable({
+    participantIds: v.array(v.string()), // always sorted [lower, higher] for dedup
+    lastMessageText: v.optional(v.string()),
+    lastMessageAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_participant', ['participantIds'])
+    .index('by_last_message', ['lastMessageAt']),
+
+  // Individual messages (one row per message)
+  messages: defineTable({
+    conversationId: v.id('conversations'),
+    senderId: v.string(),
+    content: v.string(),
+    messageType: v.string(), // 'text' | 'session_share'
+    sharedSessionId: v.optional(v.id('sessions')),
+    sharedSessionTitle: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index('by_conversation', ['conversationId', 'createdAt']),
+
+  // Per-user read cursors for conversations
+  conversationReads: defineTable({
+    conversationId: v.id('conversations'),
+    userId: v.string(),
+    lastReadAt: v.number(),
+  })
+    .index('by_conversation_user', ['conversationId', 'userId'])
+    .index('by_user', ['userId']),
+
+  // Session sharing permissions
+  sharedSessions: defineTable({
+    sessionId: v.id('sessions'),
+    ownerId: v.string(),
+    sharedWithUserId: v.string(),
+    permission: v.string(), // 'view'
+    sharedAt: v.number(),
+  })
+    .index('by_shared_with', ['sharedWithUserId'])
+    .index('by_session', ['sessionId'])
+    .index('by_owner_session_user', ['ownerId', 'sessionId', 'sharedWithUserId']),
 });
