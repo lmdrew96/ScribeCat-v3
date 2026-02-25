@@ -1,8 +1,8 @@
 # ScribeCat v3 — Phase Implementation Guide
 
-> **Current Phase: 4 — Connect**
+> **Current Phase: 4 — Connect (COMPLETE)**
 >
-> **Current Version: 4.16.0**
+> **Current Version: 4.17.0**
 >
 > Last updated: February 2026
 
@@ -15,7 +15,7 @@
 | 1 | **Capture** | Recording + live transcription | Complete |
 | 2 | **Process** | Notes editor + AI generation | Complete |
 | 3 | **Learn** | Study tools + StudyQuest | Complete |
-| 4 | **Connect** | Social + Study Rooms + Games | In Progress |
+| 4 | **Connect** | Social + Study Rooms + Games + Canvas LMS | Complete |
 
 ---
 
@@ -207,7 +207,7 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 
 ---
 
-## Phase 4: Connect — IN PROGRESS
+## Phase 4: Connect — COMPLETE
 
 **Goal:** Social features and collaborative study
 
@@ -274,11 +274,16 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
   - [x] Games require pinned session (ties games to studying)
   - [x] All room members auto-join as players
 
-### Canvas LMS Integration
+### Canvas LMS Integration — COMPLETE
 
-- [ ] Browser extension for course list
-- [ ] Organize sessions by course
-- [ ] Import course info
+- [x] `course` field on sessions (first-class, not just title prefix)
+- [x] Course filter dropdown in recordings sidebar
+- [x] Canvas import dialog in Settings (JSON paste from extension)
+- [x] Chrome browser extension (Manifest V3) for Canvas course detection
+  - [x] Content script with 4 DOM selector strategies (dashboard cards, links, nav, table)
+  - [x] MutationObserver-based waiting for Canvas SPA rendering
+  - [x] Copy-to-clipboard as JSON array
+  - [x] ScribeCat-themed popup UI
 
 ### Technical Notes
 
@@ -290,6 +295,9 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 **Session Sharing:** Share record + auto-DM notification. `copyToLibrary` deep-copies session + sessionNotes, references same `audioStorageId` (no file duplication).
 **Study Rooms:** 3 new tables (`studyRooms`, `studyRoomMembers`, `studyRoomMessages`). Ephemeral rooms closed by host. Heartbeat presence (30s mutation, 60s online threshold). Pinned sessions reuse `StudyContent` + `StudyTools` for read-only viewing.
 **Multiplayer Games:** 2 new tables (`studyGames`, `studyGamePlayers`). Games live inside rooms, require pinned session. AI generates questions via `callClaude` (reused from `studyTools.ts`). Quiz Battle uses `getQuizPrompt`, Jeopardy uses `getJeopardyPrompt`. Server-side answer checking — `submitAnswer` validates against stored questions, clients never see correct answers. Answer privacy via query filtering. Auto-advance on all answered. Speed bonus for Quiz Battle. Turn rotation for Jeopardy. XP awarded via `awardXpHelper`.
+**Canvas LMS:** No new tables — `course` field added to `sessions` table with `by_user_course` index. Courses stored as `string[]` in existing `userSettings`. Browser extension in `browser-extension/` (vanilla JS, Manifest V3) detects courses on `*.instructure.com` via 4 DOM strategies. JSON paste flow in settings (no server-side Canvas API needed). Course filter in sidebar is client-side.
+
+**Date Completed:** February 2026
 
 ---
 
@@ -363,3 +371,4 @@ Before marking a phase complete:
 | 4.14.0 | Feb 2026 | Direct messaging and session sharing |
 | 4.15.0 | Feb 2026 | Study rooms — group study with shared sessions and chat |
 | 4.16.0 | Feb 2026 | Multiplayer games — Quiz Battle and Jeopardy in study rooms |
+| 4.17.0 | Feb 2026 | Canvas LMS integration — course field, filter, import, browser extension |

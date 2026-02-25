@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.16.0 | **Current Phase:** 4 (Connect) — Friends, messaging, session sharing, study rooms, and multiplayer games complete
+**Current Version:** 4.17.0 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS)
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -112,7 +112,7 @@ ScribeCat-v3/
 │       │   ├── study-content.tsx     # Study content viewer (notes + transcript + tools)
 │       │   ├── nugget-notes-panel.tsx # Real-time AI note bubbles
 │       │   ├── nugget-chat.tsx       # AI chat drawer
-│       │   ├── recordings-sidebar.tsx # Session list + trash
+│       │   ├── recordings-sidebar.tsx # Session list + trash + course filter
 │       │   ├── top-bar.tsx           # Navigation + theme selector
 │       │   ├── settings-modal.tsx    # User settings (goals, breaks, themes)
 │       │   ├── editor-toolbar.tsx    # TipTap formatting toolbar
@@ -189,6 +189,15 @@ ScribeCat-v3/
 │   ├── PHASES.md             # Phase implementation guide
 │   ├── NOTION-INSPIRED-FEATURES.md
 │   └── nugget-integration-handoff.md
+├── browser-extension/         # Chrome extension for Canvas LMS course import
+│   ├── manifest.json         # Manifest V3 config
+│   ├── scripts/
+│   │   ├── content-script.js # Canvas course detection (4 DOM strategies)
+│   │   └── background.js    # Badge updates on detection
+│   └── popup/
+│       ├── popup.html        # Extension popup UI
+│       ├── popup.css         # ScribeCat-themed styling
+│       └── popup.js          # Course display + copy-to-clipboard
 ├── .github/                   # GitHub config
 │   ├── agents/               # Copilot agent configs (Brainstorm, Explain Error)
 │   └── instructions/         # Copilot instructions
@@ -207,7 +216,7 @@ ScribeCat-v3/
 
 | Table | Purpose |
 |-------|---------|
-| `sessions` | Recording sessions (audio, transcript, notes, lecture type) |
+| `sessions` | Recording sessions (audio, transcript, notes, lecture type, course) |
 | `sessionNotes` | Separated notes content (avoids 1MB doc limit) |
 | `userSettings` | Theme, break reminders, study goals |
 | `studyStats` | Daily study minutes, session counts, goal tracking |
@@ -257,7 +266,7 @@ This project is built in 4 phases:
 1. **Capture** — Recording + transcription (COMPLETE)
 2. **Process** — Notes editor + AI generation (COMPLETE)
 3. **Learn** — Study tools + StudyQuest (COMPLETE)
-4. **Connect** — Social + Study Rooms + Games (IN PROGRESS — friends, messaging, sharing, rooms, games done; Canvas LMS integration remaining)
+4. **Connect** — Social + Study Rooms + Games + Canvas LMS (COMPLETE)
 
 Always check PHASES.md before starting work to know what's in scope.
 
