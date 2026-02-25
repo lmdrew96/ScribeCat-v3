@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.12.1 | **Current Phase:** 4 (Connect) — Friends system complete, messaging next
+**Current Version:** 4.16.0 | **Current Phase:** 4 (Connect) — Friends, messaging, session sharing, study rooms, and multiplayer games complete
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -67,7 +67,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (12 tables)
+│   ├── schema.ts             # Database schema (16 tables)
 │   ├── authHelpers.ts        # Shared auth helpers (requireAuth, requireAuthWithProfile)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
@@ -75,8 +75,10 @@ ScribeCat-v3/
 │   ├── nuggetNotes.ts        # Real-time note generation (HTTP action)
 │   ├── nuggetChat.ts         # AI chat endpoint (HTTP action)
 │   ├── lectureContext.ts     # Context extraction (HTTP action)
-│   ├── studyTools.ts         # Study tool AI actions
-│   ├── studyToolPrompts.ts   # Study tool prompt templates
+│   ├── studyTools.ts         # Study tool AI actions (exports callClaude, extractJson)
+│   ├── studyToolPrompts.ts   # Study tool + game prompt templates
+│   ├── studyGames.ts         # Multiplayer games (Quiz Battle, Jeopardy)
+│   ├── studyRooms.ts         # Study rooms (exports requireRoomMember/Host, postSystemMessage)
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
 │   ├── config.ts             # Shared AI model configuration
@@ -89,6 +91,7 @@ ScribeCat-v3/
 │   ├── userProfiles.ts       # User profiles + username search
 │   ├── friends.ts            # Friend requests + friend list
 │   ├── blocks.ts             # Block/unblock users
+│   ├── messagingHelpers.ts   # Shared messaging helpers (verifyFriendship)
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   ├── auth.config.ts        # Clerk JWT config
@@ -141,6 +144,16 @@ ScribeCat-v3/
 │       │   │   ├── user-search.tsx          # Search tab with username lookup
 │       │   │   ├── user-card.tsx            # Reusable user display card
 │       │   │   └── username-setup-modal.tsx # First-time @username creation
+│       │   ├── rooms/                # Study rooms + multiplayer games (Phase 4)
+│       │   │   ├── room-view.tsx            # Main room view (session + chat + games)
+│       │   │   ├── room-chat.tsx            # Room text chat
+│       │   │   ├── pin-session-modal.tsx    # Pin session selection modal
+│       │   │   ├── game-launcher.tsx        # Game type dropdown (host only)
+│       │   │   ├── game-view.tsx            # Game router (lobby/active/results)
+│       │   │   ├── game-lobby.tsx           # Pre-game waiting room + ready up
+│       │   │   ├── quiz-battle.tsx          # Quiz Battle active game view
+│       │   │   ├── jeopardy-game.tsx        # Jeopardy active game view
+│       │   │   └── game-results.tsx         # Post-game scoreboard + podium
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # MediaRecorder wrapper
@@ -152,6 +165,8 @@ ScribeCat-v3/
 │       │   ├── use-study-quest.ts     # Cat companion state + mood + actions
 │       │   ├── use-user-profile.ts    # User profile + username setup
 │       │   ├── use-friends.ts         # Friends queries + mutations
+│       │   ├── use-study-rooms.ts     # Study room queries + mutations + heartbeat
+│       │   ├── use-study-games.ts     # Game queries + mutations (Quiz Battle, Jeopardy)
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
@@ -188,11 +203,12 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-12 tables in `convex/schema.ts`:
+16 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
 | `sessions` | Recording sessions (audio, transcript, notes, lecture type) |
+| `sessionNotes` | Separated notes content (avoids 1MB doc limit) |
 | `userSettings` | Theme, break reminders, study goals |
 | `studyStats` | Daily study minutes, session counts, goal tracking |
 | `achievements` | Unlocked achievement tracking |
@@ -204,6 +220,15 @@ ScribeCat-v3/
 | `userProfiles` | Public identity (@username, display name, avatar) |
 | `friendships` | Friend requests + accepted friends (status, requester/receiver) |
 | `blocks` | Blocked users (asymmetric, persists independently) |
+| `conversations` | DM conversations (sorted participant pairs) |
+| `messages` | Individual DM messages |
+| `conversationReads` | Per-user read cursors for unread tracking |
+| `sharedSessions` | Session sharing permissions |
+| `studyRooms` | Ephemeral group study rooms |
+| `studyRoomMembers` | Room participants with presence |
+| `studyRoomMessages` | Room chat messages |
+| `studyGames` | Game instances (Quiz Battle / Jeopardy) inside rooms |
+| `studyGamePlayers` | Per-player game state, scores, answer tracking |
 
 ---
 
@@ -231,8 +256,8 @@ CLERK_JWT_ISSUER_DOMAIN=      # Clerk JWT validation
 This project is built in 4 phases:
 1. **Capture** — Recording + transcription (COMPLETE)
 2. **Process** — Notes editor + AI generation (COMPLETE)
-3. **Learn** — Study tools + StudyQuest (IN PROGRESS — AI tools done, StudyQuest pending)
-4. **Connect** — Social + Study Rooms + Games (NOT STARTED)
+3. **Learn** — Study tools + StudyQuest (COMPLETE)
+4. **Connect** — Social + Study Rooms + Games (IN PROGRESS — friends, messaging, sharing, rooms, games done; Canvas LMS integration remaining)
 
 Always check PHASES.md before starting work to know what's in scope.
 
@@ -387,6 +412,8 @@ Tamagotchi-style pixel art cat with XP/leveling tied to study activity.
 | Daily goal met | +50 XP |
 | Study tool use | +10 XP |
 | Achievement unlock | +30 XP |
+| Game winner | +15 XP |
+| Game participant | +10 XP |
 
 ### Cat Variants
 11 variants with 8 sprite animations each (32×32 frames in horizontal PNG strips):
