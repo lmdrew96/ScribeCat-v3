@@ -2,7 +2,7 @@
 
 > **Current Phase: 4 — Connect**
 >
-> **Current Version: 4.15.0**
+> **Current Version: 4.16.0**
 >
 > Last updated: February 2026
 
@@ -250,15 +250,29 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 - [x] Pending room badge in TopBar for unjoined invites
 - [x] Host close / member leave functionality
 
-### Multiplayer Games
+### Multiplayer Games — COMPLETE
 
-- [ ] **Quiz Battle** — head-to-head competitive
-- [ ] **Jeopardy** — category-based classic format
-
-Both games:
-- [ ] AI generates questions from study materials
-- [ ] Real-time sync via Convex
-- [ ] Score tracking
+- [x] **Quiz Battle** — 10-question head-to-head competitive quiz
+  - [x] AI generates questions from pinned session (transcript + notes)
+  - [x] Server-side answer validation (correct answers hidden from client)
+  - [x] Speed bonus scoring (100 base + up to 50 for fast answers)
+  - [x] Answer privacy (other players' picks hidden until reveal)
+  - [x] Auto-reveal when all players answer
+  - [x] Host skip for disconnected players
+- [x] **Jeopardy** — 5 categories x 5 questions (25 total)
+  - [x] AI generates category board from pinned session
+  - [x] Turn-based cell selection (rotate by join order)
+  - [x] Difficulty scaling (100-500 point values)
+  - [x] Category grid UI with revealed/unrevealed cells
+- [x] **Shared game infrastructure**
+  - [x] Game lobby with ready-up system
+  - [x] Real-time sync via Convex subscriptions
+  - [x] Score tracking with live scoreboard
+  - [x] Results screen with podium display (cat sprites)
+  - [x] XP rewards (15 winner, 10 participants)
+  - [x] System messages in room chat (game start/finish/cancel)
+  - [x] Games require pinned session (ties games to studying)
+  - [x] All room members auto-join as players
 
 ### Canvas LMS Integration
 
@@ -275,6 +289,7 @@ Both games:
 **Messaging:** 4 new tables (`conversations`, `messages`, `conversationReads`, `sharedSessions`). Sorted participantIds for conversation dedup. Individual message rows (not array-in-doc) for scalability. `conversationReads` table for per-user unread tracking.
 **Session Sharing:** Share record + auto-DM notification. `copyToLibrary` deep-copies session + sessionNotes, references same `audioStorageId` (no file duplication).
 **Study Rooms:** 3 new tables (`studyRooms`, `studyRoomMembers`, `studyRoomMessages`). Ephemeral rooms closed by host. Heartbeat presence (30s mutation, 60s online threshold). Pinned sessions reuse `StudyContent` + `StudyTools` for read-only viewing.
+**Multiplayer Games:** 2 new tables (`studyGames`, `studyGamePlayers`). Games live inside rooms, require pinned session. AI generates questions via `callClaude` (reused from `studyTools.ts`). Quiz Battle uses `getQuizPrompt`, Jeopardy uses `getJeopardyPrompt`. Server-side answer checking — `submitAnswer` validates against stored questions, clients never see correct answers. Answer privacy via query filtering. Auto-advance on all answered. Speed bonus for Quiz Battle. Turn rotation for Jeopardy. XP awarded via `awardXpHelper`.
 
 ---
 
@@ -347,3 +362,4 @@ Before marking a phase complete:
 | 4.13.2 | Feb 2026 | Put session type and course selection on same line |
 | 4.14.0 | Feb 2026 | Direct messaging and session sharing |
 | 4.15.0 | Feb 2026 | Study rooms — group study with shared sessions and chat |
+| 4.16.0 | Feb 2026 | Multiplayer games — Quiz Battle and Jeopardy in study rooms |
