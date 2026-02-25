@@ -24,14 +24,18 @@ import { awardXpHelper } from './studyQuest';
 // ─── Helpers ─────────────────────────────────────────────────
 
 /** Strip markdown code fences that Claude sometimes wraps JSON in */
-function extractJson(text: string): string {
+export function extractJson(text: string): string {
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) return fenceMatch[1].trim();
   return text.trim();
 }
 
 /** Call Claude with the given prompt and settings */
-async function callClaude(prompt: string, maxTokens: number, temperature: number): Promise<string> {
+export async function callClaude(
+  prompt: string,
+  maxTokens: number,
+  temperature: number,
+): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY not configured');

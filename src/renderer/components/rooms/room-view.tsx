@@ -1,3 +1,5 @@
+import { GameLauncher } from '@/components/rooms/game-launcher';
+import { GameView } from '@/components/rooms/game-view';
 import { PinSessionModal } from '@/components/rooms/pin-session-modal';
 import { RoomChat } from '@/components/rooms/room-chat';
 import { StudyContent } from '@/components/study-content';
@@ -7,6 +9,7 @@ import { StudyTools } from '@/components/study-tools/index';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { useSessions } from '@/hooks/use-sessions';
+import { useActiveGame } from '@/hooks/use-study-games';
 import {
   useRoom,
   useRoomActions,
@@ -45,6 +48,9 @@ export function RoomView({ roomId }: RoomViewProps) {
   const { pinnedSession } = useRoomPinnedSession(roomId);
   const { joinRoom, leaveRoom, closeRoom, inviteToRoom } = useRoomActions();
   const { sessions } = useSessions();
+
+  // Active game state
+  const { game: activeGame } = useActiveGame(roomId);
 
   // Presence heartbeat
   useRoomHeartbeat(roomId);
@@ -182,6 +188,9 @@ export function RoomView({ roomId }: RoomViewProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0">
+          {isHost && !activeGame && (
+            <GameLauncher roomId={roomId} hasPinnedSession={!!pinnedSession} />
+          )}
           {isHost && (
             <Button
               variant="ghost"
@@ -207,9 +216,11 @@ export function RoomView({ roomId }: RoomViewProps) {
 
       {/* Main content: Session + Chat side by side */}
       <div className="flex flex-1 min-h-0">
-        {/* Pinned session content */}
+        {/* Left panel: Game view (if active) OR pinned session content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {recording ? (
+          {activeGame ? (
+            <GameView game={activeGame} currentUserId={currentUserId} />
+          ) : recording ? (
             <>
               {/* Pinned session banner */}
               <div className="flex items-center gap-2 px-4 py-1.5 border-b border-[var(--glass-border)] bg-accent/5">

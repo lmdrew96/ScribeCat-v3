@@ -271,4 +271,40 @@ export default defineSchema({
     messageType: v.string(), // 'text' | 'system'
     createdAt: v.number(),
   }).index('by_room', ['roomId', 'createdAt']),
+
+  // Study games (Quiz Battle / Jeopardy instances inside rooms)
+  studyGames: defineTable({
+    roomId: v.id('studyRooms'),
+    gameType: v.string(), // 'quiz_battle' | 'jeopardy'
+    status: v.string(), // 'waiting' | 'generating' | 'active' | 'finished'
+    hostUserId: v.string(),
+    questions: v.optional(v.string()), // JSON blob (quiz array or jeopardy categories)
+    currentRound: v.number(), // 0-indexed question pointer
+    roundPhase: v.string(), // 'answering' | 'reveal' | 'selecting' (jeopardy)
+    roundStartedAt: v.optional(v.number()),
+    settings: v.string(), // JSON: { questionCount, timePerQuestion }
+    // Jeopardy-specific
+    revealedCells: v.optional(v.string()), // JSON: [[catIdx, valIdx], ...]
+    currentTurnUserId: v.optional(v.string()),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index('by_room', ['roomId'])
+    .index('by_room_active', ['roomId', 'status']),
+
+  // Study game players (one row per player per game)
+  studyGamePlayers: defineTable({
+    gameId: v.id('studyGames'),
+    userId: v.string(),
+    displayName: v.string(),
+    catVariant: v.optional(v.string()),
+    score: v.number(),
+    isReady: v.boolean(),
+    hasAnsweredCurrentRound: v.boolean(),
+    lastAnswerCorrect: v.optional(v.boolean()),
+    lastAnswerIndex: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_game', ['gameId'])
+    .index('by_game_user', ['gameId', 'userId']),
 });

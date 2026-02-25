@@ -11,7 +11,7 @@ import { verifyFriendship } from './messagingHelpers';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-async function requireRoomMember(ctx: QueryCtx, roomId: Id<'studyRooms'>, userId: string) {
+export async function requireRoomMember(ctx: QueryCtx, roomId: Id<'studyRooms'>, userId: string) {
   const member = await ctx.db
     .query('studyRoomMembers')
     .withIndex('by_room_user', (q) => q.eq('roomId', roomId).eq('userId', userId))
@@ -20,7 +20,7 @@ async function requireRoomMember(ctx: QueryCtx, roomId: Id<'studyRooms'>, userId
   return member;
 }
 
-async function requireRoomHost(ctx: QueryCtx, roomId: Id<'studyRooms'>, userId: string) {
+export async function requireRoomHost(ctx: QueryCtx, roomId: Id<'studyRooms'>, userId: string) {
   const member = await requireRoomMember(ctx, roomId, userId);
   if (member.role !== 'host') throw new ConvexError('Only the host can do this');
   return member;
@@ -33,7 +33,11 @@ async function getProfileForUser(ctx: QueryCtx, userId: string) {
     .unique();
 }
 
-async function postSystemMessage(ctx: MutationCtx, roomId: Id<'studyRooms'>, content: string) {
+export async function postSystemMessage(
+  ctx: MutationCtx,
+  roomId: Id<'studyRooms'>,
+  content: string,
+) {
   await ctx.db.insert('studyRoomMessages', {
     roomId,
     senderId: 'system',

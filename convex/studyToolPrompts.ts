@@ -5,7 +5,7 @@
 
 import type { LectureType } from './prompts';
 
-const STUDY_FOCUS: Record<LectureType, string> = {
+export const STUDY_FOCUS: Record<LectureType, string> = {
   stem: 'Focus on definitions, theorems, formulas, problem-solving steps, and key relationships between concepts.',
   humanities:
     'Focus on arguments, thesis statements, key figures, historical context, and contrasting perspectives.',
@@ -17,12 +17,12 @@ const STUDY_FOCUS: Record<LectureType, string> = {
   general: 'Focus on main topics, key terms, important relationships, and practical takeaways.',
 };
 
-function truncateTranscript(transcript: string, maxChars = 8000): string {
+export function truncateTranscript(transcript: string, maxChars = 8000): string {
   if (transcript.length <= maxChars) return transcript;
   return `...${transcript.slice(-maxChars)}`;
 }
 
-function buildInput(transcript: string, notes: string | undefined): string {
+export function buildInput(transcript: string, notes: string | undefined): string {
   let input = `TRANSCRIPT:\n${truncateTranscript(transcript)}`;
   if (notes?.trim()) {
     input += `\n\nSTUDENT'S NOTES:\n${notes.slice(0, 3000)}`;
@@ -189,4 +189,37 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 }
 
 Keep explanations under 3 sentences each. Make analogies fun and memorable. Include 3-5 concepts.`;
+}
+
+export function getJeopardyPrompt(
+  transcript: string,
+  notes: string | undefined,
+  lectureType: LectureType,
+): string {
+  return `You are a Jeopardy game creator for ScribeCat, an ADHD-friendly study app.
+${STUDY_FOCUS[lectureType]}
+
+Create a Jeopardy board with 5 categories and 5 questions per category from this lecture content.
+Each category should cover a distinct topic area. Questions should increase in difficulty
+(100 = easy, 500 = hard). Each question has 4 multiple choice options.
+
+${buildInput(transcript, notes)}
+
+Return ONLY valid JSON:
+{
+  "categories": [
+    {
+      "name": "Category Name (2-4 words)",
+      "questions": [
+        { "question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "value": 100 },
+        { "question": "...", "options": ["A","B","C","D"], "correctIndex": 1, "explanation": "...", "value": 200 },
+        { "question": "...", "options": ["A","B","C","D"], "correctIndex": 2, "explanation": "...", "value": 300 },
+        { "question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "value": 400 },
+        { "question": "...", "options": ["A","B","C","D"], "correctIndex": 3, "explanation": "...", "value": 500 }
+      ]
+    }
+  ]
+}
+
+Generate exactly 5 categories with exactly 5 questions each (25 total). Vary topics across the lecture material.`;
 }
