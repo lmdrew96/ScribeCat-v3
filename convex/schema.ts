@@ -7,6 +7,7 @@ export default defineSchema({
     userId: v.string(),
     title: v.string(),
     lectureType: v.optional(v.string()),
+    course: v.optional(v.string()),
     audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.string()),
     transcriptSegments: v.optional(
@@ -36,6 +37,7 @@ export default defineSchema({
   })
     .index('by_user', ['userId'])
     .index('by_user_deleted', ['userId', 'isDeleted'])
+    .index('by_user_course', ['userId', 'course'])
     .index('by_deleted_at', ['isDeleted', 'deletedAt'])
     .searchIndex('search_notes', {
       searchField: 'notesPlainText',

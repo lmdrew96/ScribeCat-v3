@@ -243,6 +243,7 @@ export function RecordingPanel({
       const sessionId = await createSession({
         title: sessionTitle.trim() || defaultTitle,
         lectureType,
+        course: course || undefined,
       });
 
       setCurrentSessionId(sessionId);

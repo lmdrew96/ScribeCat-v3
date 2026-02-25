@@ -29,6 +29,7 @@ export interface SessionSummary {
   date: string;
   duration: string;
   lectureType?: string;
+  course?: string;
 }
 
 export interface Recording {
@@ -130,6 +131,7 @@ export function StudyView() {
     }),
     duration: formatDuration(session.duration),
     lectureType: session.lectureType,
+    course: session.course,
   }));
 
   const trashedRecordings: SessionSummary[] = trashedSessions.map((session) => ({
@@ -142,6 +144,7 @@ export function StudyView() {
     }),
     duration: formatDuration(session.duration),
     lectureType: session.lectureType,
+    course: session.course,
   }));
 
   // Build full Recording for StudyContent from sessions.get result

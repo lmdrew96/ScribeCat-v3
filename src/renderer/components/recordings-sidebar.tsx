@@ -19,17 +19,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   ArrowLeft,
   Calendar,
   Clock,
   FileAudio,
+  Filter,
   MoreHorizontal,
   PanelLeftClose,
   RotateCcw,
   Share2,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface RecordingsSidebarProps {
   recordings: SessionSummary[];
@@ -61,8 +69,21 @@ export function RecordingsSidebar({
 }: RecordingsSidebarProps) {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [viewingTrash, setViewingTrash] = useState(false);
+  const [courseFilter, setCourseFilter] = useState('all');
 
-  const activeList = viewingTrash ? trashedRecordings : recordings;
+  // Extract unique courses from recordings for filter dropdown
+  const availableCourses = useMemo(() => {
+    const courses = new Set<string>();
+    for (const r of recordings) {
+      if (r.course) courses.add(r.course);
+    }
+    return Array.from(courses).sort();
+  }, [recordings]);
+
+  const filteredRecordings =
+    courseFilter === 'all' ? recordings : recordings.filter((r) => r.course === courseFilter);
+
+  const activeList = viewingTrash ? trashedRecordings : filteredRecordings;
 
   return (
     <>
@@ -87,11 +108,37 @@ export function RecordingsSidebar({
           )}
         </div>
 
+        {/* Course filter — only in main view when courses exist */}
+        {!viewingTrash && availableCourses.length > 0 && (
+          <div className="px-1 mb-2">
+            <Select value={courseFilter} onValueChange={setCourseFilter}>
+              <SelectTrigger className="h-7 text-[11px] bg-background border-border">
+                <Filter className="h-3 w-3 mr-1 shrink-0" />
+                <SelectValue placeholder="Filter by course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  All Courses
+                </SelectItem>
+                {availableCourses.map((course) => (
+                  <SelectItem key={course} value={course} className="text-xs">
+                    {course}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <ScrollArea className="flex-1">
           <div className="space-y-1">
             {activeList.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {viewingTrash ? 'Trash is empty' : 'No recordings yet'}
+                {viewingTrash
+                  ? 'Trash is empty'
+                  : courseFilter !== 'all'
+                    ? 'No recordings for this course'
+                    : 'No recordings yet'}
               </p>
             )}
             {activeList.map((recording) => (

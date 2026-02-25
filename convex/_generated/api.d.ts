@@ -27,6 +27,7 @@ import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
 import type * as sessionSharing from "../sessionSharing.js";
 import type * as sessions from "../sessions.js";
+import type * as studyGames from "../studyGames.js";
 import type * as studyQuest from "../studyQuest.js";
 import type * as studyRooms from "../studyRooms.js";
 import type * as studyToolPrompts from "../studyToolPrompts.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   prompts: typeof prompts;
   sessionSharing: typeof sessionSharing;
   sessions: typeof sessions;
+  studyGames: typeof studyGames;
   studyQuest: typeof studyQuest;
   studyRooms: typeof studyRooms;
   studyToolPrompts: typeof studyToolPrompts;

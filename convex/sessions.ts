@@ -32,6 +32,7 @@ export const listMetadata = query({
       createdAt: s.createdAt,
       duration: s.duration,
       lectureType: s.lectureType,
+      course: s.course,
       audioStorageId: s.audioStorageId,
     }));
   },
@@ -80,6 +81,7 @@ export const create = mutation({
   args: {
     title: v.string(),
     lectureType: v.optional(v.string()),
+    course: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
@@ -88,6 +90,7 @@ export const create = mutation({
       userId,
       title: args.title,
       lectureType: args.lectureType ?? 'general',
+      course: args.course,
       duration: 0,
       createdAt: now,
       updatedAt: now,
@@ -113,6 +116,7 @@ export const update = mutation({
       ),
     ),
     lectureType: v.optional(v.string()),
+    course: v.optional(v.string()),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
     nuggetNotes: v.optional(
@@ -266,6 +270,7 @@ export const listDeletedMetadata = query({
       createdAt: s.createdAt,
       duration: s.duration,
       lectureType: s.lectureType,
+      course: s.course,
     }));
   },
 });
