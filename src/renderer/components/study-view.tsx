@@ -43,6 +43,7 @@ export interface Recording {
   audioStorageId?: string;
   transcriptSegments?: TranscriptSegment[];
   lectureType?: string;
+  course?: string;
   nuggetNotes?: { text: string; recordingTime: number }[];
 }
 
@@ -164,6 +165,7 @@ export function StudyView() {
         audioStorageId: fullSession.audioStorageId,
         transcriptSegments: fullSession.transcriptSegments,
         lectureType: fullSession.lectureType,
+        course: fullSession.course,
         nuggetNotes: fullSession.nuggetNotes,
       }
     : null;

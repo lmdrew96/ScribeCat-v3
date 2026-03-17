@@ -1,5 +1,6 @@
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,8 +26,11 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Cat, FileText, Mic, Pause, Play } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { BookOpen, Cat, Check, FileText, Mic, Pause, Pencil, Play, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 
 interface StudyContentProps {
   recording: Recording;
@@ -36,6 +40,60 @@ interface StudyContentProps {
 export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Inline editing state
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [editingCourse, setEditingCourse] = useState(false);
+  const [courseDraft, setCourseDraft] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const courseInputRef = useRef<HTMLInputElement>(null);
+
+  const updateSession = useMutation(api.sessions.update);
+
+  const startEditTitle = () => {
+    setTitleDraft(recording.title);
+    setEditingTitle(true);
+  };
+
+  const saveTitle = async () => {
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== recording.title) {
+      await updateSession({ id: recording.id as Id<'sessions'>, title: trimmed });
+    }
+    setEditingTitle(false);
+  };
+
+  const cancelTitle = () => {
+    setEditingTitle(false);
+    setTitleDraft('');
+  };
+
+  const startEditCourse = () => {
+    setCourseDraft(recording.course ?? '');
+    setEditingCourse(true);
+  };
+
+  const saveCourse = async () => {
+    const trimmed = courseDraft.trim();
+    if (trimmed !== (recording.course ?? '')) {
+      await updateSession({ id: recording.id as Id<'sessions'>, course: trimmed || undefined });
+    }
+    setEditingCourse(false);
+  };
+
+  const cancelCourse = () => {
+    setEditingCourse(false);
+    setCourseDraft('');
+  };
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.focus();
+  }, [editingTitle]);
+
+  useEffect(() => {
+    if (editingCourse) courseInputRef.current?.focus();
+  }, [editingCourse]);
 
   const { isPlaying, currentTime, duration, load, togglePlay, seek } = useAudioPlayer({
     onTimeUpdate: (time) => {
@@ -146,13 +204,125 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   return (
     <div className="h-full flex flex-col">
       <div className={`mb-2 ${sidebarCollapsed ? 'pl-8' : ''}`}>
-        <h1 className="text-base font-semibold text-foreground">{recording.title}</h1>
+        {/* Editable title */}
+        {editingTitle ? (
+          <div className="flex items-center gap-1 mb-0.5">
+            <Input
+              ref={titleInputRef}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveTitle();
+                if (e.key === 'Escape') cancelTitle();
+              }}
+              onBlur={saveTitle}
+              className="h-7 text-sm font-semibold px-2 py-0"
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveTitle();
+              }}
+            >
+              <Check className="h-3.5 w-3.5 text-primary" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 shrink-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                cancelTitle();
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={startEditTitle}
+            className="group flex items-center gap-1.5 text-left"
+          >
+            <h1 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+              {recording.title}
+            </h1>
+            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </button>
+        )}
+
+        {/* Metadata row */}
         <p className="text-xs text-muted-foreground">
           {recording.date} • {recording.duration}
           {recording.lectureType && recording.lectureType !== 'general' && (
             <span className="ml-2 capitalize">• {recording.lectureType}</span>
           )}
         </p>
+
+        {/* Editable course */}
+        {editingCourse ? (
+          <div className="flex items-center gap-1 mt-1">
+            <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+            <Input
+              ref={courseInputRef}
+              value={courseDraft}
+              onChange={(e) => setCourseDraft(e.target.value)}
+              placeholder="Course name"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveCourse();
+                if (e.key === 'Escape') cancelCourse();
+              }}
+              onBlur={saveCourse}
+              className="h-6 text-xs px-2 py-0 w-44"
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-5 w-5 shrink-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveCourse();
+              }}
+            >
+              <Check className="h-3 w-3 text-primary" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-5 w-5 shrink-0"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                cancelCourse();
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : recording.course ? (
+          <button
+            type="button"
+            onClick={startEditCourse}
+            className="group flex items-center gap-1 mt-1"
+          >
+            <BookOpen className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+              {recording.course}
+            </span>
+            <Pencil className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={startEditCourse}
+            className="mt-1 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          >
+            <BookOpen className="h-3 w-3" />
+            <span>Add course</span>
+          </button>
+        )}
       </div>
 
       {/* Audio playback controls */}
