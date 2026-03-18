@@ -4,6 +4,7 @@ import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
 import { nuggetChat } from './nuggetChat';
 import { generateNuggetNotes } from './nuggetNotes';
+import { reportBug } from './reportBug';
 import { getStreamingToken, transcribeFromUrl } from './transcription';
 
 const http = httpRouter();
@@ -70,6 +71,19 @@ http.route({
   path: '/nuggetChat',
   method: 'POST',
   handler: nuggetChat,
+});
+
+// Bug Report (creates GitHub Issue)
+http.route({
+  path: '/reportBug',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/reportBug',
+  method: 'POST',
+  handler: reportBug,
 });
 
 // AssemblyAI Streaming Token (for real-time transcription)

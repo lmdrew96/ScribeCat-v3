@@ -6,7 +6,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useMutation, useQuery } from 'convex/react';
-import { Cat, Send, X } from 'lucide-react';
+import { Bug, Cat, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -47,8 +47,18 @@ export function NuggetChat({
   const [includeTranscript, setIncludeTranscript] = useState(true);
   const [includeNotes, setIncludeNotes] = useState(true);
 
+  // Bug report state
+  const [showBugReport, setShowBugReport] = useState(false);
+  const [bugTitle, setBugTitle] = useState('');
+  const [bugDescription, setBugDescription] = useState('');
+  const [bugSubmitting, setBugSubmitting] = useState(false);
+  const [bugResult, setBugResult] = useState<{ url: string; number: number } | null>(null);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // User profile (for bug report reporter field)
+  const userProfile = useQuery(api.userProfiles.getMyProfile, {});
 
   // Chat history persistence
   const chatHistory = useQuery(
@@ -224,6 +234,46 @@ export function NuggetChat({
     ],
   );
 
+  // Submit bug report to GitHub Issues via Convex HTTP action
+  const submitBugReport = useCallback(async () => {
+    if (!bugTitle.trim() || !bugDescription.trim() || bugSubmitting) return;
+
+    setBugSubmitting(true);
+    const baseUrl = (convexUrl || import.meta.env.VITE_CONVEX_URL || '').replace(
+      '.convex.cloud',
+      '.convex.site',
+    );
+
+    try {
+      const response = await fetch(`${baseUrl}/reportBug`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: bugTitle.trim(),
+          description: bugDescription.trim(),
+          userDisplayName: userProfile?.displayName,
+          browserInfo: navigator.userAgent,
+          appVersion: '4.17.1',
+          pageUrl: window.location.href,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBugResult({ url: data.issueUrl, number: data.issueNumber });
+        setBugTitle('');
+        setBugDescription('');
+      } else {
+        setBugResult({ url: '', number: -1 });
+      }
+    } catch {
+      setBugResult({ url: '', number: -1 });
+    } finally {
+      setBugSubmitting(false);
+    }
+  }, [bugTitle, bugDescription, bugSubmitting, convexUrl, userProfile]);
+
   // Handle input keydown
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -260,77 +310,205 @@ export function NuggetChat({
                   </span>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setShowBugReport((v) => !v);
+                    setBugResult(null);
+                  }}
+                  title="Report a bug"
+                >
+                  <Bug className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onOpenChange(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4" ref={scrollRef}>
-              {messages.length === 0 ? (
-                <WelcomeMessage chatMode={chatMode} onSuggestionClick={sendMessage} />
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
-                  ))}
-                  {isLoading && <TypingIndicator />}
+            {showBugReport ? (
+              /* Bug Report Panel */
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <Bug className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-sm text-foreground">Report a Bug</span>
                 </div>
-              )}
-            </div>
 
-            {/* Context checkboxes */}
-            <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--glass-border)] text-xs text-muted-foreground">
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeTranscript}
-                  onChange={(e) => setIncludeTranscript(e.target.checked)}
-                  className="rounded border-border"
-                />
-                <span>Include transcript</span>
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeNotes}
-                  onChange={(e) => setIncludeNotes(e.target.checked)}
-                  className="rounded border-border"
-                />
-                <span>Include notes</span>
-              </label>
-            </div>
+                {bugResult ? (
+                  bugResult.number === -1 ? (
+                    <div className="glass-light rounded-lg p-4 text-sm text-destructive">
+                      Something went wrong submitting your report. Please try again.
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 w-full"
+                        onClick={() => setBugResult(null)}
+                      >
+                        Try again
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="glass-light rounded-lg p-4 flex flex-col gap-3 text-sm">
+                      <p className="text-foreground font-medium">Issue filed successfully!</p>
+                      <a
+                        href={bugResult.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline underline-offset-2 break-all"
+                      >
+                        #{bugResult.number} → View on GitHub
+                      </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setBugResult(null);
+                          setShowBugReport(false);
+                        }}
+                      >
+                        Back to chat
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        className="text-xs font-medium text-muted-foreground"
+                        htmlFor="bug-title"
+                      >
+                        Title
+                      </label>
+                      <input
+                        id="bug-title"
+                        type="text"
+                        value={bugTitle}
+                        onChange={(e) => setBugTitle(e.target.value.slice(0, 150))}
+                        placeholder="Brief summary of the issue"
+                        className="rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        disabled={bugSubmitting}
+                      />
+                      <span className="text-[10px] text-muted-foreground text-right">
+                        {bugTitle.length}/150
+                      </span>
+                    </div>
 
-            {/* Input */}
-            <div className="flex items-end gap-2 p-4 border-t border-[var(--glass-border)]">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  chatMode === 'recording'
-                    ? "Ask about what's being discussed..."
-                    : 'Ask Nugget about your lecture...'
-                }
-                className="flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] backdrop-blur-[var(--glass-blur-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[120px]"
-                rows={1}
-                disabled={isLoading}
-              />
-              <Button
-                size="icon"
-                className="h-10 w-10 shrink-0"
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || isLoading}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <label
+                        className="text-xs font-medium text-muted-foreground"
+                        htmlFor="bug-description"
+                      >
+                        Description
+                      </label>
+                      <textarea
+                        id="bug-description"
+                        value={bugDescription}
+                        onChange={(e) => setBugDescription(e.target.value)}
+                        placeholder="What happened? What did you expect? Steps to reproduce..."
+                        className="flex-1 min-h-[120px] resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        disabled={bugSubmitting}
+                      />
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground">
+                      Browser info and app version will be attached automatically.
+                    </p>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setShowBugReport(false)}
+                        disabled={bugSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={submitBugReport}
+                        disabled={!bugTitle.trim() || !bugDescription.trim() || bugSubmitting}
+                      >
+                        {bugSubmitting ? 'Submitting...' : 'Submit Report'}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Messages */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-4" ref={scrollRef}>
+                  {messages.length === 0 ? (
+                    <WelcomeMessage chatMode={chatMode} onSuggestionClick={sendMessage} />
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {messages.map((message) => (
+                        <MessageBubble key={message.id} message={message} />
+                      ))}
+                      {isLoading && <TypingIndicator />}
+                    </div>
+                  )}
+                </div>
+
+                {/* Context checkboxes */}
+                <div className="flex items-center gap-4 px-4 py-2 border-t border-[var(--glass-border)] text-xs text-muted-foreground">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeTranscript}
+                      onChange={(e) => setIncludeTranscript(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    <span>Include transcript</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeNotes}
+                      onChange={(e) => setIncludeNotes(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    <span>Include notes</span>
+                  </label>
+                </div>
+
+                {/* Input */}
+                <div className="flex items-end gap-2 p-4 border-t border-[var(--glass-border)]">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      chatMode === 'recording'
+                        ? "Ask about what's being discussed..."
+                        : 'Ask Nugget about your lecture...'
+                    }
+                    className="flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] backdrop-blur-[var(--glass-blur-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[120px]"
+                    rows={1}
+                    disabled={isLoading}
+                  />
+                  <Button
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => sendMessage()}
+                    disabled={!input.trim() || isLoading}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
