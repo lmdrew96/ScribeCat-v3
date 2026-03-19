@@ -295,6 +295,15 @@ export default defineSchema({
     .index('by_room', ['roomId'])
     .index('by_room_active', ['roomId', 'status']),
 
+  // Collaborative notes per study room
+  roomNotes: defineTable({
+    roomId: v.id('studyRooms'),
+    content: v.string(), // TipTap JSON stringified
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+    updatedByName: v.string(),
+  }).index('by_room', ['roomId']),
+
   // Study game players (one row per player per game)
   studyGamePlayers: defineTable({
     gameId: v.id('studyGames'),

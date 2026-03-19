@@ -2,6 +2,7 @@ import { GameLauncher } from '@/components/rooms/game-launcher';
 import { GameView } from '@/components/rooms/game-view';
 import { PinSessionModal } from '@/components/rooms/pin-session-modal';
 import { RoomChat } from '@/components/rooms/room-chat';
+import { RoomNotesEditor } from '@/components/rooms/room-notes-editor';
 import { StudyContent } from '@/components/study-content';
 import { CatDisplay } from '@/components/study-quest/cat-display';
 import type { CatVariant } from '@/components/study-quest/cat-sprites';
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
-import { DoorOpen, LogOut, Pin, X } from 'lucide-react';
+import { DoorOpen, FileText, LogOut, Pin, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../convex/_generated/api';
@@ -58,6 +59,9 @@ export function RoomView({ roomId }: RoomViewProps) {
   // Pin session modal
   const [pinModalOpen, setPinModalOpen] = useState(false);
 
+  // Left panel tab
+  const [activeTab, setActiveTab] = useState<'session' | 'notes'>('session');
+
   // Audio URL for pinned session
   const audioUrl = useQuery(
     api.audioStorage.getAudioUrl,
@@ -76,6 +80,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   const currentMember = room.members.find((m) => m.userId === currentUserId);
   const hasJoined = currentMember?.hasJoined ?? false;
   const onlineCount = room.members.filter((m) => m.isOnline).length;
+  const myDisplayName = currentMember?.displayName ?? user?.fullName ?? 'Someone';
 
   const handleJoin = async () => {
     try {
@@ -216,52 +221,97 @@ export function RoomView({ roomId }: RoomViewProps) {
 
       {/* Main content: Session + Chat side by side */}
       <div className="flex flex-1 min-h-0">
-        {/* Left panel: Game view (if active) OR pinned session content */}
+        {/* Left panel: Game view (if active) OR tabbed session/notes */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {activeGame ? (
             <GameView game={activeGame} currentUserId={currentUserId} />
-          ) : recording ? (
-            <>
-              {/* Pinned session banner */}
-              <div className="flex items-center gap-2 px-4 py-1.5 border-b border-[var(--glass-border)] bg-accent/5">
-                <Pin className="h-3 w-3 text-accent shrink-0" />
-                <p className="text-[10px] text-muted-foreground truncate">
-                  Pinned by{' '}
-                  <span className="font-medium text-foreground">
-                    @{pinnedSession?.owner.username}
-                  </span>
-                  : {pinnedSession?.title}
-                </p>
-              </div>
-
-              <div className="flex-1 overflow-auto p-4">
-                <StudyContent recording={recording} />
-              </div>
-              <div className="border-t border-[var(--glass-border)]">
-                <StudyTools sessionId={pinnedSession?._id as Id<'sessions'>} />
-              </div>
-            </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2">
-              <Pin className="h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm font-medium text-foreground">No session pinned</p>
-              <p className="text-xs text-muted-foreground">
-                {isHost
-                  ? 'Pin a session for everyone to study together'
-                  : 'Waiting for host to pin a session'}
-              </p>
-              {isHost && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="mt-2 gap-1 text-xs"
-                  onClick={() => setPinModalOpen(true)}
+            <>
+              {/* Tab bar */}
+              <div className="flex shrink-0 border-b border-[var(--glass-border)] glass-light">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('session')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2',
+                    activeTab === 'session'
+                      ? 'border-accent text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
                 >
                   <Pin className="h-3 w-3" />
-                  Pin a Session
-                </Button>
+                  Session
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('notes')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors border-b-2',
+                    activeTab === 'notes'
+                      ? 'border-accent text-foreground'
+                      : 'border-transparent text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <FileText className="h-3 w-3" />
+                  Notes
+                </button>
+              </div>
+
+              {/* Session tab */}
+              {activeTab === 'session' &&
+                (recording ? (
+                  <>
+                    {/* Pinned session banner */}
+                    <div className="flex items-center gap-2 px-4 py-1.5 border-b border-[var(--glass-border)] bg-accent/5">
+                      <Pin className="h-3 w-3 text-accent shrink-0" />
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        Pinned by{' '}
+                        <span className="font-medium text-foreground">
+                          @{pinnedSession?.owner.username}
+                        </span>
+                        : {pinnedSession?.title}
+                      </p>
+                    </div>
+
+                    <div className="flex-1 overflow-auto p-4">
+                      <StudyContent recording={recording} />
+                    </div>
+                    <div className="border-t border-[var(--glass-border)]">
+                      <StudyTools sessionId={pinnedSession?._id as Id<'sessions'>} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2">
+                    <Pin className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm font-medium text-foreground">No session pinned</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isHost
+                        ? 'Pin a session for everyone to study together'
+                        : 'Waiting for host to pin a session'}
+                    </p>
+                    {isHost && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2 gap-1 text-xs"
+                        onClick={() => setPinModalOpen(true)}
+                      >
+                        <Pin className="h-3 w-3" />
+                        Pin a Session
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+              {/* Notes tab */}
+              {activeTab === 'notes' && (
+                <RoomNotesEditor
+                  roomId={roomId}
+                  currentUserId={currentUserId}
+                  currentUserName={myDisplayName}
+                />
               )}
-            </div>
+            </>
           )}
         </div>
 
