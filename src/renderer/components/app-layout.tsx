@@ -2,10 +2,12 @@ import { NuggetChat } from '@/components/nugget-chat';
 import { StudyQuestWidget } from '@/components/study-quest/study-quest-widget';
 import { TopBar } from '@/components/top-bar';
 import { useSessionContext } from '@/contexts/session-context';
+import { useNotificationWatcher } from '@/hooks/use-notification-watcher';
 import { useSession } from '@/hooks/use-sessions';
 import { Outlet } from '@tanstack/react-router';
 
 export function AppLayout() {
+  useNotificationWatcher();
   const { activeSessionId, nuggetNotes, isRecording, chatOpen, setChatOpen } = useSessionContext();
 
   const session = useSession(activeSessionId);

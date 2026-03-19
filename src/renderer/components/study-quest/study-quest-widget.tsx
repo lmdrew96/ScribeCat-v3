@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { useNotificationSounds } from '@/hooks/use-notification-sounds';
 import { useStudyQuest } from '@/hooks/use-study-quest';
 import { ChevronDown, Palette, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -37,17 +38,19 @@ export function StudyQuestWidget() {
   const [adoptName, setAdoptName] = useState('');
   const [adoptVariant, setAdoptVariant] = useState<CatVariant>('grey');
   const prevLevelRef = useRef(level);
+  const { playSound } = useNotificationSounds();
 
-  // Level-up toast
+  // Level-up toast + sound
   useEffect(() => {
     if (prevLevelRef.current > 0 && level > prevLevelRef.current) {
+      playSound('levelup');
       toast.success(`${name} reached Level ${level}!`, {
         description: 'Keep studying to level up more!',
         duration: 4000,
       });
     }
     prevLevelRef.current = level;
-  }, [level, name]);
+  }, [level, name, playSound]);
 
   if (isLoading) return null;
 

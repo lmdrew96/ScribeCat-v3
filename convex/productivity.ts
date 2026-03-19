@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   weeklyGoalMinutes: 600,
   courses: [] as string[],
   nuggetNotesEnabled: true,
+  soundEnabled: true,
 };
 
 export const getSettings = query({
@@ -36,6 +37,7 @@ export const updateSettings = mutation({
     weeklyGoalMinutes: v.optional(v.number()),
     courses: v.optional(v.array(v.string())),
     nuggetNotesEnabled: v.optional(v.boolean()),
+    soundEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
