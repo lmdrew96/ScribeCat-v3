@@ -136,24 +136,33 @@ export function ConversationThread({
                           size="sm"
                           className="h-7 text-xs gap-1"
                           onClick={() =>
-                            navigate({
-                              to: '/shared/$sessionId',
-                              params: { sessionId: msg.sharedSessionId as string },
-                            })
+                            navigate(
+                              isMine
+                                ? {
+                                    to: '/study/$sessionId',
+                                    params: { sessionId: msg.sharedSessionId as string },
+                                  }
+                                : {
+                                    to: '/shared/$sessionId',
+                                    params: { sessionId: msg.sharedSessionId as string },
+                                  },
+                            )
                           }
                         >
                           <BookOpen className="h-3 w-3" />
                           View
                         </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => void handleCopyToLibrary(msg.sharedSessionId as string)}
-                        >
-                          <Copy className="h-3 w-3" />
-                          Copy
-                        </Button>
+                        {!isMine && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => void handleCopyToLibrary(msg.sharedSessionId as string)}
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copy
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ) : (
