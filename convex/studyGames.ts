@@ -42,6 +42,42 @@ interface JeopardyCategory {
   }[];
 }
 
+// ─── Parse Helpers ──────────────────────────────────────────
+
+function parseQuizQuestions(raw: string): { questions: QuizQuestion[] } | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'questions' in parsed &&
+      Array.isArray((parsed as { questions: unknown }).questions)
+    ) {
+      return parsed as { questions: QuizQuestion[] };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function parseJeopardyCategories(raw: string): { categories: JeopardyCategory[] } | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'categories' in parsed &&
+      Array.isArray((parsed as { categories: unknown }).categories)
+    ) {
+      return parsed as { categories: JeopardyCategory[] };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Queries ────────────────────────────────────────────────
 
 /** Get the active (non-finished) game for a room, with answer-privacy filtering. */
@@ -70,17 +106,17 @@ export const getActiveGame = query({
     let currentQuestion: QuizQuestion | null = null;
     if (game.questions && game.status === 'active') {
       if (game.gameType === 'quiz_battle') {
-        const parsed = JSON.parse(game.questions) as { questions: QuizQuestion[] };
-        const q = parsed.questions[game.currentRound];
+        const parsed = parseQuizQuestions(game.questions);
+        const q = parsed?.questions[game.currentRound];
         if (q) {
           // Strip correctIndex during answering phase
           currentQuestion =
             game.roundPhase === 'answering' ? { ...q, correctIndex: -1, explanation: '' } : q;
         }
       } else if (game.gameType === 'jeopardy') {
-        const parsed = JSON.parse(game.questions) as { categories: JeopardyCategory[] };
+        const parsed = parseJeopardyCategories(game.questions);
         // During answering/reveal, currentRound = flat index (catIdx * 5 + qIdx)
-        if (game.roundPhase !== 'selecting') {
+        if (parsed && game.roundPhase !== 'selecting') {
           const catIdx = Math.floor(game.currentRound / 5);
           const qIdx = game.currentRound % 5;
           const q = parsed.categories[catIdx]?.questions[qIdx];
@@ -109,8 +145,8 @@ export const getActiveGame = query({
     // Extract jeopardy category names for the board
     let categoryNames: string[] | null = null;
     if (game.gameType === 'jeopardy' && game.questions) {
-      const parsed = JSON.parse(game.questions) as { categories: JeopardyCategory[] };
-      categoryNames = parsed.categories.map((c) => c.name);
+      const parsed = parseJeopardyCategories(game.questions);
+      categoryNames = parsed?.categories.map((c) => c.name) ?? null;
     }
 
     // Privacy filter: hide other players' answer details during answering phase
@@ -307,21 +343,24 @@ export const submitAnswer = mutation({
     if (player.hasAnsweredCurrentRound) throw new ConvexError('Already answered');
 
     // Determine correctness from stored questions
-    const questions = JSON.parse(game.questions!);
     let correctIndex: number;
     let pointValue: number;
 
     if (game.gameType === 'quiz_battle') {
-      const q = (questions as { questions: QuizQuestion[] }).questions[game.currentRound];
+      const parsed = parseQuizQuestions(game.questions ?? '');
+      if (!parsed) throw new ConvexError('Game data is corrupted');
+      const q = parsed.questions[game.currentRound];
+      if (!q) throw new ConvexError('Question not found for current round');
       correctIndex = q.correctIndex;
       pointValue = 100; // base
     } else {
+      const parsed = parseJeopardyCategories(game.questions ?? '');
+      if (!parsed) throw new ConvexError('Game data is corrupted');
       // Jeopardy: currentRound = flat index
       const catIdx = Math.floor(game.currentRound / 5);
       const qIdx = game.currentRound % 5;
-      const q = (questions as { categories: JeopardyCategory[] }).categories[catIdx].questions[
-        qIdx
-      ];
+      const q = parsed.categories[catIdx]?.questions[qIdx];
+      if (!q) throw new ConvexError('Question not found for current round');
       correctIndex = q.correctIndex;
       pointValue = q.value;
     }
@@ -380,10 +419,11 @@ export const advanceRound = mutation({
     if (!callerPlayer) throw new ConvexError('Not a player');
 
     // Determine total rounds
-    const questions = JSON.parse(game.questions!);
     let totalRounds: number;
     if (game.gameType === 'quiz_battle') {
-      totalRounds = (questions as { questions: QuizQuestion[] }).questions.length;
+      const parsed = parseQuizQuestions(game.questions ?? '');
+      if (!parsed) throw new ConvexError('Game data is corrupted');
+      totalRounds = parsed.questions.length;
     } else {
       // Jeopardy: total = revealed cells count vs 25
       const revealed: number[][] = game.revealedCells ? JSON.parse(game.revealedCells) : [];

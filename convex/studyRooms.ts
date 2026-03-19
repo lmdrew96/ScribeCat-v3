@@ -65,18 +65,17 @@ export const listMyRooms = query({
         const room = await ctx.db.get(membership.roomId);
         if (!room || !room.isActive) return null;
 
-        // Get host profile
-        const hostProfile = await getProfileForUser(ctx, room.hostUserId);
-        const hostCat = await ctx.db
-          .query('catCompanion')
-          .withIndex('by_user', (q) => q.eq('userId', room.hostUserId))
-          .unique();
-
-        // Count members
-        const members = await ctx.db
-          .query('studyRoomMembers')
-          .withIndex('by_room', (q) => q.eq('roomId', room._id))
-          .collect();
+        const [hostProfile, hostCat, members] = await Promise.all([
+          getProfileForUser(ctx, room.hostUserId),
+          ctx.db
+            .query('catCompanion')
+            .withIndex('by_user', (q) => q.eq('userId', room.hostUserId))
+            .unique(),
+          ctx.db
+            .query('studyRoomMembers')
+            .withIndex('by_room', (q) => q.eq('roomId', room._id))
+            .collect(),
+        ]);
 
         return {
           roomId: room._id,
@@ -116,11 +115,13 @@ export const getRoom = query({
     const now = Date.now();
     const members = await Promise.all(
       memberDocs.map(async (member) => {
-        const profile = await getProfileForUser(ctx, member.userId);
-        const cat = await ctx.db
-          .query('catCompanion')
-          .withIndex('by_user', (q) => q.eq('userId', member.userId))
-          .unique();
+        const [profile, cat] = await Promise.all([
+          getProfileForUser(ctx, member.userId),
+          ctx.db
+            .query('catCompanion')
+            .withIndex('by_user', (q) => q.eq('userId', member.userId))
+            .unique(),
+        ]);
 
         return {
           userId: member.userId,
@@ -188,13 +189,9 @@ export const pendingRoomCount = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect();
 
-    let count = 0;
-    for (const membership of memberships) {
-      if (membership.hasJoined) continue;
-      const room = await ctx.db.get(membership.roomId);
-      if (room?.isActive) count++;
-    }
-    return count;
+    const pending = memberships.filter((m) => !m.hasJoined);
+    const rooms = await Promise.all(pending.map((m) => ctx.db.get(m.roomId)));
+    return rooms.filter((r) => r?.isActive).length;
   },
 });
 

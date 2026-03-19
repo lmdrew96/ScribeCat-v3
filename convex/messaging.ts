@@ -30,18 +30,17 @@ export const listConversations = query({
         const otherUserId = conversation.participantIds.find((id) => id !== userId);
         if (!otherUserId) return null;
 
-        // Get their profile
-        const profile = await ctx.db
-          .query('userProfiles')
-          .withIndex('by_user', (q) => q.eq('userId', otherUserId))
-          .unique();
+        const [profile, cat] = await Promise.all([
+          ctx.db
+            .query('userProfiles')
+            .withIndex('by_user', (q) => q.eq('userId', otherUserId))
+            .unique(),
+          ctx.db
+            .query('catCompanion')
+            .withIndex('by_user', (q) => q.eq('userId', otherUserId))
+            .unique(),
+        ]);
         if (!profile) return null;
-
-        // Get their cat companion for avatar
-        const cat = await ctx.db
-          .query('catCompanion')
-          .withIndex('by_user', (q) => q.eq('userId', otherUserId))
-          .unique();
 
         const hasUnread =
           conversation.lastMessageAt !== undefined && conversation.lastMessageAt > read.lastReadAt;
@@ -104,18 +103,10 @@ export const unreadCount = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect();
 
-    let count = 0;
-    for (const read of reads) {
-      const conversation = await ctx.db.get(read.conversationId);
-      if (
-        conversation?.lastMessageAt !== undefined &&
-        conversation.lastMessageAt > read.lastReadAt
-      ) {
-        count++;
-      }
-    }
-
-    return count;
+    const conversationResults = await Promise.all(reads.map((r) => ctx.db.get(r.conversationId)));
+    return conversationResults.filter(
+      (conv, i) => conv?.lastMessageAt !== undefined && conv.lastMessageAt > reads[i].lastReadAt,
+    ).length;
   },
 });
 

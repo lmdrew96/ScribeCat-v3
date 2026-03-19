@@ -7,7 +7,7 @@ import type { KeyConceptResult } from '@/types/study-tools';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import type { Id } from '../../../../convex/_generated/dataModel';
-import { GenerateButton } from './generate-button';
+import { ToolWrapper } from './tool-wrapper';
 import { useStudyTool } from './use-study-tool';
 
 interface KeyConceptsToolProps {
@@ -21,39 +21,24 @@ const IMPORTANCE_COLORS: Record<string, string> = {
 };
 
 export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
-  const { data, isGenerating, error, generate, hasData } = useStudyTool<KeyConceptResult>(
-    sessionId,
-    'keyConcepts',
-  );
+  const tool = useStudyTool<KeyConceptResult>(sessionId, 'keyConcepts');
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  if (!data || isGenerating || error) {
-    return (
-      <GenerateButton
-        onGenerate={generate}
-        isGenerating={isGenerating}
-        hasData={hasData}
-        error={error}
-        label="Extract Key Concepts"
-        description="Identify the 5-7 most important concepts with definitions."
-      />
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">{data.concepts.length} concepts</span>
-        <GenerateButton
-          onGenerate={generate}
-          isGenerating={isGenerating}
-          hasData={hasData}
-          error={error}
-        />
-      </div>
-
+    <ToolWrapper
+      {...tool}
+      label="Extract Key Concepts"
+      description="Identify the 5-7 most important concepts with definitions."
+      headerLeft={
+        tool.data && (
+          <span className="text-[10px] text-muted-foreground">
+            {tool.data.concepts.length} concepts
+          </span>
+        )
+      }
+    >
       <div className="space-y-1">
-        {data.concepts.map((concept, i) => {
+        {tool.data?.concepts.map((concept, i) => {
           const isExpanded = expandedIndex === i;
           return (
             <Card key={concept.term} className="overflow-hidden">
@@ -94,6 +79,6 @@ export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
           );
         })}
       </div>
-    </div>
+    </ToolWrapper>
   );
 }

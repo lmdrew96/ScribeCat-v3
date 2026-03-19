@@ -7,7 +7,7 @@ import type { Eli5Result } from '@/types/study-tools';
 import { ChevronDown, ChevronRight, Globe, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
 import type { Id } from '../../../../convex/_generated/dataModel';
-import { GenerateButton } from './generate-button';
+import { ToolWrapper } from './tool-wrapper';
 import { useStudyTool } from './use-study-tool';
 
 interface Eli5ToolProps {
@@ -15,38 +15,17 @@ interface Eli5ToolProps {
 }
 
 export function Eli5Tool({ sessionId }: Eli5ToolProps) {
-  const { data, isGenerating, error, generate, hasData } = useStudyTool<Eli5Result>(
-    sessionId,
-    'eli5',
-  );
+  const tool = useStudyTool<Eli5Result>(sessionId, 'eli5');
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
-  if (!data || isGenerating || error) {
-    return (
-      <GenerateButton
-        onGenerate={generate}
-        isGenerating={isGenerating}
-        hasData={hasData}
-        error={error}
-        label="Explain Like I'm 5"
-        description="Get simple explanations with fun analogies for complex concepts."
-      />
-    );
-  }
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-end">
-        <GenerateButton
-          onGenerate={generate}
-          isGenerating={isGenerating}
-          hasData={hasData}
-          error={error}
-        />
-      </div>
-
+    <ToolWrapper
+      {...tool}
+      label="Explain Like I'm 5"
+      description="Get simple explanations with fun analogies for complex concepts."
+    >
       <div className="space-y-1.5">
-        {data.explanations.map((item, i) => {
+        {tool.data?.explanations.map((item, i) => {
           const isExpanded = expandedIndex === i;
           return (
             <Card key={item.concept} className="overflow-hidden">
@@ -65,16 +44,13 @@ export function Eli5Tool({ sessionId }: Eli5ToolProps) {
 
               {isExpanded && (
                 <div className="px-3 pb-3 pt-0 space-y-2">
-                  {/* Simple explanation */}
                   <p className="text-sm text-foreground/90 leading-relaxed">{item.explanation}</p>
 
-                  {/* Analogy */}
                   <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
                     <p className="text-xs text-foreground/80 leading-relaxed">{item.analogy}</p>
                   </div>
 
-                  {/* Real-world example */}
                   <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
@@ -87,6 +63,6 @@ export function Eli5Tool({ sessionId }: Eli5ToolProps) {
           );
         })}
       </div>
-    </div>
+    </ToolWrapper>
   );
 }
