@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "4.19.0",
+  "version": "4.20.0",
   "description": "ADHD-friendly lecture companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {
@@ -108,6 +108,7 @@
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5",
-    "vite": "^7.3.0"
+    "vite": "^7.3.0",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
