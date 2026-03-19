@@ -229,7 +229,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   className={cn(
                     'flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors whitespace-nowrap',
                     activeCategory === category.id
-                      ? 'bg-[var(--glass-bg)] text-accent-foreground border border-[var(--glass-border-strong)] shadow-[0_0_12px_var(--glass-glow)]'
+                      ? 'bg-[var(--glass-bg)] text-foreground font-medium border border-[var(--glass-border-strong)] shadow-[0_0_12px_var(--glass-glow)]'
                       : 'text-muted-foreground hover:bg-[var(--glass-bg-light)] hover:text-foreground',
                   )}
                 >

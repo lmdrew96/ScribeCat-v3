@@ -25,6 +25,7 @@ import type * as nuggetChat from "../nuggetChat.js";
 import type * as nuggetNotes from "../nuggetNotes.js";
 import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
+import type * as reportBug from "../reportBug.js";
 import type * as sessionSharing from "../sessionSharing.js";
 import type * as sessions from "../sessions.js";
 import type * as studyGames from "../studyGames.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   nuggetNotes: typeof nuggetNotes;
   productivity: typeof productivity;
   prompts: typeof prompts;
+  reportBug: typeof reportBug;
   sessionSharing: typeof sessionSharing;
   sessions: typeof sessions;
   studyGames: typeof studyGames;
