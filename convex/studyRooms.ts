@@ -133,6 +133,7 @@ export const getRoom = query({
           avatarUrl: profile?.avatarUrl,
           catVariant: cat?.variant ?? null,
           catLevel: cat?.level ?? null,
+          notesCursor: member.notesCursor ?? null,
         };
       }),
     );

@@ -261,6 +261,7 @@ export default defineSchema({
     hasJoined: v.boolean(), // false = invited but hasn't opened room yet
     lastSeenAt: v.number(),
     createdAt: v.number(),
+    notesCursor: v.optional(v.string()), // JSON: {from: number, to: number} — cursor position in collab notes
   })
     .index('by_room', ['roomId'])
     .index('by_user', ['userId'])

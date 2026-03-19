@@ -309,6 +309,7 @@ export function RoomView({ roomId }: RoomViewProps) {
                   roomId={roomId}
                   currentUserId={currentUserId}
                   currentUserName={myDisplayName}
+                  members={room.members}
                 />
               )}
             </>
