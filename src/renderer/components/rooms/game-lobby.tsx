@@ -79,12 +79,12 @@ export function GameLobby({ game, currentUserId, isHost }: GameLobbyProps) {
                   )}
                 >
                   {/* Cat avatar */}
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full glass-light shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full glass-light shrink-0 overflow-hidden">
                     {player.catVariant ? (
                       <CatDisplay
                         mood="idle"
                         variant={player.catVariant as CatVariant}
-                        size="small"
+                        size="xsmall"
                       />
                     ) : (
                       <span className="text-xs font-medium text-foreground">

@@ -5,11 +5,11 @@ import { MOOD_TO_SPRITE, SPRITE_CONFIG, getSpriteUrl } from './cat-sprites';
 interface CatDisplayProps {
   mood: CatMood;
   variant: CatVariant;
-  size: 'small' | 'large';
+  size: 'xsmall' | 'small' | 'large';
 }
 
 /** Display size in px for each size variant */
-const DISPLAY_SIZE = { small: 48, large: 80 } as const;
+const DISPLAY_SIZE = { xsmall: 28, small: 40, large: 80 } as const;
 
 export function CatDisplay({ mood, variant, size }: CatDisplayProps) {
   const [frame, setFrame] = useState(0);

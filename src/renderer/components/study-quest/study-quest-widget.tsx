@@ -37,12 +37,13 @@ export function StudyQuestWidget() {
   const [showVariants, setShowVariants] = useState(false);
   const [adoptName, setAdoptName] = useState('');
   const [adoptVariant, setAdoptVariant] = useState<CatVariant>('grey');
-  const prevLevelRef = useRef(level);
+  const prevLevelRef = useRef<number | null>(null);
   const { playSound } = useNotificationSounds();
 
-  // Level-up toast + sound
+  // Level-up toast + sound — only fires after initial data load, never on restart
   useEffect(() => {
-    if (prevLevelRef.current > 0 && level > prevLevelRef.current) {
+    if (isLoading) return;
+    if (prevLevelRef.current !== null && level > prevLevelRef.current) {
       playSound('levelup');
       toast.success(`${name} reached Level ${level}!`, {
         description: 'Keep studying to level up more!',
@@ -50,7 +51,7 @@ export function StudyQuestWidget() {
       });
     }
     prevLevelRef.current = level;
-  }, [level, name, playSound]);
+  }, [isLoading, level, name, playSound]);
 
   if (isLoading) return null;
 

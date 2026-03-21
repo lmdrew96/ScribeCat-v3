@@ -105,11 +105,11 @@ export function JeopardyGame({ game, currentUserId, isHost }: JeopardyGameProps)
                 )}
               >
                 {player.catVariant ? (
-                  <div className="h-5 w-5 shrink-0">
+                  <div className="h-5 w-5 shrink-0 overflow-hidden">
                     <CatDisplay
                       mood="idle"
                       variant={player.catVariant as CatVariant}
-                      size="small"
+                      size="xsmall"
                     />
                   </div>
                 ) : (

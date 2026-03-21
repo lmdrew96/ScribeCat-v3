@@ -163,11 +163,11 @@ export function RoomView({ roomId }: RoomViewProps) {
                 title={`${member.displayName}${member.isOnline ? ' (online)' : ''}`}
               >
                 {member.catVariant ? (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full glass-light border-2 border-[var(--glass-bg)]">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full glass-light border-2 border-[var(--glass-bg)] overflow-hidden">
                     <CatDisplay
                       mood="idle"
                       variant={member.catVariant as CatVariant}
-                      size="small"
+                      size="xsmall"
                     />
                   </div>
                 ) : (
