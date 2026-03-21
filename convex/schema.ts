@@ -169,6 +169,7 @@ export default defineSchema({
     username: v.string(),
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
+    lastSeenAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

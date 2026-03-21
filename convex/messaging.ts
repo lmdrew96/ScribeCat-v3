@@ -21,6 +21,8 @@ export const listConversations = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .collect();
 
+    const now = Date.now();
+
     const conversations = await Promise.all(
       reads.map(async (read) => {
         const conversation = await ctx.db.get(read.conversationId);
@@ -54,6 +56,7 @@ export const listConversations = query({
             avatarUrl: profile.avatarUrl,
             catVariant: cat?.variant ?? null,
             catLevel: cat?.level ?? null,
+            isOnline: profile.lastSeenAt !== undefined && now - profile.lastSeenAt < 60_000,
           },
           lastMessageText: conversation.lastMessageText ?? null,
           lastMessageAt: conversation.lastMessageAt ?? conversation.createdAt,

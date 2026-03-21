@@ -32,6 +32,8 @@ export const listFriends = query({
       ...asReceiver.map((f) => f.requesterId),
     ];
 
+    const now = Date.now();
+
     // Batch-fetch profiles + cat companions
     const friends = await Promise.all(
       friendIds.map(async (friendId) => {
@@ -52,6 +54,7 @@ export const listFriends = query({
               catVariant: cat?.variant ?? null,
               catName: cat?.name ?? null,
               catLevel: cat?.level ?? null,
+              isOnline: profile.lastSeenAt !== undefined && now - profile.lastSeenAt < 60_000,
             }
           : null;
       }),

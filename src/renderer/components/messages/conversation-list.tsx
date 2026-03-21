@@ -12,6 +12,7 @@ interface ConversationItem {
     avatarUrl?: string;
     catVariant: string | null;
     catLevel: number | null;
+    isOnline: boolean;
   };
   lastMessageText: string | null;
   lastMessageAt: number;
@@ -75,7 +76,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
             {/* Avatar */}
             <div className="relative shrink-0">
               {otherUser.catVariant ? (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light overflow-hidden">
                   <CatDisplay
                     mood="idle"
                     variant={otherUser.catVariant as CatVariant}
@@ -92,6 +93,9 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--glass-bg)] text-sm font-medium text-foreground">
                   {initials}
                 </div>
+              )}
+              {otherUser.isOnline && (
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-background" />
               )}
             </div>
 

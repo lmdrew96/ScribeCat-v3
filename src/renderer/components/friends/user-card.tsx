@@ -9,6 +9,7 @@ interface UserCardProps {
   avatarUrl?: string;
   catVariant?: string | null;
   catLevel?: number | null;
+  isOnline?: boolean;
   action?: ReactNode;
   subtitle?: string;
   className?: string;
@@ -20,6 +21,7 @@ export function UserCard({
   avatarUrl,
   catVariant,
   catLevel,
+  isOnline,
   action,
   subtitle,
   className,
@@ -42,7 +44,7 @@ export function UserCard({
       {/* Avatar or cat sprite */}
       <div className="relative shrink-0">
         {catVariant ? (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light overflow-hidden">
             <CatDisplay mood="idle" variant={catVariant as CatVariant} size="small" />
           </div>
         ) : avatarUrl ? (
@@ -51,6 +53,9 @@ export function UserCard({
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--glass-bg)] text-sm font-medium text-foreground">
             {initials}
           </div>
+        )}
+        {isOnline && (
+          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-background" />
         )}
         {catLevel != null && (
           <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">

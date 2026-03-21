@@ -108,6 +108,20 @@ export const createProfile = mutation({
   },
 });
 
+/** Update last seen timestamp for presence detection */
+export const updatePresence = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    if (!profile) return; // no profile yet, skip silently
+    await ctx.db.patch(profile._id, { lastSeenAt: Date.now() });
+  },
+});
+
 /** Update profile display name or avatar (NOT username) */
 export const updateProfile = mutation({
   args: {
