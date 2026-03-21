@@ -57,11 +57,6 @@ export function UserCard({
         {isOnline && (
           <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-background" />
         )}
-        {catLevel != null && (
-          <span className="absolute -bottom-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">
-            {catLevel}
-          </span>
-        )}
       </div>
 
       {/* Name + username */}
@@ -69,6 +64,9 @@ export function UserCard({
         <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
         <p className="truncate text-xs text-muted-foreground">
           @{username}
+          {catLevel != null && (
+            <span className="ml-1.5 text-muted-foreground/70">· Lv.{catLevel}</span>
+          )}
           {subtitle && <span className="ml-1.5">{subtitle}</span>}
         </p>
       </div>

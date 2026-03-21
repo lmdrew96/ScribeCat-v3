@@ -163,15 +163,15 @@ export function RoomView({ roomId }: RoomViewProps) {
                 title={`${member.displayName}${member.isOnline ? ' (online)' : ''}`}
               >
                 {member.catVariant ? (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full glass-light border-2 border-[var(--glass-bg)] overflow-hidden">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full glass-light border-2 border-[var(--glass-bg)] overflow-hidden">
                     <CatDisplay
                       mood="idle"
                       variant={member.catVariant as CatVariant}
-                      size="xsmall"
+                      size="small"
                     />
                   </div>
                 ) : (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--glass-bg)] border-2 border-[var(--glass-bg)] text-[10px] font-medium text-foreground">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--glass-bg)] border-2 border-[var(--glass-bg)] text-[10px] font-medium text-foreground">
                     {member.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -184,7 +184,7 @@ export function RoomView({ roomId }: RoomViewProps) {
               </div>
             ))}
             {room.members.length > 5 && (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--glass-bg)] border-2 border-[var(--glass-bg)] text-[10px] font-medium text-muted-foreground">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--glass-bg)] border-2 border-[var(--glass-bg)] text-[10px] font-medium text-muted-foreground">
                 +{room.members.length - 5}
               </div>
             )}
