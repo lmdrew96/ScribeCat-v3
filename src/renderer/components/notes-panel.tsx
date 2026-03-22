@@ -304,8 +304,10 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       />
 
       {/* Editor area */}
-      <div className="relative rounded-xl glass overflow-auto max-h-[67%]">
-        <EditorContent editor={editor} className="h-full" />
+      <div className="relative flex-1 rounded-xl glass min-h-0">
+        <div className="overflow-auto max-h-[67%]">
+          <EditorContent editor={editor} />
+        </div>
 
         {isEmpty && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
