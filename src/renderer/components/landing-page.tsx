@@ -106,7 +106,7 @@ export function LandingPage() {
               key={cat.variant}
               className="glass-enter"
               style={{
-                transform: `scale(2) translateY(${i % 2 === 0 ? '0px' : '-3px'})`,
+                transform: `scale(1.25) translateY(${i % 2 === 0 ? '0px' : '-2px'})`,
                 imageRendering: 'pixelated',
                 animationDelay: `${i * 0.08}s`,
               }}
@@ -218,7 +218,7 @@ export function LandingPage() {
             {/* Cats parade */}
             <div className="flex flex-shrink-0 flex-wrap justify-center gap-6">
               {(['demon', 'vampire', 'wizard', 'xmas'] as const).map((v, i) => (
-                <div key={v} style={{ transform: 'scale(2.5)', imageRendering: 'pixelated' }}>
+                <div key={v} style={{ transform: 'scale(1.875)', imageRendering: 'pixelated' }}>
                   <CatDisplay mood={i % 2 === 0 ? 'excited' : 'happy'} variant={v} size="large" />
                 </div>
               ))}
