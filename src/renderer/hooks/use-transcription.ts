@@ -95,7 +95,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
               const segment: TranscriptSegment = {
                 text: message.transcript || '',
                 timestamp: Date.now() - startTimeRef.current,
-                isFinal: message.turn_is_formatted === true,
+                isFinal: message.end_of_turn === true,
               };
 
               setSegments((prev) => {
