@@ -4,11 +4,18 @@ import { useCallback, useEffect, useRef } from 'react';
 interface LiveTranscriptProps {
   isRecording: boolean;
   segments: TranscriptSegment[];
+  isScrubbing?: boolean;
+  lastScrubAt?: number | null;
 }
 
 const SCROLL_THRESHOLD = 80; // px from bottom to count as "near bottom"
 
-export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
+export function LiveTranscript({
+  isRecording,
+  segments,
+  isScrubbing,
+  lastScrubAt,
+}: LiveTranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
 
@@ -47,6 +54,15 @@ export function LiveTranscript({ isRecording, segments }: LiveTranscriptProps) {
             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
             <span className="text-xs text-red-500">Recording</span>
           </span>
+        )}
+        {isRecording && isScrubbing && (
+          <span className="ml-2 inline-flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-xs text-blue-400">Cleaning...</span>
+          </span>
+        )}
+        {isRecording && !isScrubbing && lastScrubAt && (
+          <span className="ml-2 text-xs text-green-400">✓ Cleaned</span>
         )}
         {!isRecording && segments.length > 0 && (
           <span className="ml-2 text-xs text-muted-foreground">— Recording stopped</span>

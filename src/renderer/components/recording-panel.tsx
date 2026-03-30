@@ -58,7 +58,24 @@ export function RecordingPanel({
   // Nugget Notes: read persistent setting for initial enabled state
   const nuggetNotesInitialEnabled =
     settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true;
-  const nuggetNotes = useNuggetNotes({ initialEnabled: nuggetNotesInitialEnabled });
+
+  const handleScrubComplete = useCallback(
+    async (scrubbedTranscript: string) => {
+      if (!currentSessionId) return;
+      try {
+        await updateSession({ id: currentSessionId, transcript: scrubbedTranscript });
+        console.log('✨ Transcript scrubbed and saved');
+      } catch (error) {
+        console.error('Error saving scrubbed transcript:', error);
+      }
+    },
+    [currentSessionId, updateSession],
+  );
+
+  const nuggetNotes = useNuggetNotes({
+    initialEnabled: nuggetNotesInitialEnabled,
+    onScrubComplete: handleScrubComplete,
+  });
 
   // Handle inserting a note into the editor
   const handleInsertNote = useCallback(
@@ -347,7 +364,12 @@ export function RecordingPanel({
     <div className="flex h-full flex-col p-4 gap-3">
       {/* Live transcript - takes most space */}
       <div className="flex-[3] min-h-0 overflow-hidden">
-        <LiveTranscript isRecording={isRecording} segments={segments} />
+        <LiveTranscript
+          isRecording={isRecording}
+          segments={segments}
+          isScrubbing={nuggetNotes.isScrubbing}
+          lastScrubAt={nuggetNotes.lastScrubAt}
+        />
       </div>
 
       {/* Nugget's Notes panel */}

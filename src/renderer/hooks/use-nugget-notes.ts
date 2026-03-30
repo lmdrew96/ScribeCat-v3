@@ -31,17 +31,25 @@ interface UseNuggetNotesConfig {
   minWordsForContext?: number;
   /** Minimum interval between context updates in ms (default: 120000 = 2 min) */
   contextIntervalMs?: number;
+  /** Minimum words before scrubbing transcript (default: 150) */
+  minWordsForScrub?: number;
+  /** Minimum interval between scrub passes in ms (default: 120000 = 2 min) */
+  scrubIntervalMs?: number;
   /** Convex URL for API calls */
   convexUrl?: string;
   /** Initial enabled state from user settings (default: true) */
   initialEnabled?: boolean;
+  /** Called when a scrub pass completes with the full stitched transcript */
+  onScrubComplete?: (scrubbedTranscript: string) => void;
 }
 
-const DEFAULT_CONFIG: Required<UseNuggetNotesConfig> = {
+const DEFAULT_CONFIG: Required<Omit<UseNuggetNotesConfig, 'onScrubComplete'>> = {
   minWordsForNotes: 30,
   noteIntervalMs: 45000,
   minWordsForContext: 200,
   contextIntervalMs: 120000,
+  minWordsForScrub: 150,
+  scrubIntervalMs: 120000,
   convexUrl: import.meta.env.VITE_CONVEX_URL || '',
   initialEnabled: true,
 };
@@ -59,6 +67,8 @@ export interface UseNuggetNotesReturn {
   isEnabled: boolean;
   isRecording: boolean;
   isProcessing: boolean;
+  isScrubbing: boolean;
+  lastScrubAt: number | null;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
   stopRecording: (finalTranscript?: string) => Promise<void>;
@@ -73,8 +83,14 @@ export interface UseNuggetNotesReturn {
   getLatestNotes: () => NuggetNote[];
 }
 
+const SCRUB_WINDOW_WORDS = 800;
+
 export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesReturn {
   const cfg = { ...DEFAULT_CONFIG, ...config };
+
+  // Keep onScrubComplete in a ref so it's always current without being a useCallback dep
+  const onScrubCompleteRef = useRef(config?.onScrubComplete);
+  onScrubCompleteRef.current = config?.onScrubComplete;
 
   // State
   const [notes, setNotes] = useState<NuggetNote[]>([]);
@@ -85,6 +101,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   }, [cfg.initialEnabled]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [lastScrubAt, setLastScrubAt] = useState<number | null>(null);
 
   // Synchronous ref for latest notes (React state is async, so this
   // ensures callers can read the up-to-date list immediately after stopRecording)
@@ -94,8 +112,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const transcriptBufferRef = useRef('');
   const lastNoteTimeRef = useRef(0);
   const lastContextTimeRef = useRef(0);
+  const lastScrubTimeRef = useRef(0);
   const wordsSinceNoteRef = useRef(0);
   const wordsSinceContextRef = useRef(0);
+  const wordsSinceScrubRef = useRef(0);
   const recordingStartTimeRef = useRef(0);
   const noteCounterRef = useRef(0);
 
@@ -255,6 +275,58 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     [cfg.noteIntervalMs, cfg.minWordsForNotes],
   );
 
+  // Check if we should scrub
+  const shouldScrub = useCallback(
+    (newWords: number): boolean => {
+      wordsSinceScrubRef.current += newWords;
+      const timeSinceUpdate = Date.now() - lastScrubTimeRef.current;
+      const enoughTime = timeSinceUpdate >= cfg.scrubIntervalMs;
+      const enoughWords = wordsSinceScrubRef.current >= cfg.minWordsForScrub;
+      return enoughTime && enoughWords;
+    },
+    [cfg.scrubIntervalMs, cfg.minWordsForScrub],
+  );
+
+  // Scrub the last SCRUB_WINDOW_WORDS of transcript, stitch with stable prefix, call onScrubComplete
+  const scrubTranscriptWindow = useCallback(
+    async (fullTranscript: string, currentContext: LectureContext): Promise<void> => {
+      if (!isRecordingRef.current) return;
+      const words = fullTranscript.trim().split(/\s+/);
+      const windowStart = Math.max(0, words.length - SCRUB_WINDOW_WORDS);
+      const prefix = words.slice(0, windowStart).join(' ');
+      const rawWindow = words.slice(windowStart).join(' ');
+      if (!rawWindow.trim()) return;
+
+      setIsScrubbing(true);
+      try {
+        const response = await fetch(getApiUrl('scrubTranscript'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rawWindow, lectureContext: currentContext }),
+        });
+
+        if (!isRecordingRef.current) return;
+
+        const data = await response.json();
+        if (data.success && data.scrubbedWindow) {
+          const stitched =
+            windowStart > 0 ? `${prefix} ${data.scrubbedWindow}` : data.scrubbedWindow;
+          lastScrubTimeRef.current = Date.now();
+          wordsSinceScrubRef.current = 0;
+          setLastScrubAt(Date.now());
+          onScrubCompleteRef.current?.(stitched);
+          console.log('✨ Transcript window scrubbed');
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return;
+        console.warn('⚠️ Failed to scrub transcript:', error);
+      } finally {
+        setIsScrubbing(false);
+      }
+    },
+    [getApiUrl],
+  );
+
   // Get recent transcript (~100 words) for note generation
   const getRecentTranscript = useCallback((): string => {
     const words = transcriptBufferRef.current.trim().split(/\s+/);
@@ -305,6 +377,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
           userNotes,
         );
       }
+
+      // Check if we should scrub transcript (Haiku - every ~2 min, sliding 800-word window)
+      if (shouldScrub(wordCount)) {
+        await scrubTranscriptWindow(transcript, currentContext);
+      }
     },
     [
       isEnabled,
@@ -312,9 +389,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       context,
       shouldUpdateContext,
       shouldGenerateNotes,
+      shouldScrub,
       updateContext,
       generateNotes,
       getRecentTranscript,
+      scrubTranscriptWindow,
     ],
   );
 
@@ -322,12 +401,16 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const startRecording = useCallback(() => {
     isRecordingRef.current = true;
     setIsRecording(true);
+    setIsScrubbing(false);
+    setLastScrubAt(null);
     recordingStartTimeRef.current = Date.now();
     transcriptBufferRef.current = '';
     lastNoteTimeRef.current = 0;
     lastContextTimeRef.current = 0;
+    lastScrubTimeRef.current = 0;
     wordsSinceNoteRef.current = 0;
     wordsSinceContextRef.current = 0;
+    wordsSinceScrubRef.current = 0;
     console.log('🎙️ Nugget Notes recording started');
   }, []);
 
@@ -416,11 +499,15 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     notesRef.current = [];
     setNotes([]);
     setContext(EMPTY_CONTEXT);
+    setIsScrubbing(false);
+    setLastScrubAt(null);
     transcriptBufferRef.current = '';
     lastNoteTimeRef.current = 0;
     lastContextTimeRef.current = 0;
+    lastScrubTimeRef.current = 0;
     wordsSinceNoteRef.current = 0;
     wordsSinceContextRef.current = 0;
+    wordsSinceScrubRef.current = 0;
     noteCounterRef.current = 0;
     console.log('🔄 Nugget Notes cleared');
   }, []);
@@ -452,6 +539,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     isEnabled,
     isRecording,
     isProcessing,
+    isScrubbing,
+    lastScrubAt,
     setEnabled: handleSetEnabled,
     startRecording,
     stopRecording,

@@ -5,6 +5,7 @@ import { extractLectureContext } from './lectureContext';
 import { nuggetChat } from './nuggetChat';
 import { generateNuggetNotes } from './nuggetNotes';
 import { reportBug } from './reportBug';
+import { scrubTranscript } from './scrubTranscript';
 import { getStreamingToken, transcribeFromUrl } from './transcription';
 
 const http = httpRouter();
@@ -71,6 +72,19 @@ http.route({
   path: '/nuggetChat',
   method: 'POST',
   handler: nuggetChat,
+});
+
+// Scrub Transcript (Haiku - every ~2 min during recording, sliding 800-word window)
+http.route({
+  path: '/scrubTranscript',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/scrubTranscript',
+  method: 'POST',
+  handler: scrubTranscript,
 });
 
 // Bug Report (creates GitHub Issue)
