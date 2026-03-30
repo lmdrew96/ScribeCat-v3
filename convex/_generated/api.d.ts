@@ -27,6 +27,7 @@ import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
 import type * as reportBug from "../reportBug.js";
 import type * as roomNotes from "../roomNotes.js";
+import type * as scrubTranscript from "../scrubTranscript.js";
 import type * as sessionSharing from "../sessionSharing.js";
 import type * as sessions from "../sessions.js";
 import type * as studyGames from "../studyGames.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   prompts: typeof prompts;
   reportBug: typeof reportBug;
   roomNotes: typeof roomNotes;
+  scrubTranscript: typeof scrubTranscript;
   sessionSharing: typeof sessionSharing;
   sessions: typeof sessions;
   studyGames: typeof studyGames;
