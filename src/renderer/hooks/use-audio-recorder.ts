@@ -247,28 +247,32 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, []);
 
   /**
-   * Request mic permission once on mount, then load devices.
-   * Separate from device-change listener to avoid re-requesting permission.
+   * Load devices only if permission was already granted.
+   * Don't request permission on mount — only on explicit startRecording().
    */
   useEffect(() => {
     let cancelled = false;
 
-    async function requestPermissionAndLoadDevices() {
+    async function checkPermissionAndLoadDevices() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Stop the stream immediately — we just needed to trigger the permission prompt
-        for (const track of stream.getTracks()) {
-          track.stop();
+        // Check if permission was already granted (non-intrusive)
+        const permissionStatus = await navigator.permissions.query({
+          name: 'microphone' as PermissionName,
+        });
+        if (permissionStatus.state === 'granted') {
+          // Permission already granted, safe to load devices
+          if (!cancelled) {
+            await loadDevices();
+          }
         }
+        // If 'denied' or 'prompt', don't do anything — let startRecording() request permission
       } catch (error) {
-        console.warn('Microphone permission denied:', error);
-      }
-      if (!cancelled) {
-        await loadDevices();
+        // Permissions API may not be supported, try loading devices anyway
+        console.debug('Permissions API not available, loading devices on demand');
       }
     }
 
-    requestPermissionAndLoadDevices();
+    checkPermissionAndLoadDevices();
 
     return () => {
       cancelled = true;
