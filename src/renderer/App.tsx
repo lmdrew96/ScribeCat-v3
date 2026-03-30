@@ -1,8 +1,8 @@
 import { SessionProvider } from '@/contexts/session-context';
-import { SignIn } from '@clerk/clerk-react';
 import { RouterProvider } from '@tanstack/react-router';
 import { AuthLoading, Authenticated, Unauthenticated } from 'convex/react';
 import { Toaster } from 'sonner';
+import { LandingPage } from './components/landing-page';
 import { router } from './router';
 
 export function App() {
@@ -15,9 +15,7 @@ export function App() {
       </AuthLoading>
 
       <Unauthenticated>
-        <div className="app-bg-orbs flex h-screen items-center justify-center">
-          <SignIn />
-        </div>
+        <LandingPage />
       </Unauthenticated>
 
       <Authenticated>
