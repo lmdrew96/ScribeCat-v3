@@ -155,6 +155,7 @@ export function getNuggetNotePrompt(
   context: LectureContext | undefined,
   lectureType: LectureType,
   userNotes?: string,
+  recentNoteTexts?: string[],
 ): string {
   const style = NUGGET_STYLE[lectureType] || NUGGET_STYLE.general;
   const contextStr = context?.currentTopic
@@ -162,18 +163,30 @@ export function getNuggetNotePrompt(
     : 'Lecture in progress.';
 
   const userNotesSection = userNotes?.trim()
-    ? `\nSTUDENT'S NOTES SO FAR:\n${userNotes.slice(-300)}\n\nAvoid duplicating points already in the student's notes. Focus on new information they may have missed.\n`
+    ? `\nSTUDENT'S NOTES SO FAR:\n${userNotes.slice(-300)}\n`
     : '';
 
-  return `Create 1-3 concise bullet notes from this lecture segment.
+  const alreadyCapturedSection =
+    recentNoteTexts && recentNoteTexts.length > 0
+      ? `\nALREADY CAPTURED (do NOT repeat or rephrase these):\n${recentNoteTexts.map((n) => `- ${n}`).join('\n')}\n`
+      : '';
+
+  return `You are a focused note-taker. Capture only the most important NEW idea from this lecture segment.
+
 ${style}
 
 CONTEXT: ${contextStr}
-${userNotesSection}
-TRANSCRIPT:
-"${transcript.slice(-500)}"
+${alreadyCapturedSection}${userNotesSection}
+RULES:
+- Output 0-2 bullet points. If nothing genuinely new or important was said, output nothing at all.
+- Each note must cover a DISTINCT concept not already in "ALREADY CAPTURED" above.
+- Be concise: one clear sentence per note. No filler, no repetition.
+- If the segment is transitional, off-topic, or just repeats prior points, output nothing.
 
-Output ONLY bullet points (no intro, no explanation). Each must start with "- ":`;
+TRANSCRIPT:
+"${transcript}"
+
+Output ONLY bullet points starting with "- ", or nothing if nothing new:`;
 }
 
 // --- Context extraction prompts ---

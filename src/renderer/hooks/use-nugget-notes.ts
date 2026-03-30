@@ -44,8 +44,8 @@ interface UseNuggetNotesConfig {
 }
 
 const DEFAULT_CONFIG: Required<Omit<UseNuggetNotesConfig, 'onScrubComplete'>> = {
-  minWordsForNotes: 30,
-  noteIntervalMs: 45000,
+  minWordsForNotes: 60,
+  noteIntervalMs: 90000,
   minWordsForContext: 200,
   contextIntervalMs: 120000,
   minWordsForScrub: 150,
@@ -204,6 +204,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      // Pass the last 8 note texts so Claude avoids redundancy
+      const recentNoteTexts = notesRef.current.slice(-8).map((n) => n.text);
+
       try {
         const response = await fetch(getApiUrl('nuggetNotes'), {
           method: 'POST',
@@ -214,6 +217,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             recordingTimeSeconds,
             lectureType: lectureType || 'general',
             userNotes,
+            recentNoteTexts,
           }),
           signal: controller.signal,
         });
@@ -327,10 +331,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     [getApiUrl],
   );
 
-  // Get recent transcript (~100 words) for note generation
+  // Get recent transcript (~150 words) for note generation
   const getRecentTranscript = useCallback((): string => {
     const words = transcriptBufferRef.current.trim().split(/\s+/);
-    return words.slice(-100).join(' ');
+    return words.slice(-150).join(' ');
   }, []);
 
   // Process incoming transcript chunk

@@ -31,8 +31,15 @@ export interface NuggetNote {
 }
 
 export const generateNuggetNotes = httpAction(async (_ctx, request) => {
-  const { transcript, context, recordingTimeSeconds, lectureType, userNotes } =
-    await request.json();
+  const { transcript, context, recordingTimeSeconds, lectureType, userNotes, recentNoteTexts } =
+    (await request.json()) as {
+      transcript: string;
+      context: LectureContext;
+      recordingTimeSeconds: number;
+      lectureType: string;
+      userNotes?: string;
+      recentNoteTexts?: string[];
+    };
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -49,6 +56,7 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     context,
     (lectureType || 'general') as LectureType,
     userNotes,
+    recentNoteTexts,
   );
 
   try {
