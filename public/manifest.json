@@ -1,0 +1,31 @@
+{
+  "name": "ScribeCat",
+  "short_name": "ScribeCat",
+  "description": "ADHD-friendly lecture companion - Record, transcribe, and study smarter",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#244952",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/trippy-nuggy-baby-boy.PNG",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
