@@ -449,7 +449,7 @@ export function RecordingPanel({
         <button
           type="button"
           onClick={isRecording ? handleStop : handleRecord}
-          disabled={!isRecording && devices.length === 0}
+          disabled={false}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             isRecording
               ? 'recording-pulse bg-[var(--record)]'

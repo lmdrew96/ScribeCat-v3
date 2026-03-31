@@ -87,6 +87,10 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
 
       streamRef.current = stream;
 
+      // Permission was just granted — populate the device list so the selector
+      // shows proper labels. Safe to call enumerateDevices now.
+      await loadDevices();
+
       // Set up audio context for visualization
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
@@ -143,7 +147,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       console.error('Error starting recording:', error);
       optionsRef.current?.onError?.(error as Error);
     }
-  }, [selectedDeviceId, updateAudioLevel]);
+  }, [selectedDeviceId, updateAudioLevel, loadDevices]);
 
   /**
    * Stop recording
