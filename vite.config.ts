@@ -40,7 +40,7 @@ export default defineConfig({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB (allow large preview images)
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,PNG,svg,woff2,webp}'],
         runtimeCaching: [
           {
             // Convex backend — never cache (real-time data)
