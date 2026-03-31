@@ -21,8 +21,9 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const startTimeRef = useRef<number>(0);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   // Track connection state with ref to avoid stale closure in cleanup
   const isConnectedRef = useRef(false);
@@ -88,7 +89,6 @@ export function useTranscription(options?: UseTranscriptionOptions) {
           try {
             const message = JSON.parse(event.data);
 
-            // Handle different message types
             if (message.type === 'Begin') {
               console.log('Session started:', message.id);
             } else if (message.type === 'Turn') {
@@ -99,14 +99,9 @@ export function useTranscription(options?: UseTranscriptionOptions) {
               };
 
               setSegments((prev) => {
-                if (segment.isFinal) {
-                  // Final transcript: remove all partial transcripts and add the final one
-                  const finalSegments = prev.filter((s) => s.isFinal);
-                  return [...finalSegments, segment];
-                }
-                // Partial transcript: replace the last partial if exists, otherwise append
-                const finalSegments = prev.filter((s) => s.isFinal);
-                return [...finalSegments, segment];
+                // Keep all finals; always replace the single pending partial
+                const finals = prev.filter((s) => s.isFinal);
+                return [...finals, segment];
               });
 
               options?.onSegment?.(segment);
@@ -122,33 +117,87 @@ export function useTranscription(options?: UseTranscriptionOptions) {
           }
         };
 
-        // Set up audio processing
-        const audioContext = new AudioContext({ sampleRate: 16000 });
+        // Set up audio processing.
+        //
+        // Do NOT pass sampleRate: 16000 here — mobile browsers (iOS Safari,
+        // Android Chrome) silently ignore the hint and use their native rate
+        // (44100 or 48000 Hz). We detect the actual rate and downsample ourselves.
+        const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
 
         const source = audioContext.createMediaStreamSource(stream);
         sourceNodeRef.current = source;
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
 
-        processor.onaudioprocess = (event) => {
-          const audioData = event.inputBuffer.getChannelData(0);
+        // Prefer AudioWorkletNode — off-main-thread, reliable on all modern
+        // mobile browsers (iOS 14.5+, Android Chrome 64+).
+        let workletLoaded = false;
 
-          // Convert Float32Array to Int16Array (AssemblyAI expects 16-bit PCM)
-          const int16Data = new Int16Array(audioData.length);
-          for (let i = 0; i < audioData.length; i++) {
-            const sample = Math.max(-1, Math.min(1, audioData[i]));
-            int16Data[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+        if (typeof AudioWorkletNode !== 'undefined' && audioContext.audioWorklet) {
+          try {
+            await audioContext.audioWorklet.addModule('/audio-processor.js');
+            const workletNode = new AudioWorkletNode(audioContext, 'audio-processor', {
+              processorOptions: { targetSampleRate: 16000 },
+            });
+            workletNodeRef.current = workletNode;
+
+            workletNode.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+              if (wsRef.current?.readyState === WebSocket.OPEN) {
+                wsRef.current.send(event.data);
+              }
+            };
+
+            source.connect(workletNode);
+            workletNode.connect(audioContext.destination);
+            workletLoaded = true;
+            console.log(
+              `AudioWorklet ready — context rate: ${audioContext.sampleRate} Hz → 16000 Hz`,
+            );
+          } catch (workletErr) {
+            console.warn(
+              'AudioWorklet unavailable, falling back to ScriptProcessorNode:',
+              workletErr,
+            );
           }
+        }
 
-          // Send audio data to AssemblyAI via WebSocket
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(int16Data.buffer);
-          }
-        };
+        if (!workletLoaded) {
+          // Fallback: ScriptProcessorNode with manual downsampling.
+          // Capture the actual context rate at setup time to avoid stale closure.
+          const nativeRate = audioContext.sampleRate;
+          const processor = audioContext.createScriptProcessor(4096, 1, 1);
+          processorRef.current = processor;
 
-        source.connect(processor);
-        processor.connect(audioContext.destination);
+          processor.onaudioprocess = (event) => {
+            const inputData = event.inputBuffer.getChannelData(0);
+
+            // Downsample to 16000 Hz if the browser ignored our rate hint
+            let audioData: Float32Array;
+            if (nativeRate !== 16000) {
+              const ratio = nativeRate / 16000;
+              const outputLen = Math.floor(inputData.length / ratio);
+              audioData = new Float32Array(outputLen);
+              for (let i = 0; i < outputLen; i++) {
+                audioData[i] = inputData[Math.floor(i * ratio)];
+              }
+            } else {
+              audioData = inputData;
+            }
+
+            const int16Data = new Int16Array(audioData.length);
+            for (let i = 0; i < audioData.length; i++) {
+              const s = Math.max(-1, Math.min(1, audioData[i]));
+              int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.send(int16Data.buffer);
+            }
+          };
+
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+          console.log(`ScriptProcessorNode fallback — context rate: ${nativeRate} Hz → 16000 Hz`);
+        }
       } catch (error) {
         console.error('Error starting transcription:', error);
         setError((error as Error).message);
@@ -163,25 +212,31 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   const stop = useCallback(async () => {
     try {
-      // Mark as disconnected immediately
       isConnectedRef.current = false;
 
-      // Disconnect source node first
       if (sourceNodeRef.current) {
         try {
           sourceNodeRef.current.disconnect();
-        } catch (e) {
-          // Ignore - may already be disconnected
+        } catch {
+          // already disconnected
         }
         sourceNodeRef.current = null;
       }
 
-      // Clean up audio processing
+      if (workletNodeRef.current) {
+        try {
+          workletNodeRef.current.disconnect();
+        } catch {
+          // already disconnected
+        }
+        workletNodeRef.current = null;
+      }
+
       if (processorRef.current) {
         try {
           processorRef.current.disconnect();
-        } catch (e) {
-          // Ignore - may already be disconnected
+        } catch {
+          // already disconnected
         }
         processorRef.current = null;
       }
@@ -189,13 +244,12 @@ export function useTranscription(options?: UseTranscriptionOptions) {
       if (audioContextRef.current) {
         try {
           await audioContextRef.current.close();
-        } catch (e) {
-          // Ignore - may already be closed
+        } catch {
+          // already closed
         }
         audioContextRef.current = null;
       }
 
-      // Stop media stream tracks
       if (mediaStreamRef.current) {
         for (const track of mediaStreamRef.current.getTracks()) {
           track.stop();
@@ -203,7 +257,6 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         mediaStreamRef.current = null;
       }
 
-      // Close WebSocket
       if (wsRef.current) {
         if (
           wsRef.current.readyState === WebSocket.OPEN ||
@@ -244,24 +297,31 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   useEffect(() => {
     return () => {
-      // Use ref to check connection state to avoid stale closure
       if (isConnectedRef.current || wsRef.current || audioContextRef.current) {
-        // Inline cleanup to avoid calling stop() with stale closure
         isConnectedRef.current = false;
 
         if (sourceNodeRef.current) {
           try {
             sourceNodeRef.current.disconnect();
-          } catch (e) {
+          } catch {
             /* ignore */
           }
           sourceNodeRef.current = null;
         }
 
+        if (workletNodeRef.current) {
+          try {
+            workletNodeRef.current.disconnect();
+          } catch {
+            /* ignore */
+          }
+          workletNodeRef.current = null;
+        }
+
         if (processorRef.current) {
           try {
             processorRef.current.disconnect();
-          } catch (e) {
+          } catch {
             /* ignore */
           }
           processorRef.current = null;
