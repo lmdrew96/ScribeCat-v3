@@ -1,5 +1,8 @@
+import { LegalDocModal } from '@/components/legal-doc-modal';
 import { SignIn } from '@clerk/clerk-react';
 import { useState } from 'react';
+import privacyContent from '../../../docs/PRIVACY_POLICY.md?raw';
+import tosContent from '../../../docs/TERMS_OF_SERVICE.md?raw';
 import { CatDisplay } from './study-quest/cat-display';
 
 const HERO_CATS: Array<{ variant: 'grey' | 'bengal' | 'siamese' | 'wizard' | 'tricolor' }> = [
@@ -57,6 +60,8 @@ const FEATURES = [
 
 export function LandingPage() {
   const [showSignIn, setShowSignIn] = useState(false);
+  const [showTos, setShowTos] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   if (showSignIn) {
     return (
@@ -268,11 +273,41 @@ export function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="glass-light border-t border-[var(--glass-border)] py-6 text-center">
+      <footer className="glass-light border-t border-[var(--glass-border)] py-6 text-center space-y-2">
+        <div className="flex items-center justify-center gap-3 text-xs">
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
+            onClick={() => setShowTos(true)}
+          >
+            Terms of Service
+          </button>
+          <span className="text-muted-foreground/50">·</span>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:underline"
+            onClick={() => setShowPrivacy(true)}
+          >
+            Privacy Policy
+          </button>
+        </div>
         <p className="text-muted-foreground text-xs">
           ScribeCat v3 · Made with ✦ for ADHD students · UD only for now
         </p>
       </footer>
+
+      <LegalDocModal
+        open={showTos}
+        onOpenChange={setShowTos}
+        title="Terms of Service"
+        content={tosContent}
+      />
+      <LegalDocModal
+        open={showPrivacy}
+        onOpenChange={setShowPrivacy}
+        title="Privacy Policy"
+        content={privacyContent}
+      />
     </div>
   );
 }
