@@ -24,7 +24,7 @@ const FEATURES = [
   {
     emoji: '✨',
     title: 'Nugget Takes Notes',
-    desc: "While you listen, our AI cat writes bullet notes every 45 seconds. Zone out a little. We've got you.",
+    desc: "While you record, our AI cat writes bullet notes every 45 seconds. Zone out a little. We've got you.",
     color: 'from-[#dea549]/20 to-[#88739e]/20',
     border: 'border-[#dea549]/30',
   },
@@ -45,7 +45,7 @@ const FEATURES = [
   {
     emoji: '💬',
     title: 'Ask Nugget Anything',
-    desc: "Confused about something from your recording? Ask the AI chat. It's read your transcript and notes.",
+    desc: 'Confused about something from your recording? Ask the AI chat. It reads your transcript and notes.',
     color: 'from-[#dbd5e2]/10 to-[#6b5a7d]/20',
     border: 'border-[#dbd5e2]/20',
   },
