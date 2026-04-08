@@ -22,7 +22,7 @@ ScribeCat ("the Service") is operated by ADHDesigns. This Privacy Policy explain
 
 ### Data Collected Automatically
 - **Account data** — email address and authentication tokens (managed by Clerk)
-- **Session metadata** — recording duration, timestamps, lecture type selections
+- **Session metadata** — recording duration, timestamps, note type selections
 - **Study statistics** — study time, session counts, goal tracking, achievement progress
 - **Presence data** — online/offline status for social features
 

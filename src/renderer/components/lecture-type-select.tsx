@@ -41,7 +41,7 @@ export function LectureTypeSelect({ value, onChange, disabled }: LectureTypeSele
   return (
     <Select value={value} onValueChange={(v) => onChange(v as LectureType)} disabled={disabled}>
       <SelectTrigger className="h-8 text-xs">
-        <SelectValue placeholder="Lecture type" />
+        <SelectValue placeholder="Note type" />
       </SelectTrigger>
       <SelectContent>
         {LECTURE_TYPES.map((type) => (

@@ -188,7 +188,7 @@ export function ConceptMapTool({ sessionId }: ConceptMapToolProps) {
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           className="block"
           role="img"
-          aria-label="Concept map showing relationships between lecture topics"
+          aria-label="Concept map showing relationships between session topics"
         >
           {/* Edges */}
           {data.edges.map((edge) => {

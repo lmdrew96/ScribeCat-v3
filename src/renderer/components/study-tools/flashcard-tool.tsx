@@ -65,7 +65,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
         hasData={hasData}
         error={error}
         label="Generate Flashcards"
-        description="Create study flashcards from your lecture content."
+        description="Create study flashcards from your session content."
       />
     );
   }

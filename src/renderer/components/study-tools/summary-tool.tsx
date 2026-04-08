@@ -19,7 +19,7 @@ export function SummaryTool({ sessionId }: SummaryToolProps) {
     <ToolWrapper
       {...tool}
       label="Generate Summary"
-      description="Create a comprehensive summary of your lecture with key takeaways."
+      description="Create a comprehensive summary of your session with key takeaways."
       headerLeft={
         tool.data && (
           <span className="text-[10px] text-muted-foreground">{tool.data.wordCount} words</span>

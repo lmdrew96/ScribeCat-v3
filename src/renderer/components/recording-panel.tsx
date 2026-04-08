@@ -80,7 +80,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
 
       {/* Recording controls - compact bottom bar */}
       <div className="flex items-center gap-4 rounded-xl glass p-3">
-        {/* Device selector + Lecture type - only show when not recording */}
+        {/* Device selector + Note type - only show when not recording */}
         {!isRecording && (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col gap-2">
             <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
