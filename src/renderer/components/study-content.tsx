@@ -368,7 +368,11 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
 
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
           <ScrollArea className="h-full rounded-xl glass p-4">
-            {recording.transcriptSegments && recording.transcriptSegments.length > 0 ? (
+            {recording.transcript ? (
+              <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
+                {recording.transcript}
+              </p>
+            ) : recording.transcriptSegments && recording.transcriptSegments.length > 0 ? (
               <div className="space-y-2">
                 {recording.transcriptSegments
                   .filter((seg) => seg.isFinal)
@@ -390,7 +394,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
               </div>
             ) : (
               <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
-                {recording.transcript || 'No transcript available'}
+                No transcript available
               </p>
             )}
           </ScrollArea>

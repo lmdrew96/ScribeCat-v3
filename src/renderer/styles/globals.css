@@ -90,8 +90,11 @@
   --font-color-1: #dbd5e2;
   --font-color-2: #dea549;
   --font-color-3: #96d080;
-  --font-color-4: #c45c5c;
-  --font-color-5: #8cbdb9;
+  --font-color-4: #e06060;
+  --font-color-5: #7ec8c8;
+  --font-color-6: #c49bff;
+  --font-color-7: #f0a0c0;
+  --font-color-8: #e0d080;
 }
 
 @theme inline {
@@ -344,11 +347,14 @@
   --app-bg-to: #e4ffde;
   --orb-opacity: 0.25;
 
-  --font-color-1: #4a4458;
-  --font-color-2: #d4a5d2;
-  --font-color-3: #81c784;
-  --font-color-4: #e57373;
-  --font-color-5: #7d6b8a;
+  --font-color-1: #3d3450;
+  --font-color-2: #9b5e99;
+  --font-color-3: #2e7d32;
+  --font-color-4: #c62828;
+  --font-color-5: #00796b;
+  --font-color-6: #6a1b9a;
+  --font-color-7: #ad1457;
+  --font-color-8: #e65100;
 }
 
 /* Void Kitty Theme */
@@ -411,6 +417,9 @@
   --font-color-3: #99ff85;
   --font-color-4: #ff5252;
   --font-color-5: #b580ff;
+  --font-color-6: #ffb74d;
+  --font-color-7: #f48fb1;
+  --font-color-8: #80deea;
 }
 
 /* Chaos Cat Theme */
@@ -473,6 +482,9 @@
   --font-color-3: #76ff03;
   --font-color-4: #ff1744;
   --font-color-5: #ff5ee0;
+  --font-color-6: #ffea00;
+  --font-color-7: #ff9100;
+  --font-color-8: #b388ff;
 }
 
 /* High Contrast Dark Theme */
@@ -535,6 +547,9 @@
   --font-color-3: #00ff00;
   --font-color-4: #ff0000;
   --font-color-5: #ffff00;
+  --font-color-6: #ff80ff;
+  --font-color-7: #ff8000;
+  --font-color-8: #80ff80;
 }
 
 /* High Contrast Light Theme */
@@ -597,6 +612,9 @@
   --font-color-3: #0000cc;
   --font-color-4: #cc0000;
   --font-color-5: #663399;
+  --font-color-6: #c45000;
+  --font-color-7: #880044;
+  --font-color-8: #005577;
 }
 
 /* TipTap Editor Styles */

@@ -170,10 +170,13 @@ export function EditorToolbar({
 
   const fontColors = [
     { name: 'Default', value: 'var(--font-color-1)' },
-    { name: 'Accent', value: 'var(--font-color-2)' },
+    { name: 'Amber', value: 'var(--font-color-2)' },
     { name: 'Green', value: 'var(--font-color-3)' },
     { name: 'Red', value: 'var(--font-color-4)' },
     { name: 'Teal', value: 'var(--font-color-5)' },
+    { name: 'Purple', value: 'var(--font-color-6)' },
+    { name: 'Pink', value: 'var(--font-color-7)' },
+    { name: 'Gold', value: 'var(--font-color-8)' },
   ];
 
   const highlightColors = [
