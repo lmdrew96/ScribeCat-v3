@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -169,14 +170,14 @@ export function EditorToolbar({
   };
 
   const fontColors = [
-    { name: 'Default', value: 'var(--font-color-1)' },
-    { name: 'Amber', value: 'var(--font-color-2)' },
-    { name: 'Green', value: 'var(--font-color-3)' },
-    { name: 'Red', value: 'var(--font-color-4)' },
-    { name: 'Teal', value: 'var(--font-color-5)' },
-    { name: 'Purple', value: 'var(--font-color-6)' },
-    { name: 'Pink', value: 'var(--font-color-7)' },
-    { name: 'Gold', value: 'var(--font-color-8)' },
+    'var(--font-color-1)',
+    'var(--font-color-2)',
+    'var(--font-color-3)',
+    'var(--font-color-4)',
+    'var(--font-color-5)',
+    'var(--font-color-6)',
+    'var(--font-color-7)',
+    'var(--font-color-8)',
   ];
 
   const highlightColors = [
@@ -389,48 +390,47 @@ export function EditorToolbar({
         </SelectContent>
       </Select>
 
-      {/* Font Color Dropdown */}
-      <Select
-        value={
-          fontColors.find((c) => editor.isActive('textStyle', { color: c.value }))?.value ?? 'unset'
-        }
-        onValueChange={(value) => {
-          if (value === 'unset') {
-            editor.chain().focus().unsetColor().run();
-          } else {
-            editor.chain().focus().setColor(value).run();
-          }
-        }}
-      >
-        <SelectTrigger className="h-7 w-24 text-xs shrink-0">
-          <div className="flex items-center gap-1.5">
+      {/* Font Color Swatches */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0">
             <Type
-              className="h-3 w-3"
+              className="h-3.5 w-3.5"
               style={{
-                color: fontColors.find((c) => editor.isActive('textStyle', { color: c.value }))
-                  ?.value,
+                color:
+                  fontColors.find((c) => editor.isActive('textStyle', { color: c })) ??
+                  'var(--foreground)',
               }}
             />
-            <span>Color</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2" align="start">
+          <div className="grid grid-cols-4 gap-1.5">
+            {fontColors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().setColor(color).run();
+                }}
+                className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                  editor.isActive('textStyle', { color })
+                    ? 'border-foreground scale-110'
+                    : 'border-transparent'
+                }`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
           </div>
-        </SelectTrigger>
-        <SelectContent>
-          {fontColors.map((color) => (
-            <SelectItem key={color.name} value={color.value}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-full border border-border"
-                  style={{ backgroundColor: color.value }}
-                />
-                <span>{color.name}</span>
-              </div>
-            </SelectItem>
-          ))}
-          <SelectItem value="unset">
-            <span className="text-muted-foreground">Reset</span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().unsetColor().run()}
+            className="mt-1.5 w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center py-0.5"
+          >
+            Reset
+          </button>
+        </PopoverContent>
+      </Popover>
 
       {/* Highlight Color Dropdown */}
       <Select

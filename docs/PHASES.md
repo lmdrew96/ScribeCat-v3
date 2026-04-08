@@ -2,9 +2,9 @@
 
 > **Current Phase: 4 — Connect (COMPLETE)**
 >
-> **Current Version: 4.17.0**
+> **Current Version: 4.25.1**
 >
-> Last updated: February 2026
+> Last updated: April 2026
 
 ---
 
@@ -372,3 +372,23 @@ Before marking a phase complete:
 | 4.15.0 | Feb 2026 | Study rooms — group study with shared sessions and chat |
 | 4.16.0 | Feb 2026 | Multiplayer games — Quiz Battle and Jeopardy in study rooms |
 | 4.17.0 | Feb 2026 | Canvas LMS integration — course field, filter, import, browser extension |
+| 4.17.1 | Feb 2026 | Inline title and course editing on session details page |
+| 4.18.0 | Mar 2026 | Bug reporting via Nugget Chat — auto-creates GitHub Issues |
+| 4.19.0 | Mar 2026 | Notification sounds, browser push alerts, and badge caps |
+| 4.20.0 | Mar 2026 | PWA support — installable, service worker, app manifest |
+| 4.20.1 | Mar 2026 | Fix settings category text contrast across all themes |
+| 4.21.0 | Mar 2026 | Collaborative notes in study rooms |
+| 4.21.1 | Mar 2026 | Fix N+1 queries, unsafe JSON.parse, and study tool boilerplate |
+| 4.21.2 | Mar 2026 | Real-time cursor presence in collaborative notes |
+| 4.21.3 | Mar 2026 | Fix session share View button crashing for sender |
+| 4.22.0 | Mar 2026 | Friend online status across app, fix cat sprite clipping |
+| 4.22.1-4 | Mar 2026 | UI polish — room sprites, notes layout, transcript formatting |
+| 4.23.0 | Mar 2026 | Real-time transcript scrubbing (sliding 800-word window) |
+| 4.23.1 | Mar 2026 | Reduce Nugget note redundancy via dedup context and slower interval |
+| 4.24.0 | Mar 2026 | Fun descriptive landing page for unauthenticated users |
+| 4.24.1-3 | Mar 2026 | Cat sprite scaling, @udel.edu enforcement in code |
+| 4.24.4-5 | Mar 2026 | OpenGraph preview image, PWA manifest improvements |
+| 4.24.6-7 | Apr 2026 | PWA cache limits, lazy microphone permission |
+| 4.24.8-10 | Apr 2026 | Safari PWA icon, AudioWorklet downsampler, mic permission fix |
+| 4.25.0 | Apr 2026 | Session resilience — recording survives navigation, screen sleep, auth expiry, tab close |
+| 4.25.1 | Apr 2026 | Expand editor font colors to 8, fix cleaned transcript display in study view |

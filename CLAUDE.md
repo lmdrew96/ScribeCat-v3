@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.17.0 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS)
+**Current Version:** 4.25.1 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS)
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -67,7 +67,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (16 tables)
+│   ├── schema.ts             # Database schema (23 tables)
 │   ├── authHelpers.ts        # Shared auth helpers (requireAuth, requireAuthWithProfile)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
@@ -75,10 +75,12 @@ ScribeCat-v3/
 │   ├── nuggetNotes.ts        # Real-time note generation (HTTP action)
 │   ├── nuggetChat.ts         # AI chat endpoint (HTTP action)
 │   ├── lectureContext.ts     # Context extraction (HTTP action)
+│   ├── scrubTranscript.ts    # Transcript cleanup (HTTP action)
 │   ├── studyTools.ts         # Study tool AI actions (exports callClaude, extractJson)
 │   ├── studyToolPrompts.ts   # Study tool + game prompt templates
 │   ├── studyGames.ts         # Multiplayer games (Quiz Battle, Jeopardy)
 │   ├── studyRooms.ts         # Study rooms (exports requireRoomMember/Host, postSystemMessage)
+│   ├── roomNotes.ts          # Collaborative room notes
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
 │   ├── config.ts             # Shared AI model configuration
@@ -91,7 +93,10 @@ ScribeCat-v3/
 │   ├── userProfiles.ts       # User profiles + username search
 │   ├── friends.ts            # Friend requests + friend list
 │   ├── blocks.ts             # Block/unblock users
+│   ├── messaging.ts          # DM conversations + messages
 │   ├── messagingHelpers.ts   # Shared messaging helpers (verifyFriendship)
+│   ├── sessionSharing.ts     # Session sharing permissions
+│   ├── reportBug.ts          # Bug report endpoint
 │   ├── crons.ts              # Scheduled jobs (trash cleanup)
 │   ├── http.ts               # HTTP action routes
 │   ├── auth.config.ts        # Clerk JWT config
@@ -102,12 +107,13 @@ ScribeCat-v3/
 │       ├── index.tsx         # Entry point (Clerk + Convex providers)
 │       ├── router.tsx        # TanStack Router config (routes + type registration)
 │       ├── contexts/
-│       │   └── session-context.tsx   # App-wide session/recording/chat state
+│       │   ├── session-context.tsx   # App-wide session/recording/chat state
+│       │   └── recording-context.tsx # Persistent recording state (survives navigation)
 │       ├── components/
-│       │   ├── app-layout.tsx        # Root layout (TopBar + Outlet + NuggetChat)
+│       │   ├── app-layout.tsx        # Root layout (providers, TopBar, Outlet, guards)
 │       │   ├── home-view.tsx         # Recording mode (main view)
 │       │   ├── study-view.tsx        # Study mode (sessions + tools)
-│       │   ├── recording-panel.tsx   # Audio recording + transcript + nugget notes
+│       │   ├── recording-panel.tsx   # Recording UI (presentational, reads from context)
 │       │   ├── notes-panel.tsx       # TipTap editor + AI generation
 │       │   ├── study-content.tsx     # Study content viewer (notes + transcript + tools)
 │       │   ├── nugget-notes-panel.tsx # Real-time AI note bubbles
@@ -115,12 +121,16 @@ ScribeCat-v3/
 │       │   ├── recordings-sidebar.tsx # Session list + trash + course filter
 │       │   ├── top-bar.tsx           # Navigation + theme selector
 │       │   ├── settings-modal.tsx    # User settings (goals, breaks, themes)
-│       │   ├── editor-toolbar.tsx    # TipTap formatting toolbar
+│       │   ├── editor-toolbar.tsx    # TipTap formatting toolbar (8 font colors)
 │       │   ├── live-transcript.tsx   # Real-time transcript display
 │       │   ├── lecture-type-select.tsx # Lecture type dropdown
 │       │   ├── audio-waveform.tsx    # Waveform visualization
 │       │   ├── file-upload-transcribe.tsx # File upload + transcription
 │       │   ├── theme-provider.tsx    # Theme context provider
+│       │   ├── landing-page.tsx      # Public landing page
+│       │   ├── shared-session-view.tsx # Shared session viewer
+│       │   ├── mini-recording-indicator.tsx # Floating pill when recording on non-home routes
+│       │   ├── recording-navigation-guard.tsx # beforeunload guard during recording
 │       │   ├── study-tools/          # 6 AI study tool components
 │       │   │   ├── index.tsx         # Study tools container
 │       │   │   ├── summary-tool.tsx
@@ -144,9 +154,18 @@ ScribeCat-v3/
 │       │   │   ├── user-search.tsx          # Search tab with username lookup
 │       │   │   ├── user-card.tsx            # Reusable user display card
 │       │   │   └── username-setup-modal.tsx # First-time @username creation
+│       │   ├── messages/              # Direct messaging (Phase 4)
+│       │   │   ├── messages-view.tsx        # Main /messages page
+│       │   │   ├── conversation-list.tsx    # DM conversation list
+│       │   │   ├── conversation-thread.tsx  # Individual DM thread
+│       │   │   └── share-session-modal.tsx  # Share session via DM
 │       │   ├── rooms/                # Study rooms + multiplayer games (Phase 4)
+│       │   │   ├── study-rooms-view.tsx     # Main /rooms page with room list
+│       │   │   ├── room-list.tsx            # Room browser + join UI
 │       │   │   ├── room-view.tsx            # Main room view (session + chat + games)
 │       │   │   ├── room-chat.tsx            # Room text chat
+│       │   │   ├── room-notes-editor.tsx    # Collaborative notes editor
+│       │   │   ├── create-room-modal.tsx    # Room creation modal
 │       │   │   ├── pin-session-modal.tsx    # Pin session selection modal
 │       │   │   ├── game-launcher.tsx        # Game type dropdown (host only)
 │       │   │   ├── game-view.tsx            # Game router (lobby/active/results)
@@ -165,8 +184,15 @@ ScribeCat-v3/
 │       │   ├── use-study-quest.ts     # Cat companion state + mood + actions
 │       │   ├── use-user-profile.ts    # User profile + username setup
 │       │   ├── use-friends.ts         # Friends queries + mutations
+│       │   ├── use-messaging.ts       # DM conversations + messages
+│       │   ├── use-session-sharing.ts # Session sharing hooks
 │       │   ├── use-study-rooms.ts     # Study room queries + mutations + heartbeat
 │       │   ├── use-study-games.ts     # Game queries + mutations (Quiz Battle, Jeopardy)
+│       │   ├── use-notification-sounds.ts  # Audio notification playback
+│       │   ├── use-notification-watcher.ts # Real-time notification listener
+│       │   ├── use-presence.ts        # Online/offline presence tracking
+│       │   ├── use-wake-lock.ts       # Screen Wake Lock API during recording
+│       │   ├── use-session-keep-alive.ts # Clerk session keep-alive during recording
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
@@ -181,7 +207,7 @@ ScribeCat-v3/
 │       │   ├── study-tools.ts
 │       │   └── friends.ts
 │       └── styles/
-│           └── globals.css           # Tailwind imports + 6 theme definitions
+│           └── globals.css           # Tailwind imports + 6 themes (8 font colors each)
 ├── public/                    # Static assets
 │   └── cats/                 # 11 cat variant sprite sheets (32×32 pixel art)
 ├── docs/                      # Documentation
@@ -212,7 +238,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-16 tables in `convex/schema.ts`:
+23 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -221,11 +247,11 @@ ScribeCat-v3/
 | `userSettings` | Theme, break reminders, study goals |
 | `studyStats` | Daily study minutes, session counts, goal tracking |
 | `achievements` | Unlocked achievement tracking |
+| `catCompanion` | StudyQuest cat (name, variant, XP, level, mood, recent gains) |
 | `studyToolResults` | Cached AI study tool output per session |
 | `flashcardProgress` | Spaced repetition tracking per card |
 | `quizAttempts` | Quiz answer history and scores |
 | `chatHistory` | Persistent per-session Nugget Chat messages |
-| `catCompanion` | StudyQuest cat (name, variant, XP, level, mood, recent gains) |
 | `userProfiles` | Public identity (@username, display name, avatar) |
 | `friendships` | Friend requests + accepted friends (status, requester/receiver) |
 | `blocks` | Blocked users (asymmetric, persists independently) |
@@ -236,6 +262,7 @@ ScribeCat-v3/
 | `studyRooms` | Ephemeral group study rooms |
 | `studyRoomMembers` | Room participants with presence |
 | `studyRoomMessages` | Room chat messages |
+| `roomNotes` | Collaborative notes per study room |
 | `studyGames` | Game instances (Quiz Battle / Jeopardy) inside rooms |
 | `studyGamePlayers` | Per-player game state, scores, answer tracking |
 
@@ -444,9 +471,25 @@ Priority-based client-side resolution: excited > happy > studying > sleepy > idl
 5. **High Contrast Dark** — accessibility
 6. **High Contrast Light** — accessibility
 
-All themes include glassmorphism effects (frosted glass panels, gradient backgrounds, glow accents).
+All themes include glassmorphism effects (frosted glass panels, gradient backgrounds, glow accents). Each theme defines 8 font color CSS variables (`--font-color-1` through `--font-color-8`) used by the editor toolbar.
 
 Theme switching via `ThemeProvider` context (`src/renderer/components/theme-provider.tsx`).
+
+---
+
+## Session Resilience Architecture
+
+Recording state persists across route navigation via `RecordingContext` (mounted in `AppLayout`).
+
+| Layer | File | Purpose |
+|-------|------|---------|
+| **RecordingContext** | `contexts/recording-context.tsx` | Owns `useAudioRecorder`, `useTranscription`, `useNuggetNotes`; syncs to `SessionContext` |
+| **Wake Lock** | `hooks/use-wake-lock.ts` | Keeps screen awake during recording via Wake Lock API |
+| **Auth Keep-Alive** | `hooks/use-session-keep-alive.ts` | Calls `session.touch()` every 4 min to prevent Clerk session expiry |
+| **Navigation Guard** | `components/recording-navigation-guard.tsx` | Blocks `beforeunload` (tab close/refresh) during recording |
+| **Mini Indicator** | `components/mini-recording-indicator.tsx` | Floating pill with timer + controls on non-home routes |
+
+**Key design decision:** Recording hooks live in `AppLayout`, not `HomeView`. Navigating away from `/` no longer kills the recording — the mini indicator shows on other routes with full controls.
 
 ---
 
