@@ -85,7 +85,7 @@ export function PinSessionModal({
           <div className="max-h-[400px] overflow-y-auto space-y-1.5">
             {sessions.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No sessions to pin. Record a lecture first!
+                No sessions to pin. Record a session first!
               </p>
             ) : (
               sessions.map((session) => {

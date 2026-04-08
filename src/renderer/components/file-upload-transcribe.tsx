@@ -173,7 +173,7 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Upload a recorded lecture file for batch transcription. Supports MP3, WAV, M4A, and more.
+        Upload a recorded audio file for batch transcription. Supports MP3, WAV, M4A, and more.
       </p>
 
       <div className="flex items-center gap-2">

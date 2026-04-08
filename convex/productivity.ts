@@ -38,6 +38,9 @@ export const updateSettings = mutation({
     courses: v.optional(v.array(v.string())),
     nuggetNotesEnabled: v.optional(v.boolean()),
     soundEnabled: v.optional(v.boolean()),
+    tosAcceptedAt: v.optional(v.number()),
+    tosVersion: v.optional(v.string()),
+    audioRetentionMonths: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);

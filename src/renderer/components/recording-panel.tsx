@@ -2,6 +2,7 @@ import { AudioWaveform } from '@/components/audio-waveform';
 import { LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
+import { RecordingConsentModal } from '@/components/recording-consent-modal';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,9 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
     handleRecord,
     handleStop,
     handlePauseResume,
+    showConsentModal,
+    setShowConsentModal,
+    requestRecord,
   } = useRecordingContext();
 
   const formatTime = (seconds: number) => {
@@ -137,7 +141,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
         {/* Record/Stop button */}
         <button
           type="button"
-          onClick={isRecording ? handleStop : handleRecord}
+          onClick={isRecording ? handleStop : requestRecord}
           disabled={false}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             isRecording
@@ -181,6 +185,15 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           Transcription error: {transcriptionError}
         </div>
       )}
+
+      <RecordingConsentModal
+        open={showConsentModal}
+        onConfirm={() => {
+          setShowConsentModal(false);
+          handleRecord();
+        }}
+        onCancel={() => setShowConsentModal(false)}
+      />
     </div>
   );
 }

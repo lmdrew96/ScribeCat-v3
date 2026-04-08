@@ -1,3 +1,4 @@
+import { LegalDocModal } from '@/components/legal-doc-modal';
 import { type Theme, useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -28,11 +29,13 @@ import {
   Clock,
   Download,
   ExternalLink,
+  FileText,
   Github,
   Info,
   Lock,
   Mic,
   Palette,
+  Shield,
   User,
   Volume2,
   VolumeX,
@@ -40,6 +43,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import privacyContent from '../../../docs/PRIVACY_POLICY.md?raw';
+import tosContent from '../../../docs/TERMS_OF_SERVICE.md?raw';
 import packageJson from '../../../package.json';
 import { ACHIEVEMENT_DEFINITIONS } from '../../shared/achievements';
 
@@ -105,6 +110,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [pushPermission, setPushPermission] = useState<NotificationPermission>(() =>
     getPermissionStatus(),
   );
+
+  // Legal doc modals
+  const [showTos, setShowTos] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Audio settings (local only)
   const [showWaveform, setShowWaveform] = useState(true);
@@ -330,6 +339,39 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm text-foreground">Show waveform while recording</Label>
                   <Switch checked={showWaveform} onCheckedChange={setShowWaveform} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm text-foreground">Audio Retention Period</Label>
+                  <Select
+                    value={String(
+                      settings && '_id' in settings ? (settings.audioRetentionMonths ?? 6) : 6,
+                    )}
+                    onValueChange={(val) => updateSettings({ audioRetentionMonths: Number(val) })}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 month</SelectItem>
+                      <SelectItem value="3">3 months</SelectItem>
+                      <SelectItem value="6">6 months</SelectItem>
+                      <SelectItem value="12">12 months</SelectItem>
+                      <SelectItem value="0">Never delete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Audio files older than this are automatically deleted. Transcripts and notes are
+                    always kept.
+                  </p>
+                </div>
+
+                <div className="rounded-lg glass-light p-3 space-y-1">
+                  <p className="text-xs font-medium text-foreground/70">Transcription Privacy</p>
+                  <p className="text-xs text-muted-foreground">
+                    Audio is sent to AssemblyAI for real-time transcription. Only the text
+                    transcript is retained — audio is not stored by AssemblyAI after processing.
+                  </p>
                 </div>
               </div>
             )}
@@ -813,7 +855,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Your ADHD-friendly lecture companion. Take notes, record lectures, and study
+                  Your ADHD-friendly study companion. Record voice notes, take notes, and study
                   smarter.
                 </p>
 
@@ -851,6 +893,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </button>
                 </div>
 
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-foreground">Legal</h4>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                    onClick={() => setShowTos(true)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Terms of Service
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-accent hover:underline"
+                    onClick={() => setShowPrivacy(true)}
+                  >
+                    <Shield className="h-4 w-4" />
+                    Privacy Policy
+                  </button>
+                </div>
+
                 <div className="pt-4 border-t border-[var(--glass-border)]">
                   <p className="text-xs text-muted-foreground">
                     Made with love for distracted minds everywhere.
@@ -861,6 +923,19 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </div>
         </div>
       </DialogContent>
+
+      <LegalDocModal
+        open={showTos}
+        onOpenChange={setShowTos}
+        title="Terms of Service"
+        content={tosContent}
+      />
+      <LegalDocModal
+        open={showPrivacy}
+        onOpenChange={setShowPrivacy}
+        title="Privacy Policy"
+        content={privacyContent}
+      />
     </Dialog>
   );
 }

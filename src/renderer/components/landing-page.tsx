@@ -35,14 +35,14 @@ const FEATURES = [
   {
     emoji: '🐱',
     title: 'StudyQuest',
-    desc: 'Your pixel art cat companion levels up as you study. Neglect your lectures, neglect your cat.',
+    desc: 'Your pixel art cat companion levels up as you study. Neglect your sessions, neglect your cat.',
     color: 'from-[#c45c5c]/20 to-[#88739e]/20',
     border: 'border-[#c45c5c]/30',
   },
   {
     emoji: '💬',
     title: 'Ask Nugget Anything',
-    desc: "Confused about something from lecture? Ask the AI chat. It's read your transcript and notes.",
+    desc: "Confused about something from your recording? Ask the AI chat. It's read your transcript and notes.",
     color: 'from-[#dbd5e2]/10 to-[#6b5a7d]/20',
     border: 'border-[#dbd5e2]/20',
   },
@@ -122,11 +122,11 @@ export function LandingPage() {
 
         <div className="mt-8 flex flex-col items-center gap-4">
           <div className="glass text-primary rounded-full px-4 py-1 text-xs font-medium uppercase tracking-widest">
-            ADHD-Friendly Lecture Companion
+            ADHD-Friendly Study Companion
           </div>
 
           <h1 className="text-foreground max-w-2xl text-5xl leading-tight font-bold tracking-tight sm:text-6xl">
-            Your lecture notes,{' '}
+            Your voice notes,{' '}
             <span
               className="inline-block"
               style={{ color: 'var(--primary)', textShadow: '0 0 30px var(--record-glow)' }}
@@ -180,7 +180,7 @@ export function LandingPage() {
         <h2 className="text-foreground mb-8 text-center text-2xl font-bold">How it works</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
           {[
-            { step: '1', label: 'Hit record', sub: 'Open ScribeCat before lecture starts' },
+            { step: '1', label: 'Hit record', sub: 'Open ScribeCat before class starts' },
             {
               step: '2',
               label: 'Just listen',
@@ -252,7 +252,7 @@ export function LandingPage() {
             style={{ imageRendering: 'pixelated' }}
           />
           <h2 className="text-foreground mb-2 text-2xl font-bold">
-            Ready to actually remember your lectures?
+            Ready to actually remember your notes?
           </h2>
           <p className="text-muted-foreground mb-6 text-sm">
             Nugget is waiting. Your notes are not going to write themselves.

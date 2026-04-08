@@ -1,8 +1,10 @@
+import { AudioDeletionWarning } from '@/components/audio-deletion-warning';
 import { MiniRecordingIndicator } from '@/components/mini-recording-indicator';
 import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingNavigationGuard } from '@/components/recording-navigation-guard';
 import { StudyQuestWidget } from '@/components/study-quest/study-quest-widget';
 import { TopBar } from '@/components/top-bar';
+import { TosAcceptanceModal } from '@/components/tos-acceptance-modal';
 import { RecordingProvider } from '@/contexts/recording-context';
 import { useSessionContext } from '@/contexts/session-context';
 import { useNotificationWatcher } from '@/hooks/use-notification-watcher';
@@ -29,6 +31,7 @@ export function AppLayout() {
       <div className="app-bg-orbs flex h-screen flex-col">
         <TopBar />
         <main className="relative z-10 flex-1 overflow-hidden">
+          <AudioDeletionWarning />
           <Outlet />
           <MiniRecordingIndicator />
         </main>
@@ -44,6 +47,7 @@ export function AppLayout() {
         />
         <StudyQuestWidget />
         <RecordingNavigationGuard />
+        <TosAcceptanceModal />
       </div>
     </RecordingProvider>
   );

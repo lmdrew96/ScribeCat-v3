@@ -34,6 +34,8 @@ export default defineSchema({
     updatedAt: v.number(),
     isDeleted: v.boolean(),
     deletedAt: v.optional(v.number()),
+    audioDeletedAt: v.optional(v.number()),
+    audioRetentionExtendedAt: v.optional(v.number()),
   })
     .index('by_user', ['userId'])
     .index('by_user_deleted', ['userId', 'isDeleted'])
@@ -66,6 +68,9 @@ export default defineSchema({
     courses: v.optional(v.array(v.string())),
     nuggetNotesEnabled: v.optional(v.boolean()),
     soundEnabled: v.optional(v.boolean()),
+    tosAcceptedAt: v.optional(v.number()),
+    tosVersion: v.optional(v.string()),
+    audioRetentionMonths: v.optional(v.number()),
   }).index('by_user', ['userId']),
 
   // Daily study stats (one row per user per day)

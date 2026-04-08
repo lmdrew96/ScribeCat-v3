@@ -492,7 +492,7 @@ export function NuggetChat({
                     placeholder={
                       chatMode === 'recording'
                         ? "Ask about what's being discussed..."
-                        : 'Ask Nugget about your lecture...'
+                        : 'Ask Nugget about your notes...'
                     }
                     className="flex-1 resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] backdrop-blur-[var(--glass-blur-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[40px] max-h-[120px]"
                     rows={1}
@@ -553,7 +553,7 @@ function WelcomeMessage({
     recording: {
       greeting: "I'm here while you record!",
       description:
-        'Ask me about anything that comes up in your lecture. I can see your transcript and notes in real-time.',
+        'Ask me about anything from your recording. I can see your transcript and notes in real-time.',
       suggestions: [
         'What was just discussed?',
         'Can you clarify that last point?',

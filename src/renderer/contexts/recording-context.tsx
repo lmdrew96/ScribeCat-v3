@@ -63,6 +63,11 @@ interface RecordingContextValue {
   handleRecord: () => Promise<void>;
   handleStop: () => Promise<void>;
   handlePauseResume: () => void;
+
+  // Consent
+  showConsentModal: boolean;
+  setShowConsentModal: (show: boolean) => void;
+  requestRecord: () => void;
 }
 
 const RecordingContext = createContext<RecordingContextValue | null>(null);
@@ -87,6 +92,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     null,
     currentSessionIdRef,
   );
+
+  // Consent modal
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   // Pre-record config
   const [lectureType, setLectureType] = useSimpleState<LectureType>('general');
@@ -262,6 +270,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   // ─── Recording Controls ─────────────────────────────────────────────────
 
+  const requestRecord = useCallback(() => {
+    setShowConsentModal(true);
+  }, []);
+
   const handleRecord = useCallback(async () => {
     try {
       const course = selectedCourse && selectedCourse !== 'none' ? selectedCourse : '';
@@ -403,6 +415,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     handleRecord,
     handleStop,
     handlePauseResume,
+    showConsentModal,
+    setShowConsentModal,
+    requestRecord,
   };
 
   return <RecordingContext.Provider value={value}>{children}</RecordingContext.Provider>;

@@ -1,8 +1,8 @@
 # ScribeCat v3
 
-**ADHD-friendly lecture companion** — Record, transcribe, and study smarter
+**ADHD-friendly study companion** — Record, transcribe, and study smarter
 
-> A web app for recording lectures with real-time transcription, AI-powered note-taking, and gamified study tools. Built with React, Convex, and Claude AI.
+> A web app for recording voice notes with real-time transcription, AI-powered note-taking, and gamified study tools. Built with React, Convex, and Claude AI.
 
 ---
 
@@ -26,7 +26,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - Real-time transcription via AssemblyAI
 - Pause/resume recording with timestamps
 - Audio playback synced to transcript (click-to-seek)
-- Lecture type selection (STEM, Humanities, Discussion, Lab, Review, General)
+- Note type selection (STEM, Humanities, Discussion, Lab, Review, General)
 - Session management with trash system (30-day retention)
 - File upload + transcription for pre-recorded audio
 - Course tagging with Canvas LMS import support
@@ -35,7 +35,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - TipTap rich text editor with full formatting toolbar (8 theme-aware font colors)
 - Inline Excalidraw diagrams (lazy-loaded, drag/resize)
 - Draggable/resizable images and textboxes (interact.js)
-- AI note generation from transcript (lecture-type-aware prompts)
+- AI note generation from transcript (note-type-aware prompts)
 - Smart auto-save (750ms debounce + Cmd+S manual)
 
 ### AI Features (Phase 2-3)
@@ -87,7 +87,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 ### Session Resilience
 - Recording persists across route navigation (RecordingContext in AppLayout)
 - Screen Wake Lock prevents sleep during recording
-- Clerk auth keep-alive prevents session expiry during long lectures
+- Clerk auth keep-alive prevents session expiry during long recordings
 - `beforeunload` guard prevents accidental tab close during recording
 - Mini recording indicator with controls on non-home routes
 
