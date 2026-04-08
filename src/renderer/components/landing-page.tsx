@@ -185,10 +185,10 @@ export function LandingPage() {
         <h2 className="text-foreground mb-8 text-center text-2xl font-bold">How it works</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-4">
           {[
-            { step: '1', label: 'Hit record', sub: 'Open ScribeCat before class starts' },
+            { step: '1', label: 'Hit record', sub: 'Open ScribeCat before each study session' },
             {
               step: '2',
-              label: 'Just listen',
+              label: 'Just talk',
               sub: 'Transcription and AI notes happen automatically',
             },
             {
