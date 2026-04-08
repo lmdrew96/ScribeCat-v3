@@ -3,12 +3,11 @@ import type React from 'react';
 import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSessionContext } from '@/contexts/session-context';
+import { useRecordingContext } from '@/contexts/recording-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
 import { FileText, GripVertical, Mic } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Id } from '../../../convex/_generated/dataModel';
+import { useCallback, useRef, useState } from 'react';
 
 // Type for NotesPanel ref
 export interface NotesPanelRef {
@@ -16,27 +15,12 @@ export interface NotesPanelRef {
 }
 
 export function HomeView() {
-  const { setActiveSessionId, setNuggetNotes, setIsRecording } = useSessionContext();
+  const { currentSessionId } = useRecordingContext();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
   const notesPanelRef = useRef<NotesPanelRef>(null);
-
-  // Sync local session ID to shared context for NuggetChat
-  useEffect(() => {
-    setActiveSessionId(currentSessionId);
-  }, [currentSessionId, setActiveSessionId]);
-
-  // Clear context on unmount (navigating away from home)
-  useEffect(() => {
-    return () => {
-      setActiveSessionId(null);
-      setNuggetNotes([]);
-      setIsRecording(false);
-    };
-  }, [setActiveSessionId, setNuggetNotes, setIsRecording]);
 
   const handleMouseDown = useCallback(() => {
     setIsDragging(true);
@@ -86,12 +70,7 @@ export function HomeView() {
           forceMount
           className={cn('flex-1 min-h-0', activeTab !== 'recording' && 'hidden')}
         >
-          <RecordingPanel
-            onSessionChange={setCurrentSessionId}
-            onInsertNote={handleInsertNote}
-            onNuggetNotesChange={setNuggetNotes}
-            onRecordingStateChange={setIsRecording}
-          />
+          <RecordingPanel onInsertNote={handleInsertNote} />
         </TabsContent>
         <TabsContent
           value="notes"
@@ -124,12 +103,7 @@ export function HomeView() {
       </div>
 
       <div style={{ width: `${100 - leftWidth}%` }} className="min-w-[260px]">
-        <RecordingPanel
-          onSessionChange={setCurrentSessionId}
-          onInsertNote={handleInsertNote}
-          onNuggetNotesChange={setNuggetNotes}
-          onRecordingStateChange={setIsRecording}
-        />
+        <RecordingPanel onInsertNote={handleInsertNote} />
       </div>
     </div>
   );

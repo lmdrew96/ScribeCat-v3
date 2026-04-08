@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -67,16 +67,24 @@ export function StudyView() {
   const sessionMatch = useMatch({ from: '/study/$sessionId', shouldThrow: false });
   const selectedId = sessionMatch?.params.sessionId ?? null;
 
-  // Sync selected session to context for NuggetChat
+  const { isRecording } = useSessionContext();
+  const isRecordingRef = useRef(isRecording);
+  isRecordingRef.current = isRecording;
+
+  // Sync selected session to context for NuggetChat — but only when not recording,
+  // since recording context owns activeSessionId during a recording
   useEffect(() => {
+    if (isRecording) return;
     setActiveSessionId(selectedId as SessionId | null);
     setNuggetNotes([]);
-  }, [selectedId, setActiveSessionId, setNuggetNotes]);
+  }, [selectedId, setActiveSessionId, setNuggetNotes, isRecording]);
 
-  // Clear context on unmount
+  // Clear context on unmount — but only if not recording
   useEffect(() => {
     return () => {
-      setActiveSessionId(null);
+      if (!isRecordingRef.current) {
+        setActiveSessionId(null);
+      }
     };
   }, [setActiveSessionId]);
 

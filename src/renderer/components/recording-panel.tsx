@@ -1,5 +1,5 @@
 import { AudioWaveform } from '@/components/audio-waveform';
-import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
+import { LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 
@@ -12,352 +12,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAudioRecorder } from '@/hooks/use-audio-recorder';
-
-import { type NuggetNote, useNuggetNotes } from '@/hooks/use-nugget-notes';
-import { useBreakReminder, useLogStudyTime, useStudySettings } from '@/hooks/use-productivity';
-import { useSession, useSessions } from '@/hooks/use-sessions';
-import { useTranscription } from '@/hooks/use-transcription';
-import { useMutation } from 'convex/react';
+import { useRecordingContext } from '@/contexts/recording-context';
 import { Mic, Pause, Play, Square } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
-import { ACHIEVEMENT_DEFINITIONS } from '../../shared/achievements';
 
 interface RecordingPanelProps {
-  onSessionChange?: (sessionId: Id<'sessions'> | null) => void;
   onInsertNote?: (noteText: string) => void;
-  onNuggetNotesChange?: (notes: NuggetNote[]) => void;
-  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
-export function RecordingPanel({
-  onSessionChange,
-  onInsertNote,
-  onNuggetNotesChange,
-  onRecordingStateChange,
-}: RecordingPanelProps) {
-  const { createSession, updateSession } = useSessions();
-  const logStudyTime = useLogStudyTime();
-  const [currentSessionId, setCurrentSessionId] = useState<Id<'sessions'> | null>(null);
-
-  // Reactively get session data (for user's notes in the editor)
-  const session = useSession(currentSessionId);
-
-  // Lecture type state
-  const [lectureType, setLectureType] = useState<LectureType>('general');
-
-  // Course + title state
-  const { settings } = useStudySettings();
-  const courses = settings && '_id' in settings ? (settings.courses ?? []) : [];
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [sessionTitle, setSessionTitle] = useState('');
-
-  // Nugget Notes: read persistent setting for initial enabled state
-  const nuggetNotesInitialEnabled =
-    settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true;
-
-  const handleScrubComplete = useCallback(
-    async (scrubbedTranscript: string) => {
-      if (!currentSessionId) return;
-      try {
-        await updateSession({ id: currentSessionId, transcript: scrubbedTranscript });
-        console.log('✨ Transcript scrubbed and saved');
-      } catch (error) {
-        console.error('Error saving scrubbed transcript:', error);
-      }
-    },
-    [currentSessionId, updateSession],
-  );
-
-  const nuggetNotes = useNuggetNotes({
-    initialEnabled: nuggetNotesInitialEnabled,
-    onScrubComplete: handleScrubComplete,
-  });
-
-  // Handle inserting a note into the editor
-  const handleInsertNote = useCallback(
-    (noteText: string) => {
-      if (onInsertNote) {
-        onInsertNote(noteText);
-      }
-    },
-    [onInsertNote],
-  );
-
-  // Convex audio upload mutation
-  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
-
-  // Notify parent when session changes
-  useEffect(() => {
-    onSessionChange?.(currentSessionId);
-  }, [currentSessionId, onSessionChange]);
-
-  // Notify parent when Nugget Notes change
-  useEffect(() => {
-    onNuggetNotesChange?.(nuggetNotes.notes);
-  }, [nuggetNotes.notes, onNuggetNotesChange]);
-
-  // Track if component is mounted for async operations
-  const isMountedRef = useRef(true);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-      // Clear refs to help garbage collection
-      lastSavedTranscriptRef.current = '';
-      lastNuggetProcessRef.current = '';
-      console.log('🧹 RecordingPanel unmount cleanup');
-    };
-  }, []);
-
+export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
   const {
     isRecording,
     isPaused,
-    devices,
-    selectedDeviceId,
     audioLevel,
     recordingTime,
-    startRecording,
-    stopRecording,
-    togglePause,
+    devices,
+    selectedDeviceId,
     setSelectedDeviceId,
-    reset: resetRecorder,
-    getStream,
-  } = useAudioRecorder({
-    onDataAvailable: async (audioBlob) => {
-      // Upload audio to Convex storage when recording stops
-      if (currentSessionId) {
-        try {
-          const uploadUrl = await generateUploadUrl();
-          const uploadResult = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
-            body: audioBlob,
-          });
-          const { storageId } = await uploadResult.json();
-
-          await updateSession({
-            id: currentSessionId,
-            audioStorageId: storageId,
-          });
-        } catch (error) {
-          console.error('Error uploading audio:', error);
-        }
-      }
-    },
-    onError: (error) => {
-      console.error('Recording error:', error);
-    },
-  });
-
-  const {
-    error: transcriptionError,
+    lectureType,
+    setLectureType,
+    selectedCourse,
+    setSelectedCourse,
+    sessionTitle,
+    setSessionTitle,
+    courses,
     segments,
-    start: startTranscription,
-    stop: stopTranscription,
-    reset: resetTranscription,
-    getFullTranscript,
-  } = useTranscription();
-
-  // Break reminder toasts during recording
-  useBreakReminder(isRecording);
-
-  // Notify parent when recording state changes
-  useEffect(() => {
-    onRecordingStateChange?.(isRecording);
-  }, [isRecording, onRecordingStateChange]);
-
-  // Track the last saved transcript to avoid duplicate saves
-  const lastSavedTranscriptRef = useRef<string>('');
-  const lastNuggetProcessRef = useRef<string>('');
-
-  // Save transcript when we get new final segments (debounced by checking if content changed)
-  useEffect(() => {
-    const saveTranscript = async () => {
-      if (!currentSessionId || segments.length === 0) return;
-
-      const finalSegments = segments.filter((s) => s.isFinal);
-      if (finalSegments.length === 0) return;
-
-      const fullTranscript = finalSegments.map((s) => s.text).join(' ');
-
-      // Only save if transcript actually changed
-      if (fullTranscript === lastSavedTranscriptRef.current) return;
-      lastSavedTranscriptRef.current = fullTranscript;
-
-      try {
-        await updateSession({
-          id: currentSessionId,
-          transcriptSegments: segments,
-          transcript: fullTranscript,
-        });
-        console.log(`Transcript saved: ${fullTranscript.substring(0, 50)}...`);
-      } catch (error) {
-        console.error('Error saving transcript:', error);
-      }
-    };
-    saveTranscript();
-  }, [segments, currentSessionId, updateSession]);
-
-  // Process transcript chunks for Nugget Notes
-  // Use a ref to track if the effect is still active
-  const nuggetEffectActiveRef = useRef(true);
-
-  useEffect(() => {
-    nuggetEffectActiveRef.current = true;
-
-    const processForNugget = async () => {
-      if (!nuggetEffectActiveRef.current) return;
-      if (!nuggetNotes.isRecording || !nuggetNotes.isEnabled) return;
-
-      const finalSegments = segments.filter((s) => s.isFinal);
-      if (finalSegments.length === 0) return;
-
-      const fullTranscript = finalSegments.map((s) => s.text).join(' ');
-
-      // Only process if we have new content
-      if (fullTranscript === lastNuggetProcessRef.current) return;
-      lastNuggetProcessRef.current = fullTranscript;
-
-      // Check again if still active before async operation
-      if (!nuggetEffectActiveRef.current) return;
-
-      // Process the transcript chunk with lecture type context and user's notes
-      await nuggetNotes.processTranscriptChunk(
-        fullTranscript,
-        recordingTime,
-        lectureType,
-        session?.notesPlainText || undefined,
-      );
-    };
-
-    processForNugget();
-
-    return () => {
-      nuggetEffectActiveRef.current = false;
-    };
-  }, [segments, recordingTime, nuggetNotes, lectureType, session?.notesPlainText]);
+    transcriptionError,
+    nuggetNotes,
+    handleRecord,
+    handleStop,
+    handlePauseResume,
+  } = useRecordingContext();
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleRecord = async () => {
-    try {
-      // Build session title: custom title > course prefix + timestamp > timestamp
-      const course = selectedCourse && selectedCourse !== 'none' ? selectedCourse : '';
-      const defaultTitle = course
-        ? `${course} - ${new Date().toLocaleString()}`
-        : `Recording ${new Date().toLocaleString()}`;
-      const sessionId = await createSession({
-        title: sessionTitle.trim() || defaultTitle,
-        lectureType,
-        course: course || undefined,
-      });
-
-      setCurrentSessionId(sessionId);
-
-      // Clear previous state for new recording
-      resetTranscription();
-      nuggetNotes.clearNotes();
-      nuggetNotes.startRecording();
-      lastNuggetProcessRef.current = '';
-
-      // Start audio recording first (this creates the media stream)
-      await startRecording();
-
-      // Get the media stream from the audio recorder (avoid duplicate getUserMedia)
-      // Small delay to ensure the stream is ready
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      const stream = getStream();
-
-      if (!stream) {
-        throw new Error('Failed to get media stream from audio recorder');
-      }
-
-      // Start transcription with the shared stream
-      await startTranscription(stream);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
-  };
-
-  const handleStop = async () => {
-    // Stop recording (this also stops the media stream tracks)
-    stopRecording();
-
-    // Stop transcription
-    await stopTranscription();
-
-    // Stop Nugget Notes (process final chunk)
-    const finalTranscript = getFullTranscript();
-    await nuggetNotes.stopRecording(finalTranscript);
-
-    // Update final session data (including nugget notes)
-    // Use getLatestNotes() instead of .notes to get notes generated
-    // during stopRecording (React state may not have flushed yet)
-    if (currentSessionId) {
-      await updateSession({
-        id: currentSessionId,
-        duration: recordingTime * 1000, // Convert to milliseconds
-        transcript: getFullTranscript(),
-        transcriptSegments: segments,
-        nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
-          text: n.text,
-          recordingTime: n.recordingTime,
-        })),
-      });
-    }
-
-    // Log study time for productivity tracking
-    const durationMinutes = Math.round(recordingTime / 60);
-    if (durationMinutes > 0) {
-      try {
-        const result = await logStudyTime({
-          durationMinutes,
-          sessionHour: new Date().getHours(),
-        });
-
-        // Show toast for newly unlocked achievements
-        if (result?.newUnlocks?.length) {
-          for (const id of result.newUnlocks) {
-            const def = ACHIEVEMENT_DEFINITIONS.find((a) => a.id === id);
-            if (def) {
-              toast.success(`Achievement Unlocked: ${def.name}`, {
-                description: def.description,
-                duration: 5000,
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error logging study time:', error);
-      }
-    }
-
-    // Clear refs to help garbage collection
-    lastSavedTranscriptRef.current = '';
-    lastNuggetProcessRef.current = '';
-
-    // Reset title for next recording
-    setSessionTitle('');
-
-    // Reset recorder but keep transcription visible
-    // NOTE: Do NOT clear currentSessionId here — notes must remain
-    // editable/saveable until a new recording starts
-    resetRecorder();
-  };
-
-  const handlePauseResume = () => {
-    togglePause();
   };
 
   return (
@@ -378,7 +67,7 @@ export function RecordingPanel({
         isRecording={isRecording}
         isProcessing={nuggetNotes.isProcessing}
         isEnabled={nuggetNotes.isEnabled}
-        onInsertNote={handleInsertNote}
+        onInsertNote={onInsertNote ?? (() => {})}
         onToggleEnabled={nuggetNotes.setEnabled}
       />
 
