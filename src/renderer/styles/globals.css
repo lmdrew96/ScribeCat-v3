@@ -292,6 +292,53 @@
   animation: xp-flash 1.5s ease-out forwards;
 }
 
+/* ─── Legal Document Markdown Styles ──────────────────────────── */
+.legal-doc h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 0 0 0.5em;
+}
+.legal-doc h2 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 1.25em 0 0.4em;
+}
+.legal-doc h3 {
+  font-size: 1.05em;
+  font-weight: 600;
+  margin: 1em 0 0.3em;
+}
+.legal-doc hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+.legal-doc ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+.legal-doc li {
+  margin: 0.25em 0;
+}
+.legal-doc p {
+  margin: 0.5em 0;
+}
+.legal-doc strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.legal-doc a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.legal-doc code {
+  background: var(--glass-bg-light);
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+
 /* Purring Pastels Theme */
 [data-theme="soft-focus"] {
   --background: #f8f4ff;
