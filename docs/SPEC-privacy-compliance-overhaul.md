@@ -84,7 +84,7 @@ Must cover:
 - **Data Retention:** Audio auto-deletes after 6 months. Transcripts persist until user deletion.
 - **Data Sharing:** No data is sold or shared with third parties for advertising. Third-party services receive only what is necessary for their function.
 - **User Rights:** Users can delete all their data at any time. Export functionality available via Google Drive integration.
-- **Contact:** lmdrew96@gmail.com
+- **Contact:** nae@adhdesigns.dev
 
 ### 2.2 Surface Legal Docs in App
 

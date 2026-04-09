@@ -338,6 +338,22 @@
   padding: 0.1em 0.3em;
   font-size: 0.9em;
 }
+.legal-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+}
+.legal-doc th,
+.legal-doc td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.legal-doc th {
+  background: var(--glass-bg-light);
+  font-weight: 600;
+  color: var(--foreground);
+}
 
 /* Purring Pastels Theme */
 [data-theme="soft-focus"] {

@@ -80,7 +80,7 @@ You have the right to:
 - **Access** your data through the application interface
 - **Delete** your recordings, notes, and sessions at any time
 - **Export** your data (notes can be copied; audio can be played back)
-- **Delete your account** by contacting us at lmdrew96@gmail.com
+- **Delete your account** by contacting us at nae@adhdesigns.dev
 
 ## 9. Children's Privacy
 
@@ -100,4 +100,4 @@ We may update this Privacy Policy periodically. Material changes will be communi
 
 ## 12. Contact
 
-For privacy questions or data requests, contact: **lmdrew96@gmail.com**
+For privacy questions or data requests, contact: **nae@adhdesigns.dev**

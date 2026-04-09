@@ -79,4 +79,4 @@ We may update these Terms at any time. Continued use of the Service after change
 
 ## 13. Contact
 
-For questions about these Terms, contact: **lmdrew96@gmail.com**
+For questions about these Terms, contact: **nae@adhdesigns.dev**

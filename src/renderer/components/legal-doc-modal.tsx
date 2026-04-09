@@ -68,6 +68,52 @@ function parseMarkdown(md: string): ReactNode[] {
       continue;
     }
 
+    // Table: collect consecutive pipe-delimited rows
+    if (line.startsWith('|')) {
+      flushList();
+      const tableRows: string[] = [];
+      while (i < lines.length && lines[i].startsWith('|')) {
+        tableRows.push(lines[i]);
+        i++;
+      }
+      i--; // back up since the for loop will increment
+
+      // Filter out separator rows (|---|---|)
+      const dataRows = tableRows.filter((r) => !/^\|[\s-:|]+\|$/.test(r));
+      if (dataRows.length > 0) {
+        const parseCells = (row: string) =>
+          row
+            .split('|')
+            .slice(1, -1)
+            .map((c) => c.trim());
+
+        const headerCells = parseCells(dataRows[0]);
+        const bodyRows = dataRows.slice(1);
+
+        elements.push(
+          <table key={key++}>
+            <thead>
+              <tr>
+                {headerCells.map((cell, ci) => (
+                  <th key={ci}>{parseInline(cell)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bodyRows.map((row, ri) => (
+                <tr key={ri}>
+                  {parseCells(row).map((cell, ci) => (
+                    <td key={ci}>{parseInline(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>,
+        );
+      }
+      continue;
+    }
+
     // Headings
     const h3 = line.match(/^### (.+)$/);
     if (h3) {
