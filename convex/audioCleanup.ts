@@ -70,7 +70,9 @@ export const cleanupExpiredAudio = internalMutation({
 export const getSessionsApproachingDeletion = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireAuth(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const userId = identity.subject;
     const now = Date.now();
 
     const settings = await ctx.db
@@ -103,7 +105,7 @@ export const getSessionsApproachingDeletion = query({
         title: s.title,
         createdAt: s.createdAt,
         daysRemaining: Math.ceil(
-          (s.audioRetentionExtendedAt ?? s.createdAt + retentionMs - now) / (24 * 60 * 60 * 1000),
+          ((s.audioRetentionExtendedAt ?? s.createdAt) + retentionMs - now) / (24 * 60 * 60 * 1000),
         ),
       }));
   },
