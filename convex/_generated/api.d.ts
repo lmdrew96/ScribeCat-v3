@@ -9,6 +9,7 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as audioCleanup from "../audioCleanup.js";
 import type * as audioStorage from "../audioStorage.js";
 import type * as authHelpers from "../authHelpers.js";
 import type * as blocks from "../blocks.js";
@@ -48,6 +49,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  audioCleanup: typeof audioCleanup;
   audioStorage: typeof audioStorage;
   authHelpers: typeof authHelpers;
   blocks: typeof blocks;
