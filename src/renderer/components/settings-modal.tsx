@@ -105,6 +105,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [weeklyGoal, setWeeklyGoal] = useState('10');
   const [nuggetNotesEnabled, setNuggetNotesEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   // Browser push permission (local only — derived from Notification API)
   const [pushPermission, setPushPermission] = useState<NotificationPermission>(() =>
@@ -132,7 +133,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setWeeklyGoal(String(Math.floor(settings.weeklyGoalMinutes / 60)));
     setNuggetNotesEnabled(settings.nuggetNotesEnabled ?? true);
     setSoundEnabled(settings.soundEnabled ?? true);
-  }, [settings]);
+    if (settings.timezone) {
+      setTimezone(settings.timezone);
+    } else {
+      // Auto-backfill timezone for existing users
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setTimezone(detected);
+      void updateSettings({ timezone: detected });
+    }
+  }, [settings, updateSettings]);
 
   // Save settings to Convex
   const [newCourse, setNewCourse] = useState('');
@@ -149,6 +158,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       courses?: string[];
       nuggetNotesEnabled?: boolean;
       soundEnabled?: boolean;
+      timezone?: string;
     }) => {
       void updateSettings(updates);
     },
@@ -379,6 +389,36 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             {/* Study */}
             {activeCategory === 'study' && (
               <div className="space-y-5">
+                {/* Timezone */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-foreground">Timezone</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Used for daily study stats, streaks, and AI time awareness
+                  </p>
+                  <Select
+                    value={timezone}
+                    onValueChange={(value) => {
+                      const resolved =
+                        value === 'auto' ? Intl.DateTimeFormat().resolvedOptions().timeZone : value;
+                      setTimezone(resolved);
+                      saveSettings({ timezone: resolved });
+                    }}
+                  >
+                    <SelectTrigger className="w-56 bg-background border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                      <SelectItem value="America/New_York">Eastern</SelectItem>
+                      <SelectItem value="America/Chicago">Central</SelectItem>
+                      <SelectItem value="America/Denver">Mountain</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific</SelectItem>
+                      <SelectItem value="America/Anchorage">Alaska</SelectItem>
+                      <SelectItem value="Pacific/Honolulu">Hawaii</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Break Reminders */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">

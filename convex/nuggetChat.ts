@@ -20,8 +20,15 @@ interface ChatMessage {
 }
 
 export const nuggetChat = httpAction(async (_ctx, request) => {
-  const { message, conversationHistory, transcript, notes, lectureType, nuggetNotes } =
-    await request.json();
+  const {
+    message,
+    conversationHistory,
+    transcript,
+    notes,
+    lectureType,
+    nuggetNotes,
+    currentDateTime,
+  } = await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -44,6 +51,10 @@ Your personality:
 - Occasional cat puns are welcome but keep them subtle
 
 `;
+
+  if (currentDateTime) {
+    systemPrompt += `## Current Date & Time\n${currentDateTime}\n\n`;
+  }
 
   if (lectureType && lectureType !== 'general') {
     systemPrompt += `## Lecture Type\nThis is a **${lectureType}** lecture. Tailor your explanations accordingly.\n\n`;

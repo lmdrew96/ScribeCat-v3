@@ -28,7 +28,7 @@ export function CreateExamRoomModal({ open, onOpenChange }: CreateExamRoomModalP
     try {
       const examRoomId = await createExamRoom({
         name: name.trim(),
-        examDate: examDate ? new Date(examDate).getTime() : undefined,
+        examDate: examDate ? new Date(`${examDate}T00:00:00`).getTime() : undefined,
       });
       toast.success('Exam room created!');
       onOpenChange(false);

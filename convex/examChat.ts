@@ -25,7 +25,8 @@ interface ChatMessage {
 // ─── HTTP Action ─────────────────────────────────────────────
 
 export const examNuggetChat = httpAction(async (_ctx, request) => {
-  const { message, conversationHistory, brainContext, sessionTitles } = await request.json();
+  const { message, conversationHistory, brainContext, sessionTitles, currentDateTime, examDate } =
+    await request.json();
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -51,6 +52,15 @@ The student has ${(sessionTitles as string[])?.length ?? 0} sessions loaded for 
 ${(sessionTitles as string[])?.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n') ?? 'No sessions yet'}
 
 `;
+
+  if (currentDateTime) {
+    systemPrompt += `## Current Date & Time\n${currentDateTime}\n`;
+    if (examDate) {
+      const daysLeft = Math.ceil((Number(examDate) - Date.now()) / (1000 * 60 * 60 * 24));
+      systemPrompt += `The exam is ${daysLeft > 0 ? `in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'today or has passed'}.\n`;
+    }
+    systemPrompt += '\n';
+  }
 
   if (brainContext) {
     systemPrompt += `## Knowledge Map (Topics & Concepts)\n${brainContext}\n\n`;

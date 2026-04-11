@@ -41,6 +41,7 @@ export const updateSettings = mutation({
     tosAcceptedAt: v.optional(v.number()),
     tosVersion: v.optional(v.string()),
     audioRetentionMonths: v.optional(v.number()),
+    timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
@@ -65,6 +66,22 @@ export const updateSettings = mutation({
   },
 });
 
+// ─── Timezone Helpers ────────────────────────────────────────
+
+/** Get today's date as YYYY-MM-DD in the user's timezone (falls back to UTC). */
+function getLocalDateString(timezone?: string): string {
+  if (!timezone) return new Date().toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+}
+
+/** Get a date N days ago as YYYY-MM-DD in the user's timezone. */
+function getLocalDateStringDaysAgo(daysAgo: number, timezone?: string): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  if (!timezone) return d.toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(d);
+}
+
 // ─── Study Stats ─────────────────────────────────────────────
 
 export const getStudyStats = query({
@@ -72,8 +89,15 @@ export const getStudyStats = query({
   handler: async (ctx) => {
     const userId = await requireAuth(ctx);
 
-    // Get today's date string
-    const today = new Date().toISOString().split('T')[0];
+    // Read user's timezone from settings
+    const settings = await ctx.db
+      .query('userSettings')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .unique();
+    const tz = settings?.timezone;
+
+    // Get today's date string in user's timezone
+    const today = getLocalDateString(tz);
 
     // Get today's stats
     const todayStats = await ctx.db
@@ -91,9 +115,7 @@ export const getStudyStats = query({
     const streak = computeStreak(allStats, today);
 
     // Compute weekly total (last 7 days)
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - 6);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekStartStr = getLocalDateStringDaysAgo(6, tz);
 
     const weeklyMinutes = allStats
       .filter((s) => s.date >= weekStartStr && s.date <= today)
@@ -148,15 +170,15 @@ export const logStudyTime = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
-    const today = new Date().toISOString().split('T')[0];
 
-    // Get user settings for goal
+    // Get user settings for goal + timezone
     const settings = await ctx.db
       .query('userSettings')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
 
     const goalMinutes = settings?.dailyGoalMinutes ?? DEFAULT_SETTINGS.dailyGoalMinutes;
+    const today = getLocalDateString(settings?.timezone);
 
     // Get or create today's stats
     const existing = await ctx.db

@@ -9,6 +9,7 @@ import type { Id } from '../../../../convex/_generated/dataModel';
 
 interface ExamChatProps {
   examRoomId: Id<'examRooms'>;
+  examDate?: number;
 }
 
 interface ChatMessage {
@@ -17,7 +18,7 @@ interface ChatMessage {
   timestamp: number;
 }
 
-export function ExamChat({ examRoomId }: ExamChatProps) {
+export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
   const chatHistory = useQuery(api.examChat.getExamChatHistory, { examRoomId });
   const saveChatHistory = useMutation(api.examChat.saveExamChatHistory);
 
@@ -82,8 +83,13 @@ export function ExamChat({ examRoomId }: ExamChatProps) {
             role: m.role,
             content: m.content,
           })),
-          brainContext: '', // Brain context is built server-side in future; for now sessions provide it
+          brainContext: '',
           sessionTitles,
+          currentDateTime: new Date().toLocaleString('en-US', {
+            dateStyle: 'full',
+            timeStyle: 'short',
+          }),
+          examDate,
         }),
       });
 
@@ -120,7 +126,7 @@ export function ExamChat({ examRoomId }: ExamChatProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, examRoomId, examRoomSessions, saveChatHistory]);
+  }, [input, isLoading, messages, examRoomId, examRoomSessions, saveChatHistory, examDate]);
 
   return (
     <div className="flex h-full flex-col">

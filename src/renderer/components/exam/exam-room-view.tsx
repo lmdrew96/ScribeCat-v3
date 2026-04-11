@@ -230,7 +230,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
         {activeTab === 'simulation' && (
           <ExamSimulation examRoomId={examRoomId} sessionCount={sessions.length} />
         )}
-        {activeTab === 'chat' && <ExamChat examRoomId={examRoomId} />}
+        {activeTab === 'chat' && <ExamChat examRoomId={examRoomId} examDate={room.examDate} />}
         {activeTab === 'weakSpots' && <WeakSpotsPanel examRoomId={examRoomId} />}
       </div>
 

@@ -71,6 +71,7 @@ export default defineSchema({
     tosAcceptedAt: v.optional(v.number()),
     tosVersion: v.optional(v.string()),
     audioRetentionMonths: v.optional(v.number()),
+    timezone: v.optional(v.string()),
   }).index('by_user', ['userId']),
 
   // Daily study stats (one row per user per day)

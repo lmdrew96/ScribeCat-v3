@@ -182,6 +182,10 @@ export function NuggetChat({
             notes: includeNotes ? notes : undefined,
             lectureType,
             nuggetNotes: includeNotes ? nuggetNotes : undefined,
+            currentDateTime: new Date().toLocaleString('en-US', {
+              dateStyle: 'full',
+              timeStyle: 'short',
+            }),
           }),
         });
 
