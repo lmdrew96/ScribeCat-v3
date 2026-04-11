@@ -5,6 +5,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { renderInline } from '@/lib/render-markdown';
 import type { QuizResult } from '@/types/study-tools';
 import { useMutation } from 'convex/react';
 import { CheckCircle2, RefreshCw, RotateCcw, XCircle } from 'lucide-react';
@@ -212,7 +213,9 @@ export function QuizTool({ sessionId }: QuizToolProps) {
         {/* Explanation */}
         {state === 'review' && (
           <div className="mt-2 pt-2 border-t border-[var(--glass-border)]">
-            <p className="text-[10px] text-muted-foreground">{question.explanation}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {renderInline(question.explanation)}
+            </p>
             <div className="flex justify-between items-center mt-1.5">
               <span className="text-[10px] text-muted-foreground">{question.topic}</span>
               <Button

@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.25.1 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS)
+**Current Version:** 4.27.0 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS, exam rooms)
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -67,7 +67,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 ```
 ScribeCat-v3/
 ├── convex/                    # Convex backend (server-side)
-│   ├── schema.ts             # Database schema (23 tables)
+│   ├── schema.ts             # Database schema (31 tables)
 │   ├── authHelpers.ts        # Shared auth helpers (requireAuth, requireAuthWithProfile)
 │   ├── sessions.ts           # Session CRUD queries/mutations
 │   ├── ai.ts                 # AI note generation (Convex action)
@@ -81,6 +81,15 @@ ScribeCat-v3/
 │   ├── studyGames.ts         # Multiplayer games (Quiz Battle, Jeopardy)
 │   ├── studyRooms.ts         # Study rooms (exports requireRoomMember/Host, postSystemMessage)
 │   ├── roomNotes.ts          # Collaborative room notes
+│   ├── examRooms.ts          # Exam room CRUD, invites, messaging, heartbeat
+│   ├── examBrain.ts          # Session Conductor AI — topic index extraction (Sonnet)
+│   ├── examChat.ts           # Exam room Nugget chat (HTTP action)
+│   ├── examTools.ts          # Multi-session exam study tool generation
+│   ├── examToolPrompts.ts    # Prompt templates for 8 exam tool types
+│   ├── examSimulation.ts     # Timed practice exam generation + attempt tracking
+│   ├── examGames.ts          # Exam room game instantiation (Quiz Battle, Jeopardy)
+│   ├── weakSpots.ts          # Per-topic accuracy tracking + targeted review
+│   ├── audioCleanup.ts       # Audio auto-deletion for privacy compliance
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
 │   ├── config.ts             # Shared AI model configuration
@@ -97,7 +106,7 @@ ScribeCat-v3/
 │   ├── messagingHelpers.ts   # Shared messaging helpers (verifyFriendship)
 │   ├── sessionSharing.ts     # Session sharing permissions
 │   ├── reportBug.ts          # Bug report endpoint
-│   ├── crons.ts              # Scheduled jobs (trash cleanup)
+│   ├── crons.ts              # Scheduled jobs (trash cleanup, audio cleanup)
 │   ├── http.ts               # HTTP action routes
 │   ├── auth.config.ts        # Clerk JWT config
 │   └── _generated/           # Auto-generated types (DO NOT EDIT)
@@ -173,6 +182,18 @@ ScribeCat-v3/
 │       │   │   ├── quiz-battle.tsx          # Quiz Battle active game view
 │       │   │   ├── jeopardy-game.tsx        # Jeopardy active game view
 │       │   │   └── game-results.tsx         # Post-game scoreboard + podium
+│       │   ├── exam/                 # Exam Study Room (Phase 4)
+│       │   │   ├── exam-study-view.tsx      # Main /exam page (split layout)
+│       │   │   ├── exam-room-view.tsx       # Active exam room (tabbed UI)
+│       │   │   ├── exam-room-list.tsx       # Sidebar room list
+│       │   │   ├── create-exam-room-modal.tsx # Room creation with exam date
+│       │   │   ├── exam-session-list.tsx    # Sessions tab with remove
+│       │   │   ├── exam-session-picker.tsx  # Add sessions modal
+│       │   │   ├── exam-invite-modal.tsx    # Invite friends (host only)
+│       │   │   ├── exam-tools.tsx           # 6 multi-session AI study tools
+│       │   │   ├── exam-simulation.tsx      # Timed practice exam
+│       │   │   ├── exam-chat.tsx            # Nugget AI chat (exam context)
+│       │   │   └── weak-spots-panel.tsx     # Topic accuracy + targeted review
 │       │   └── ui/                   # shadcn/ui components
 │       ├── hooks/
 │       │   ├── use-audio-recorder.ts   # MediaRecorder wrapper
@@ -193,15 +214,22 @@ ScribeCat-v3/
 │       │   ├── use-presence.ts        # Online/offline presence tracking
 │       │   ├── use-wake-lock.ts       # Screen Wake Lock API during recording
 │       │   ├── use-session-keep-alive.ts # Clerk session keep-alive during recording
+│       │   ├── use-exam-room.ts        # Exam room queries + mutations + heartbeat
+│       │   ├── use-exam-tools.ts      # Exam study tool generation hook
+│       │   ├── use-exam-simulation.ts # Timed exam state + attempt tracking
+│       │   ├── use-weak-spots.ts      # Topic accuracy + targeted review
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
 │       │   ├── markdown-to-tiptap.ts   # MD -> TipTap JSON converter
+│       │   ├── render-markdown.tsx     # Shared lightweight MD renderer (inline + block)
 │       │   ├── citation-mark.ts        # TipTap citation mark extension
 │       │   ├── excalidraw-extension.tsx # TipTap Excalidraw node
 │       │   ├── draggable-image-extension.tsx
 │       │   ├── textbox-extension.tsx
 │       │   ├── font-size-extension.ts
+│       │   ├── notification-sounds.ts  # Audio notification playback utility
+│       │   ├── push-notifications.ts   # Browser push notification utility
 │       │   └── utils.ts               # cn() helper
 │       ├── types/
 │       │   ├── study-tools.ts
@@ -214,7 +242,10 @@ ScribeCat-v3/
 │   ├── README.md             # Project README (features, setup, tech stack)
 │   ├── PHASES.md             # Phase implementation guide
 │   ├── NOTION-INSPIRED-FEATURES.md
-│   └── nugget-integration-handoff.md
+│   ├── nugget-integration-handoff.md
+│   ├── TERMS_OF_SERVICE.md   # Terms of Service content
+│   ├── PRIVACY_POLICY.md     # Privacy Policy content
+│   └── SPEC-privacy-compliance-overhaul.md # Privacy compliance spec
 ├── browser-extension/         # Chrome extension for Canvas LMS course import
 │   ├── manifest.json         # Manifest V3 config
 │   ├── scripts/
@@ -238,7 +269,7 @@ ScribeCat-v3/
 
 ## Database Schema (Convex)
 
-23 tables in `convex/schema.ts`:
+31 tables in `convex/schema.ts`:
 
 | Table | Purpose |
 |-------|---------|
@@ -263,8 +294,15 @@ ScribeCat-v3/
 | `studyRoomMembers` | Room participants with presence |
 | `studyRoomMessages` | Room chat messages |
 | `roomNotes` | Collaborative notes per study room |
-| `studyGames` | Game instances (Quiz Battle / Jeopardy) inside rooms |
+| `studyGames` | Game instances (Quiz Battle / Jeopardy) inside rooms + exam rooms |
 | `studyGamePlayers` | Per-player game state, scores, answer tracking |
+| `examRooms` | Multi-session exam prep rooms (name, host, examDate, status) |
+| `examRoomMembers` | Exam room participants with roles and presence |
+| `examRoomSessions` | Sessions linked to exam rooms with AI-extracted topic indexes |
+| `examRoomMessages` | Exam room chat messages (Nugget + system) |
+| `examToolResults` | Cached exam study tool output (8 tool types) |
+| `examChatHistory` | Per-user Nugget chat history per exam room |
+| `weakSpots` | Per-user topic accuracy tracking for targeted review |
 
 ---
 

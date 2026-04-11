@@ -4,6 +4,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { renderInline } from '@/lib/render-markdown';
 import type { FlashcardResult } from '@/types/study-tools';
 import { useMutation, useQuery } from 'convex/react';
 import { BookOpen, ChevronLeft, ChevronRight, GraduationCap, RotateCcw } from 'lucide-react';
@@ -130,7 +131,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
                 display: isFlipped ? 'none' : 'block',
               }}
             >
-              <p className="text-xs font-medium text-foreground">{card.front}</p>
+              <p className="text-xs font-medium text-foreground">{renderInline(card.front)}</p>
               <span className={`text-[10px] ${DIFFICULTY_COLORS[card.difficulty] || ''}`}>
                 {card.difficulty}
               </span>
@@ -143,7 +144,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
                 display: isFlipped ? 'block' : 'none',
               }}
             >
-              <p className="text-xs text-foreground/90">{card.back}</p>
+              <p className="text-xs text-foreground/90">{renderInline(card.back)}</p>
               <span className="text-[10px] text-muted-foreground">{card.topic}</span>
             </div>
           </div>

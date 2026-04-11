@@ -3,6 +3,7 @@
  */
 
 import { Card } from '@/components/ui/card';
+import { renderInline } from '@/lib/render-markdown';
 import type { Eli5Result } from '@/types/study-tools';
 import { ChevronDown, ChevronRight, Globe, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
@@ -44,17 +45,21 @@ export function Eli5Tool({ sessionId }: Eli5ToolProps) {
 
               {isExpanded && (
                 <div className="px-3 pb-3 pt-0 space-y-2">
-                  <p className="text-sm text-foreground/90 leading-relaxed">{item.explanation}</p>
+                  <p className="text-sm text-foreground/90 leading-relaxed">
+                    {renderInline(item.explanation)}
+                  </p>
 
                   <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
-                    <p className="text-xs text-foreground/80 leading-relaxed">{item.analogy}</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed">
+                      {renderInline(item.analogy)}
+                    </p>
                   </div>
 
                   <div className="flex items-start gap-2 rounded-md glass-light p-2">
                     <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {item.realWorldExample}
+                      {renderInline(item.realWorldExample)}
                     </p>
                   </div>
                 </div>

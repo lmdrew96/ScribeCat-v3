@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { renderMarkdown } from '@/lib/render-markdown';
 import { useMutation, useQuery } from 'convex/react';
 import { Cat, Loader2, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -160,7 +161,13 @@ export function ExamChat({ examRoomId }: ExamChatProps) {
                   : 'glass-light border border-[var(--glass-border)] text-foreground'
               }`}
             >
-              <div className="whitespace-pre-wrap">{msg.content}</div>
+              {msg.role === 'assistant' ? (
+                <div className="text-sm leading-relaxed space-y-0.5">
+                  {renderMarkdown(msg.content)}
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap">{msg.content}</div>
+              )}
             </div>
           </div>
         ))}

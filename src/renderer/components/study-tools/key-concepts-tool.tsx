@@ -3,6 +3,7 @@
  */
 
 import { Card } from '@/components/ui/card';
+import { renderInline } from '@/lib/render-markdown';
 import type { KeyConceptResult } from '@/types/study-tools';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
@@ -60,7 +61,9 @@ export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
 
               {isExpanded && (
                 <div className="px-2 pb-2 pt-0 ml-7">
-                  <p className="text-xs text-foreground/80 leading-relaxed">{concept.definition}</p>
+                  <p className="text-xs text-foreground/80 leading-relaxed">
+                    {renderInline(concept.definition)}
+                  </p>
                   {concept.relatedTerms.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {concept.relatedTerms.map((term) => (

@@ -3,6 +3,7 @@
  */
 
 import { Card } from '@/components/ui/card';
+import { renderInline, renderMarkdown } from '@/lib/render-markdown';
 import type { SummaryResult } from '@/types/study-tools';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { ToolWrapper } from './tool-wrapper';
@@ -27,9 +28,9 @@ export function SummaryTool({ sessionId }: SummaryToolProps) {
       }
     >
       <Card className="p-3">
-        <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-line">
-          {tool.data?.summary}
-        </p>
+        <div className="text-xs text-foreground/90 leading-relaxed space-y-1">
+          {tool.data?.summary ? renderMarkdown(tool.data.summary) : null}
+        </div>
       </Card>
 
       {(tool.data?.keyTakeaways.length ?? 0) > 0 && (
@@ -39,7 +40,7 @@ export function SummaryTool({ sessionId }: SummaryToolProps) {
             {tool.data?.keyTakeaways.map((takeaway) => (
               <li key={takeaway} className="flex items-start gap-1.5 text-xs text-foreground/90">
                 <span className="text-primary mt-0.5 shrink-0">&#x2022;</span>
-                {takeaway}
+                <span>{renderInline(takeaway)}</span>
               </li>
             ))}
           </ul>

@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { type ExamToolType, useExamTool } from '@/hooks/use-exam-tools';
+import { renderInline, renderMarkdown } from '@/lib/render-markdown';
 import { cn } from '@/lib/utils';
 import {
   BookOpen,
@@ -179,12 +180,8 @@ function SummaryView({ data }: { data: unknown }) {
   if (!d) return null;
   return (
     <div className="space-y-4">
-      <div className="prose prose-sm text-foreground max-w-none">
-        {d.summary.split('\n\n').map((p, i) => (
-          <p key={i} className="text-sm leading-relaxed">
-            {p}
-          </p>
-        ))}
+      <div className="text-sm leading-relaxed space-y-1 text-foreground max-w-none">
+        {renderMarkdown(d.summary)}
       </div>
       {d.keyTakeaways?.length > 0 && (
         <div className="space-y-2">
@@ -195,7 +192,7 @@ function SummaryView({ data }: { data: unknown }) {
             {d.keyTakeaways.map((t, i) => (
               <li key={i} className="flex gap-2 text-sm text-foreground">
                 <span className="text-accent shrink-0">•</span>
-                {t}
+                <span>{renderInline(t)}</span>
               </li>
             ))}
           </ul>
@@ -234,7 +231,7 @@ function KeyConceptsView({ data }: { data: unknown }) {
               {c.importance}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">{c.definition}</p>
+          <p className="text-xs text-muted-foreground">{renderInline(c.definition)}</p>
           {c.relatedTerms?.length > 0 && (
             <p className="text-[10px] text-muted-foreground/70 mt-1">
               Related: {c.relatedTerms.join(', ')}
@@ -287,7 +284,9 @@ function FlashcardsView({ data }: { data: unknown }) {
               {card.difficulty}
             </span>
           </div>
-          <p className="text-sm text-foreground">{flipped.has(i) ? card.back : card.front}</p>
+          <p className="text-sm text-foreground">
+            {renderInline(flipped.has(i) ? card.back : card.front)}
+          </p>
           <p className="text-[10px] text-muted-foreground mt-2">
             {flipped.has(i) ? 'Click to see question' : 'Click to reveal answer'}
           </p>
@@ -352,7 +351,9 @@ function QuizView({ data }: { data: unknown }) {
             ))}
           </div>
           {revealed.has(i) && (
-            <p className="text-xs text-muted-foreground mt-2 italic">{q.explanation}</p>
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              {renderInline(q.explanation)}
+            </p>
           )}
         </div>
       ))}
@@ -419,9 +420,11 @@ function Eli5View({ data }: { data: unknown }) {
       {d.explanations.map((e, i) => (
         <div key={i} className="rounded-lg p-4 glass-light border border-[var(--glass-border)]">
           <h4 className="text-sm font-medium text-foreground mb-2">{e.concept}</h4>
-          <p className="text-xs text-foreground mb-2">{e.explanation}</p>
-          <p className="text-xs text-accent italic mb-1">{e.analogy}</p>
-          <p className="text-[10px] text-muted-foreground">Example: {e.realWorldExample}</p>
+          <p className="text-xs text-foreground mb-2">{renderInline(e.explanation)}</p>
+          <p className="text-xs text-accent italic mb-1">{renderInline(e.analogy)}</p>
+          <p className="text-[10px] text-muted-foreground">
+            Example: {renderInline(e.realWorldExample)}
+          </p>
         </div>
       ))}
     </div>

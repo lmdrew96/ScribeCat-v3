@@ -2,7 +2,7 @@
 
 > **Current Phase: 4 — Connect (COMPLETE)**
 >
-> **Current Version: 4.25.1**
+> **Current Version: 4.27.0**
 >
 > Last updated: April 2026
 
@@ -274,6 +274,53 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
   - [x] Games require pinned session (ties games to studying)
   - [x] All room members auto-join as players
 
+### Privacy & Compliance — COMPLETE
+
+- [x] Recording consent modal (displayed before first recording)
+- [x] Terms of Service and Privacy Policy (formatted markdown rendering with tables)
+- [x] Legal doc links in landing page footer
+- [x] Audio auto-deletion (configurable retention, `audioCleanup.ts` cron)
+- [x] "Lecture" → "Study session" rebranding throughout app for legal clarity
+- [x] Contact email updated to nae@adhdesigns.dev
+
+### Exam Study Room — COMPLETE
+
+- [x] **Room Management**
+  - [x] Create exam room with name and optional exam date (countdown display)
+  - [x] Invite friends (host-only, friends-only)
+  - [x] Join/leave/archive rooms
+  - [x] Online member count with heartbeat presence
+  - [x] `/exam` and `/exam/$examRoomId` routes
+- [x] **Session Conductor AI** (`convex/examBrain.ts`)
+  - [x] Sonnet-powered topic index extraction on session add
+  - [x] Structured brain context (topics, concepts, session mapping)
+  - [x] Powers all downstream AI tools with multi-session awareness
+- [x] **Multi-Session Study Tools** (all use brain context)
+  - [x] Summary — comprehensive overview across all sessions
+  - [x] Key Concepts — importance-ranked concept definitions
+  - [x] Flashcards — interactive cards with difficulty labels
+  - [x] Quiz — practice questions with explanations
+  - [x] Concept Map — visual node graph of topic relationships
+  - [x] ELI5 — simple explanations with analogies and examples
+- [x] **Exam Simulation**
+  - [x] Timed practice exams (configurable questions: 15/20/30, time: 15/30/45/60 min)
+  - [x] Question navigation grid
+  - [x] Auto-submit on time expiry
+  - [x] Attempt history with scores + time tracking
+  - [x] Topic breakdown statistics per attempt
+- [x] **Weak Spots & Targeted Review**
+  - [x] Per-topic accuracy tracking from quiz/flashcard performance
+  - [x] Topic bars ranked weakest-first
+  - [x] AI-generated targeted review (flashcards + quiz for weak topics)
+  - [x] Reset weak spots
+- [x] **Exam Chat**
+  - [x] Nugget AI chat in exam mode (per-room, per-user history)
+  - [x] Context-aware Q&A across all room sessions
+  - [x] Markdown rendering for AI responses
+- [x] **Games**
+  - [x] Quiz Battle and Jeopardy via shared `studyGames` table with `examRoomId`
+  - [x] XP rewards for game participation
+
 ### Canvas LMS Integration — COMPLETE
 
 - [x] `course` field on sessions (first-class, not just title prefix)
@@ -296,8 +343,11 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 **Study Rooms:** 3 new tables (`studyRooms`, `studyRoomMembers`, `studyRoomMessages`). Ephemeral rooms closed by host. Heartbeat presence (30s mutation, 60s online threshold). Pinned sessions reuse `StudyContent` + `StudyTools` for read-only viewing.
 **Multiplayer Games:** 2 new tables (`studyGames`, `studyGamePlayers`). Games live inside rooms, require pinned session. AI generates questions via `callClaude` (reused from `studyTools.ts`). Quiz Battle uses `getQuizPrompt`, Jeopardy uses `getJeopardyPrompt`. Server-side answer checking — `submitAnswer` validates against stored questions, clients never see correct answers. Answer privacy via query filtering. Auto-advance on all answered. Speed bonus for Quiz Battle. Turn rotation for Jeopardy. XP awarded via `awardXpHelper`.
 **Canvas LMS:** No new tables — `course` field added to `sessions` table with `by_user_course` index. Courses stored as `string[]` in existing `userSettings`. Browser extension in `browser-extension/` (vanilla JS, Manifest V3) detects courses on `*.instructure.com` via 4 DOM strategies. JSON paste flow in settings (no server-side Canvas API needed). Course filter in sidebar is client-side.
+**Privacy & Compliance:** Recording consent modal (`legal-doc-modal.tsx`), TOS/Privacy Policy with formatted markdown rendering (headings, tables, bold, links). Audio auto-deletion via `audioCleanup.ts` cron job. "Lecture" → "Study session" rebranding for legal defensibility.
+**Exam Study Room:** 8 new tables (`examRooms`, `examRoomMembers`, `examRoomSessions`, `examRoomMessages`, `examToolResults`, `examChatHistory`, `weakSpots` + reused `studyGames`). Session Conductor AI (`examBrain.ts`) uses Sonnet to extract structured topic indexes when sessions are added — downstream tools use this brain context instead of raw transcripts (cost-effective: Sonnet for indexing, Haiku for per-request chat/tools). 11 frontend components in `src/renderer/components/exam/`, 4 hooks (`use-exam-room`, `use-exam-tools`, `use-exam-simulation`, `use-weak-spots`), 7 backend files (`examRooms`, `examBrain`, `examChat`, `examTools`, `examToolPrompts`, `examSimulation`, `examGames`, `weakSpots`). Routes: `/exam` and `/exam/$examRoomId`.
+**Shared Markdown Renderer:** `src/renderer/lib/render-markdown.tsx` — extracted from `nugget-chat.tsx` and shared across exam chat, exam tools, study tools, and weak spots panel for consistent AI content rendering.
 
-**Date Completed:** February 2026
+**Date Completed:** April 2026
 
 ---
 
@@ -392,3 +442,12 @@ Before marking a phase complete:
 | 4.24.8-10 | Apr 2026 | Safari PWA icon, AudioWorklet downsampler, mic permission fix |
 | 4.25.0 | Apr 2026 | Session resilience — recording survives navigation, screen sleep, auth expiry, tab close |
 | 4.25.1 | Apr 2026 | Expand editor font colors to 8, fix cleaned transcript display in study view |
+| 4.25.2 | Apr 2026 | Update all docs, replace font color dropdown with swatch grid |
+| 4.26.0 | Apr 2026 | Privacy & compliance overhaul — consent modal, legal docs, audio auto-deletion |
+| 4.26.1 | Apr 2026 | Complete lecture→study rebranding audit |
+| 4.26.2 | Apr 2026 | Add TOS/Privacy links to landing page footer, tweak copy |
+| 4.26.3 | Apr 2026 | Fix audioCleanup query crash — graceful auth fallback |
+| 4.26.4 | Apr 2026 | Fix manifest.json syntax error |
+| 4.26.5 | Apr 2026 | Render TOS and Privacy Policy as formatted markdown |
+| 4.26.6 | Apr 2026 | Add table rendering to legal docs, update contact email |
+| 4.27.0 | Apr 2026 | Exam Study Room — multi-session exam prep with Session Conductor AI |

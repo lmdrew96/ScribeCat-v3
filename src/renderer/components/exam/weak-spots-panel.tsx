@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useWeakSpots } from '@/hooks/use-weak-spots';
+import { renderInline } from '@/lib/render-markdown';
 import { cn } from '@/lib/utils';
 import { Loader2, RefreshCw, Target, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -201,7 +202,9 @@ function ReviewCard({ card }: { card: { front: string; back: string; topic: stri
       className="w-full text-left rounded-lg p-3 glass-light border border-[var(--glass-border)] transition-all hover:border-accent/30"
     >
       <span className="text-[10px] text-muted-foreground">{card.topic}</span>
-      <p className="text-sm text-foreground mt-1">{flipped ? card.back : card.front}</p>
+      <p className="text-sm text-foreground mt-1">
+        {renderInline(flipped ? card.back : card.front)}
+      </p>
       <p className="text-[10px] text-muted-foreground mt-1">
         {flipped ? 'Click for question' : 'Click for answer'}
       </p>
@@ -250,7 +253,9 @@ function ReviewQuestion({
         ))}
       </div>
       {selected !== null && (
-        <p className="text-xs text-muted-foreground mt-2 italic">{question.explanation}</p>
+        <p className="text-xs text-muted-foreground mt-2 italic">
+          {renderInline(question.explanation)}
+        </p>
       )}
     </div>
   );

@@ -1,8 +1,8 @@
-# ScribeCat-v2: Privacy & Compliance Overhaul
+# ScribeCat v3: Privacy & Compliance Overhaul
 
 ## Context
 
-ScribeCat is an Electron-based study companion app with audio recording, transcription, AI-powered study tools, and collaborative study rooms. After a compliance review, we identified that the current recording/transcription architecture poses legal and policy risks:
+ScribeCat is a web-based study companion app with audio recording, transcription, AI-powered study tools, and collaborative study rooms. After a compliance review, we identified that the current recording/transcription architecture poses legal and policy risks:
 
 - **Delaware is a two-party consent state** — recording others without consent is illegal
 - **University of Delaware** treats lecture recording as a DSS accommodation requiring signed agreements

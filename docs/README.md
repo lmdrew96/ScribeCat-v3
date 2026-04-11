@@ -6,7 +6,7 @@
 
 ---
 
-## Current Status: v4.25.1 — Phase 4 (Connect) COMPLETE
+## Current Status: v4.27.0 — Phase 4 (Connect) COMPLETE
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -83,6 +83,24 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 - Multiplayer games: Quiz Battle and Jeopardy
 - Game lobby with ready-up system
 - Post-game scoreboard with podium and XP awards
+
+### Exam Study Room (Phase 4)
+- Multi-session exam prep rooms with optional exam date countdown
+- Session Conductor AI (Sonnet-powered topic indexing on session add)
+- 6 multi-session AI study tools (Summary, Key Concepts, Flashcards, Quiz, Concept Map, ELI5)
+- Timed exam simulation (configurable questions + time limit, question navigation)
+- Weak Spots panel — per-topic accuracy tracking from quiz/flashcard performance
+- Targeted Review — AI-generated flashcards + quiz focused on weak topics
+- Exam-mode Nugget Chat — context-aware AI Q&A across all room sessions
+- Invite friends to exam rooms (host-only)
+- Exam attempt history with scores and topic breakdowns
+- Multiplayer games (Quiz Battle, Jeopardy) using exam room sessions
+
+### Privacy & Compliance (v4.26.0)
+- Recording consent modal before first recording
+- Terms of Service and Privacy Policy with formatted markdown rendering
+- Audio auto-deletion (configurable retention, cron-based cleanup)
+- "Lecture" → "Study session" rebranding for legal clarity
 
 ### Session Resilience
 - Recording persists across route navigation (RecordingContext in AppLayout)
@@ -178,7 +196,7 @@ See **[Phase Implementation Guide](PHASES.md)** for detailed feature checklists.
 
 ```
 ScribeCat-v3/
-├── convex/                    # Convex backend (33 files, 23 tables)
+├── convex/                    # Convex backend (42 files, 31 tables)
 │   ├── schema.ts             # Database schema
 │   ├── sessions.ts           # Session CRUD
 │   ├── ai.ts                 # AI note generation (Convex action)
@@ -191,6 +209,15 @@ ScribeCat-v3/
 │   ├── studyGames.ts         # Multiplayer games (Quiz Battle, Jeopardy)
 │   ├── studyRooms.ts         # Study rooms
 │   ├── roomNotes.ts          # Collaborative room notes
+│   ├── examRooms.ts          # Exam room CRUD, invites, messaging
+│   ├── examBrain.ts          # Session Conductor AI (topic index extraction)
+│   ├── examChat.ts           # Exam room Nugget chat
+│   ├── examTools.ts          # Multi-session exam study tools
+│   ├── examToolPrompts.ts    # Exam tool prompt templates
+│   ├── examSimulation.ts     # Timed practice exam generation
+│   ├── examGames.ts          # Exam room game instantiation
+│   ├── weakSpots.ts          # Per-topic accuracy + targeted review
+│   ├── audioCleanup.ts       # Audio auto-deletion for privacy
 │   ├── scrubTranscript.ts    # Transcript cleaning/scrubbing
 │   ├── prompts.ts            # Note generation prompts by lecture type
 │   ├── citations.ts          # Citation parser
@@ -259,8 +286,20 @@ ScribeCat-v3/
 │       │   │   ├── quiz-battle.tsx          # Quiz Battle game
 │       │   │   ├── jeopardy-game.tsx        # Jeopardy game
 │       │   │   └── game-results.tsx         # Post-game scoreboard
+│       │   ├── exam/                 # Exam Study Room
+│       │   │   ├── exam-study-view.tsx      # Main /exam page
+│       │   │   ├── exam-room-view.tsx       # Active exam room (tabbed)
+│       │   │   ├── exam-room-list.tsx       # Room list sidebar
+│       │   │   ├── create-exam-room-modal.tsx
+│       │   │   ├── exam-session-list.tsx    # Sessions tab
+│       │   │   ├── exam-session-picker.tsx  # Add sessions modal
+│       │   │   ├── exam-invite-modal.tsx    # Invite friends
+│       │   │   ├── exam-tools.tsx           # 6 AI study tools
+│       │   │   ├── exam-simulation.tsx      # Timed practice exam
+│       │   │   ├── exam-chat.tsx            # Nugget AI chat
+│       │   │   └── weak-spots-panel.tsx     # Topic accuracy tracking
 │       │   └── ui/                   # shadcn/ui components
-│       ├── hooks/                    # 20 custom hooks
+│       ├── hooks/                    # 24 custom hooks
 │       │   ├── use-audio-recorder.ts
 │       │   ├── use-audio-player.ts
 │       │   ├── use-transcription.ts
@@ -279,15 +318,22 @@ ScribeCat-v3/
 │       │   ├── use-presence.ts
 │       │   ├── use-wake-lock.ts
 │       │   ├── use-session-keep-alive.ts
+│       │   ├── use-exam-room.ts           # Exam room queries + mutations
+│       │   ├── use-exam-tools.ts          # Exam study tool generation
+│       │   ├── use-exam-simulation.ts     # Timed exam state management
+│       │   ├── use-weak-spots.ts          # Topic accuracy tracking
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
 │       │   ├── markdown-to-tiptap.ts
+│       │   ├── render-markdown.tsx        # Shared MD renderer for AI content
 │       │   ├── citation-mark.ts
 │       │   ├── excalidraw-extension.tsx
 │       │   ├── draggable-image-extension.tsx
 │       │   ├── textbox-extension.tsx
 │       │   ├── font-size-extension.ts
+│       │   ├── notification-sounds.ts
+│       │   ├── push-notifications.ts
 │       │   └── utils.ts
 │       ├── types/
 │       │   ├── study-tools.ts
@@ -332,6 +378,7 @@ pnpm convex:deploy    # Deploy Convex functions to production
 - **[Phase Implementation Guide](PHASES.md)** — Feature roadmap and checklists
 - **[Notion-Inspired Features](NOTION-INSPIRED-FEATURES.md)** — Lecture types, dual-input synthesis, citations
 - **[Nugget Integration Handoff](nugget-integration-handoff.md)** — AI note-taking system architecture
+- **[Privacy Compliance Spec](SPEC-privacy-compliance-overhaul.md)** — Consent, legal docs, audio deletion
 
 ---
 
