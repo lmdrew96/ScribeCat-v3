@@ -16,6 +16,13 @@ import type * as blocks from "../blocks.js";
 import type * as citations from "../citations.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
+import type * as examBrain from "../examBrain.js";
+import type * as examChat from "../examChat.js";
+import type * as examGames from "../examGames.js";
+import type * as examRooms from "../examRooms.js";
+import type * as examSimulation from "../examSimulation.js";
+import type * as examToolPrompts from "../examToolPrompts.js";
+import type * as examTools from "../examTools.js";
 import type * as friends from "../friends.js";
 import type * as generateNotes from "../generateNotes.js";
 import type * as http from "../http.js";
@@ -39,6 +46,7 @@ import type * as studyTools from "../studyTools.js";
 import type * as transcription from "../transcription.js";
 import type * as uploadImage from "../uploadImage.js";
 import type * as userProfiles from "../userProfiles.js";
+import type * as weakSpots from "../weakSpots.js";
 import type * as xpUtils from "../xpUtils.js";
 
 import type {
@@ -56,6 +64,13 @@ declare const fullApi: ApiFromModules<{
   citations: typeof citations;
   config: typeof config;
   crons: typeof crons;
+  examBrain: typeof examBrain;
+  examChat: typeof examChat;
+  examGames: typeof examGames;
+  examRooms: typeof examRooms;
+  examSimulation: typeof examSimulation;
+  examToolPrompts: typeof examToolPrompts;
+  examTools: typeof examTools;
   friends: typeof friends;
   generateNotes: typeof generateNotes;
   http: typeof http;
@@ -79,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   transcription: typeof transcription;
   uploadImage: typeof uploadImage;
   userProfiles: typeof userProfiles;
+  weakSpots: typeof weakSpots;
   xpUtils: typeof xpUtils;
 }>;
 

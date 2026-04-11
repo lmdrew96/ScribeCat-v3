@@ -28,7 +28,7 @@ interface GameQuestion {
 
 export interface ActiveGame {
   _id: Id<'studyGames'>;
-  roomId: Id<'studyRooms'>;
+  roomId?: Id<'studyRooms'>;
   gameType: string;
   status: string;
   hostUserId: string;

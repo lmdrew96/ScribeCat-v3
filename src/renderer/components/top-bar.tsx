@@ -1,11 +1,21 @@
 import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
+import { usePendingExamRoomCount } from '@/hooks/use-exam-room';
 import { useFriends } from '@/hooks/use-friends';
 import { useUnreadCount } from '@/hooks/use-messaging';
 import { usePendingRoomCount } from '@/hooks/use-study-rooms';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { BookOpen, Cat, DoorOpen, Home, MessageSquare, Settings, Users } from 'lucide-react';
+import {
+  BookOpen,
+  Cat,
+  DoorOpen,
+  GraduationCap,
+  Home,
+  MessageSquare,
+  Settings,
+  Users,
+} from 'lucide-react';
 import { useState } from 'react';
 
 export function TopBar() {
@@ -14,6 +24,7 @@ export function TopBar() {
   const { pendingCount } = useFriends();
   const unreadCount = useUnreadCount();
   const pendingRoomCount = usePendingRoomCount();
+  const pendingExamRoomCount = usePendingExamRoomCount();
 
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
   const isHome = currentPath === '/';
@@ -21,6 +32,7 @@ export function TopBar() {
   const isFriends = currentPath === '/friends';
   const isMessages = currentPath.startsWith('/messages');
   const isRooms = currentPath.startsWith('/rooms');
+  const isExam = currentPath.startsWith('/exam');
 
   return (
     <>
@@ -97,6 +109,22 @@ export function TopBar() {
               {pendingRoomCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
                   {pendingRoomCount > 99 ? '99+' : pendingRoomCount}
+                </span>
+              )}
+            </Link>
+          </Button>
+          <Button
+            variant={isExam ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 relative"
+            asChild
+          >
+            <Link to="/exam">
+              <GraduationCap className="h-4 w-4" />
+              <span className="hidden sm:inline">Exam</span>
+              {pendingExamRoomCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                  {pendingExamRoomCount > 99 ? '99+' : pendingExamRoomCount}
                 </span>
               )}
             </Link>

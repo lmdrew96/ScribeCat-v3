@@ -282,9 +282,10 @@ export default defineSchema({
     createdAt: v.number(),
   }).index('by_room', ['roomId', 'createdAt']),
 
-  // Study games (Quiz Battle / Jeopardy instances inside rooms)
+  // Study games (Quiz Battle / Jeopardy instances inside rooms or exam rooms)
   studyGames: defineTable({
-    roomId: v.id('studyRooms'),
+    roomId: v.optional(v.id('studyRooms')), // set for study room games
+    examRoomId: v.optional(v.id('examRooms')), // set for exam room games
     gameType: v.string(), // 'quiz_battle' | 'jeopardy'
     status: v.string(), // 'waiting' | 'generating' | 'active' | 'finished'
     hostUserId: v.string(),
@@ -300,7 +301,8 @@ export default defineSchema({
     finishedAt: v.optional(v.number()),
   })
     .index('by_room', ['roomId'])
-    .index('by_room_active', ['roomId', 'status']),
+    .index('by_room_active', ['roomId', 'status'])
+    .index('by_exam_room', ['examRoomId']),
 
   // Collaborative notes per study room
   roomNotes: defineTable({
@@ -326,4 +328,95 @@ export default defineSchema({
   })
     .index('by_game', ['gameId'])
     .index('by_game_user', ['gameId', 'userId']),
+
+  // ─── Exam Study Rooms ──────────────────────────────────────
+
+  // Exam rooms (persistent, multi-session study environments)
+  examRooms: defineTable({
+    name: v.string(),
+    hostUserId: v.string(),
+    examDate: v.optional(v.number()),
+    status: v.string(), // 'studying' | 'archived'
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_host', ['hostUserId', 'isActive'])
+    .index('by_active', ['isActive']),
+
+  // Exam room members (one row per participant)
+  examRoomMembers: defineTable({
+    examRoomId: v.id('examRooms'),
+    userId: v.string(),
+    role: v.string(), // 'host' | 'member'
+    hasJoined: v.boolean(), // false = invited but hasn't opened room yet
+    lastSeenAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index('by_room', ['examRoomId'])
+    .index('by_user', ['userId'])
+    .index('by_room_user', ['examRoomId', 'userId']),
+
+  // Exam room sessions (junction: multiple sessions per exam room)
+  examRoomSessions: defineTable({
+    examRoomId: v.id('examRooms'),
+    sessionId: v.id('sessions'),
+    addedByUserId: v.string(),
+    addedAt: v.number(),
+    topicIndex: v.optional(v.string()), // JSON: {topics: [{topic, concepts, sessionTitle}], extractedAt}
+  })
+    .index('by_room', ['examRoomId'])
+    .index('by_room_session', ['examRoomId', 'sessionId']),
+
+  // Exam room chat messages
+  examRoomMessages: defineTable({
+    examRoomId: v.id('examRooms'),
+    senderId: v.string(),
+    content: v.string(),
+    messageType: v.string(), // 'text' | 'system'
+    createdAt: v.number(),
+  }).index('by_room', ['examRoomId', 'createdAt']),
+
+  // Exam tool results (multi-session, cached per room + tool type)
+  examToolResults: defineTable({
+    examRoomId: v.id('examRooms'),
+    userId: v.string(),
+    toolType: v.string(), // 6 standard + 'exam_sim' + 'targeted_review'
+    result: v.string(), // JSON blob
+    sessionIds: v.array(v.id('sessions')), // which sessions were used
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_room_tool', ['examRoomId', 'toolType'])
+    .index('by_room_user_tool', ['examRoomId', 'userId', 'toolType']),
+
+  // Exam chat history (multi-session Nugget Chat per user per room)
+  examChatHistory: defineTable({
+    examRoomId: v.id('examRooms'),
+    userId: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.string(),
+        content: v.string(),
+        timestamp: v.number(),
+      }),
+    ),
+    updatedAt: v.number(),
+  }).index('by_room_user', ['examRoomId', 'userId']),
+
+  // Weak spots (per-user topic performance tracking in exam rooms)
+  weakSpots: defineTable({
+    examRoomId: v.id('examRooms'),
+    userId: v.string(),
+    topics: v.array(
+      v.object({
+        topic: v.string(),
+        correctCount: v.number(),
+        totalCount: v.number(),
+        accuracy: v.number(), // 0-1
+        lastTestedAt: v.number(),
+      }),
+    ),
+    updatedAt: v.number(),
+  }).index('by_room_user', ['examRoomId', 'userId']),
 });

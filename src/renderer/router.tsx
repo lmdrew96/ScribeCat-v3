@@ -1,4 +1,5 @@
 import { AppLayout } from '@/components/app-layout';
+import { ExamStudyView } from '@/components/exam/exam-study-view';
 import { FriendsView } from '@/components/friends/friends-view';
 import { HomeView } from '@/components/home-view';
 import { MessagesView } from '@/components/messages/messages-view';
@@ -59,6 +60,18 @@ const roomRoute = createRoute({
   component: StudyRoomsView,
 });
 
+const examRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/exam',
+  component: ExamStudyView,
+});
+
+const examRoomRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/exam/$examRoomId',
+  component: ExamStudyView,
+});
+
 const sharedSessionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/shared/$sessionId',
@@ -74,6 +87,8 @@ const routeTree = rootRoute.addChildren([
   conversationRoute,
   roomsRoute,
   roomRoute,
+  examRoute,
+  examRoomRoute,
   sharedSessionRoute,
 ]);
 

@@ -1,6 +1,7 @@
 /**
- * Study Games — Quiz Battle & Jeopardy multiplayer games inside study rooms.
- * Games require a pinned session; questions are AI-generated from session content.
+ * Study Games — Quiz Battle & Jeopardy multiplayer games inside study rooms or exam rooms.
+ * Games require a pinned session (study rooms) or multi-session brain (exam rooms).
+ * Questions are AI-generated from session content.
  */
 
 import { ConvexError, v } from 'convex/values';
@@ -15,6 +16,7 @@ import {
   query,
 } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import { buildExamInput } from './examToolPrompts';
 import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
 import { postSystemMessage, requireRoomHost, requireRoomMember } from './studyRooms';
@@ -180,7 +182,9 @@ export const getGameResults = query({
     const game = await ctx.db.get(args.gameId);
     if (!game) return null;
 
-    await requireRoomMember(ctx, game.roomId, userId);
+    if (game.roomId) {
+      await requireRoomMember(ctx, game.roomId, userId);
+    }
 
     const players = await ctx.db
       .query('studyGamePlayers')
@@ -430,14 +434,14 @@ export const advanceRound = mutation({
       totalRounds = 25;
       // If all cells revealed, finish
       if (revealed.length >= totalRounds) {
-        await finishGameHelper(ctx, game._id, game.roomId);
+        await finishGameHelper(ctx, game._id, game.roomId ?? null, game.examRoomId ?? null);
         return;
       }
     }
 
     // Quiz Battle: check if this was the last round
     if (game.gameType === 'quiz_battle' && game.currentRound + 1 >= totalRounds) {
-      await finishGameHelper(ctx, game._id, game.roomId);
+      await finishGameHelper(ctx, game._id, game.roomId ?? null, game.examRoomId ?? null);
       return;
     }
 
@@ -554,7 +558,17 @@ export const cancelGame = mutation({
     await ctx.db.delete(args.gameId);
 
     const gameLabel = game.gameType === 'quiz_battle' ? 'Quiz Battle' : 'Jeopardy';
-    await postSystemMessage(ctx, game.roomId, `${gameLabel} was cancelled.`);
+    if (game.roomId) {
+      await postSystemMessage(ctx, game.roomId, `${gameLabel} was cancelled.`);
+    } else if (game.examRoomId) {
+      await ctx.db.insert('examRoomMessages', {
+        examRoomId: game.examRoomId,
+        senderId: 'system',
+        content: `${gameLabel} was cancelled.`,
+        messageType: 'system',
+        createdAt: Date.now(),
+      });
+    }
   },
 });
 
@@ -601,7 +615,8 @@ export const saveQuestions = internalMutation({
 async function finishGameHelper(
   ctx: MutationCtx,
   gameId: Id<'studyGames'>,
-  _roomId: Id<'studyRooms'>,
+  roomId: Id<'studyRooms'> | null,
+  examRoomId: Id<'examRooms'> | null,
 ) {
   const players = await ctx.db
     .query('studyGamePlayers')
@@ -620,11 +635,20 @@ async function finishGameHelper(
   });
 
   const gameLabel = game.gameType === 'quiz_battle' ? 'Quiz Battle' : 'Jeopardy';
-  await postSystemMessage(
-    ctx,
-    game.roomId,
-    `${gameLabel} finished! Winner: ${winner?.displayName ?? 'N/A'} (${winner?.score ?? 0} pts)`,
-  );
+  const finishMsg = `${gameLabel} finished! Winner: ${winner?.displayName ?? 'N/A'} (${winner?.score ?? 0} pts)`;
+
+  if (roomId) {
+    await postSystemMessage(ctx, roomId, finishMsg);
+  } else if (examRoomId) {
+    // Post to exam room chat
+    await ctx.db.insert('examRoomMessages', {
+      examRoomId,
+      senderId: 'system',
+      content: finishMsg,
+      messageType: 'system',
+      createdAt: Date.now(),
+    });
+  }
 
   // Award XP: 15 to winner, 10 to everyone
   for (const p of players) {
@@ -637,29 +661,59 @@ async function finishGameHelper(
 
 // ─── Action (AI Generation) ─────────────────────────────────
 
-/** Generate questions from the pinned session content. */
+/** Generate questions from the pinned session content (or exam room brain). */
 export const generateQuestions = internalAction({
   args: { gameId: v.id('studyGames') },
   handler: async (ctx, args) => {
-    // Fetch game to get room + game type
     const game = await ctx.runQuery(internal.studyGames.getGameForGeneration, {
       gameId: args.gameId,
     });
     if (!game) throw new Error('Game not found');
 
-    const { transcript, notesPlainText, lectureType, gameType } = game;
-    if (!transcript) throw new Error('Pinned session has no transcript');
-
-    const lt = (lectureType || 'general') as LectureType;
+    const { gameType } = game;
     let prompt: string;
     let maxTokens: number;
 
-    if (gameType === 'quiz_battle') {
-      prompt = getQuizPrompt(transcript, notesPlainText ?? undefined, lt, 10);
-      maxTokens = 4096;
+    if (game.isExamRoom && game.examRoomId) {
+      // Exam room: use brain context + multi-session content
+      const [brain, sessions] = await Promise.all([
+        ctx.runQuery(internal.examBrain.getExamRoomBrain, {
+          examRoomId: game.examRoomId,
+        }),
+        ctx.runQuery(internal.examBrain.getAllSessionContent, {
+          examRoomId: game.examRoomId,
+        }),
+      ]);
+
+      if (sessions.length === 0) throw new Error('No sessions in exam room');
+
+      const lt: LectureType = (sessions[0]?.lectureType as LectureType) ?? 'general';
+      const combinedInput = buildExamInput(
+        brain.brainContext,
+        sessions.map((s) => ({ title: s.title, transcript: s.transcript, notes: s.notes })),
+      );
+
+      if (gameType === 'quiz_battle') {
+        prompt = `You are an expert quiz creator for ScribeCat. Create a 10-question multiple choice quiz covering material from ALL sessions.\n\n${combinedInput}\n\nReturn ONLY valid JSON: {"questions": [{"question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "topic": "..."}]}`;
+        maxTokens = 4096;
+      } else {
+        prompt = `You are a Jeopardy game creator for ScribeCat. Create a Jeopardy board with 5 categories and 5 questions per category covering ALL sessions.\n\n${combinedInput}\n\nReturn ONLY valid JSON: {"categories": [{"name": "Category (2-4 words)", "questions": [{"question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "value": 100}]}]}`;
+        maxTokens = 8192;
+      }
     } else {
-      prompt = getJeopardyPrompt(transcript, notesPlainText ?? undefined, lt);
-      maxTokens = 8192;
+      // Study room: use single pinned session
+      const { transcript, notesPlainText, lectureType } = game;
+      if (!transcript) throw new Error('Pinned session has no transcript');
+
+      const lt = (lectureType || 'general') as LectureType;
+
+      if (gameType === 'quiz_battle') {
+        prompt = getQuizPrompt(transcript, notesPlainText ?? undefined, lt, 10);
+        maxTokens = 4096;
+      } else {
+        prompt = getJeopardyPrompt(transcript, notesPlainText ?? undefined, lt);
+        maxTokens = 8192;
+      }
     }
 
     const response = await callClaude(prompt, maxTokens, 0.4);
@@ -679,23 +733,41 @@ export const getGameForGeneration = internalQuery({
     const game = await ctx.db.get(args.gameId);
     if (!game) return null;
 
-    const room = await ctx.db.get(game.roomId);
-    if (!room?.pinnedSessionId) return null;
+    // Study room games use pinned session
+    if (game.roomId) {
+      const room = await ctx.db.get(game.roomId);
+      if (!room?.pinnedSessionId) return null;
 
-    const session = await ctx.db.get(room.pinnedSessionId);
-    if (!session) return null;
+      const session = await ctx.db.get(room.pinnedSessionId);
+      if (!session) return null;
 
-    // Get notes from sessionNotes table
-    const notesDoc = await ctx.db
-      .query('sessionNotes')
-      .withIndex('by_session', (q) => q.eq('sessionId', room.pinnedSessionId!))
-      .unique();
+      const notesDoc = await ctx.db
+        .query('sessionNotes')
+        .withIndex('by_session', (q) => q.eq('sessionId', room.pinnedSessionId!))
+        .unique();
 
-    return {
-      gameType: game.gameType,
-      transcript: session.transcript ?? null,
-      notesPlainText: notesDoc?.plainText ?? session.notesPlainText ?? null,
-      lectureType: session.lectureType ?? null,
-    };
+      return {
+        gameType: game.gameType,
+        transcript: session.transcript ?? null,
+        notesPlainText: notesDoc?.plainText ?? session.notesPlainText ?? null,
+        lectureType: session.lectureType ?? null,
+        isExamRoom: false,
+        examRoomId: null,
+      };
+    }
+
+    // Exam room games use multi-session brain context
+    if (game.examRoomId) {
+      return {
+        gameType: game.gameType,
+        transcript: null,
+        notesPlainText: null,
+        lectureType: null,
+        isExamRoom: true,
+        examRoomId: game.examRoomId,
+      };
+    }
+
+    return null;
   },
 });

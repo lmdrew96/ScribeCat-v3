@@ -1,5 +1,6 @@
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
+import { examNuggetChat } from './examChat';
 import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
 import { nuggetChat } from './nuggetChat';
@@ -124,6 +125,19 @@ http.route({
   path: '/assemblyai/transcribe',
   method: 'POST',
   handler: transcribeFromUrl,
+});
+
+// Exam Nugget Chat (multi-session AI chat in exam rooms)
+http.route({
+  path: '/examNuggetChat',
+  method: 'OPTIONS',
+  handler: corsHandler,
+});
+
+http.route({
+  path: '/examNuggetChat',
+  method: 'POST',
+  handler: examNuggetChat,
 });
 
 export default http;
