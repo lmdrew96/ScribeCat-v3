@@ -9,6 +9,7 @@ import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
 import { FontSize } from '@/lib/font-size-extension';
+import { renderMarkdown } from '@/lib/render-markdown';
 import { TextBox } from '@/lib/textbox-extension';
 import CodeBlock from '@tiptap/extension-code-block';
 import Color from '@tiptap/extension-color';
@@ -27,7 +28,18 @@ import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useMutation } from 'convex/react';
-import { BookOpen, Cat, Check, FileText, Mic, Pause, Pencil, Play, X } from 'lucide-react';
+import {
+  BookOpen,
+  Cat,
+  Check,
+  FileImage,
+  FileText,
+  Mic,
+  Pause,
+  Pencil,
+  Play,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -94,6 +106,10 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   useEffect(() => {
     if (editingCourse) courseInputRef.current?.focus();
   }, [editingCourse]);
+
+  // Detect document-based sessions (uploaded images/PDFs, not audio recordings)
+  const isDocumentSession =
+    !!recording.transcript && !recording.audioUrl && !recording.audioStorageId;
 
   const { isPlaying, currentTime, duration, load, togglePlay, seek } = useAudioPlayer({
     onTimeUpdate: (time) => {
@@ -350,28 +366,48 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
         </div>
       )}
 
-      <Tabs defaultValue="transcript" className="flex-1 min-h-0">
+      <Tabs
+        defaultValue={isDocumentSession ? 'transcript' : 'transcript'}
+        className="flex-1 min-h-0"
+      >
         <TabsList className="mb-3 h-8">
           <TabsTrigger value="transcript" className="gap-1.5 text-xs h-7 px-3">
-            <Mic className="h-3 w-3" />
-            Transcript
+            {isDocumentSession ? (
+              <>
+                <FileImage className="h-3 w-3" />
+                Extracted Text
+              </>
+            ) : (
+              <>
+                <Mic className="h-3 w-3" />
+                Transcript
+              </>
+            )}
           </TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5 text-xs h-7 px-3">
             <FileText className="h-3 w-3" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="nugget-notes" className="gap-1.5 text-xs h-7 px-3">
-            <Cat className="h-3 w-3" />
-            Nugget Notes
-          </TabsTrigger>
+          {!isDocumentSession && (
+            <TabsTrigger value="nugget-notes" className="gap-1.5 text-xs h-7 px-3">
+              <Cat className="h-3 w-3" />
+              Nugget Notes
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
           <ScrollArea className="h-full rounded-xl glass p-4">
             {recording.transcript ? (
-              <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
-                {recording.transcript}
-              </p>
+              isDocumentSession ? (
+                <div className="text-xs text-foreground/90 leading-relaxed space-y-0.5">
+                  {renderMarkdown(recording.transcript)}
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
+                  {recording.transcript}
+                </p>
+              )
             ) : recording.transcriptSegments && recording.transcriptSegments.length > 0 ? (
               <div className="space-y-2">
                 {recording.transcriptSegments
