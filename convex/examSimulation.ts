@@ -19,12 +19,12 @@ import { callClaude, extractJson } from './studyTools';
 export const getExamSimulation = query({
   args: { examRoomId: v.id('examRooms') },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const userId = await requireAuth(ctx);
 
     const result = await ctx.db
       .query('examToolResults')
-      .withIndex('by_room_tool', (q) =>
-        q.eq('examRoomId', args.examRoomId).eq('toolType', 'exam_sim'),
+      .withIndex('by_room_user_tool', (q) =>
+        q.eq('examRoomId', args.examRoomId).eq('userId', userId).eq('toolType', 'exam_sim'),
       )
       .first();
 
