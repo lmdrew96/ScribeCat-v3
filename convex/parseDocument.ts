@@ -55,7 +55,7 @@ export const parseDocumentImages = action({
       throw new Error('storageIds and mimeTypes must have the same length');
     }
 
-    // Fetch each file from storage and convert to base64
+    // Get public URLs for each file from Convex storage
     const contentBlocks: Anthropic.Messages.ContentBlockParam[] = [];
 
     for (let i = 0; i < args.storageIds.length; i++) {
@@ -67,34 +67,20 @@ export const parseDocumentImages = action({
         throw new Error(`Failed to get URL for storage ID: ${storageId}`);
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.statusText}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const base64Data = Buffer.from(arrayBuffer).toString('base64');
-
       if (SUPPORTED_PDF_TYPES.has(mimeType)) {
         contentBlocks.push({
           type: 'document',
           source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: base64Data,
+            type: 'url',
+            url,
           },
         });
       } else if (SUPPORTED_IMAGE_TYPES.has(mimeType)) {
-        // HEIC gets re-mapped to jpeg (browsers convert on upload)
-        const mediaType: ImageMediaType =
-          mimeType === 'image/heic' ? 'image/jpeg' : (mimeType as ImageMediaType);
-
         contentBlocks.push({
           type: 'image',
           source: {
-            type: 'base64',
-            media_type: mediaType,
-            data: base64Data,
+            type: 'url',
+            url,
           },
         });
       } else {
