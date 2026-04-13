@@ -305,30 +305,30 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
 
       {/* Actions */}
       <div className="flex flex-col items-center gap-3">
-        {sim.hasQuestions ? (
+        {sim.hasQuestions && (
           <Button onClick={() => sim.startSimulation(timeLimitMinutes)} className="gap-2">
             <GraduationCap className="h-4 w-4" />
             Start Exam
           </Button>
-        ) : (
-          <Button
-            onClick={() => void sim.generate(questionCount)}
-            disabled={sim.isGenerating}
-            className="gap-2"
-          >
-            {sim.isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <GraduationCap className="h-4 w-4" />
-                Generate Exam
-              </>
-            )}
-          </Button>
         )}
+        <Button
+          variant={sim.hasQuestions ? 'secondary' : 'default'}
+          onClick={() => void sim.generate(questionCount)}
+          disabled={sim.isGenerating}
+          className="gap-2"
+        >
+          {sim.isGenerating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <GraduationCap className="h-4 w-4" />
+              {sim.hasQuestions ? 'Regenerate Exam' : 'Generate Exam'}
+            </>
+          )}
+        </Button>
         {sim.error && <p className="text-xs text-destructive">{sim.error}</p>}
       </div>
 
