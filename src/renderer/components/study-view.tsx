@@ -1,3 +1,4 @@
+import { DocumentUpload } from '@/components/document-upload';
 import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
 import { ShareSessionModal } from '@/components/messages/share-session-modal';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
@@ -240,10 +241,21 @@ export function StudyView() {
             <div className="text-center space-y-4">
               <div>
                 <h3 className="mb-1 text-sm font-medium text-foreground">Select a recording</h3>
-                <p className="text-xs text-muted-foreground">Choose from the sidebar</p>
+                <p className="text-xs text-muted-foreground">
+                  Choose from the sidebar, or upload content
+                </p>
               </div>
-              <div className="max-w-xs mx-auto">
-                <FileUploadTranscribe />
+              <div className="max-w-xs mx-auto space-y-3">
+                <FileUploadTranscribe
+                  onSessionCreated={(id) =>
+                    navigate({ to: '/study/$sessionId', params: { sessionId: id } })
+                  }
+                />
+                <DocumentUpload
+                  onSessionCreated={(id) =>
+                    navigate({ to: '/study/$sessionId', params: { sessionId: id } })
+                  }
+                />
               </div>
             </div>
           </div>

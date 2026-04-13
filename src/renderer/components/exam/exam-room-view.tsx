@@ -1,3 +1,4 @@
+import { DocumentUpload } from '@/components/document-upload';
 import { ExamChat } from '@/components/exam/exam-chat';
 import { ExamInviteModal } from '@/components/exam/exam-invite-modal';
 import { ExamSessionList } from '@/components/exam/exam-session-list';
@@ -6,6 +7,7 @@ import { ExamSimulation } from '@/components/exam/exam-simulation';
 import { ExamTools } from '@/components/exam/exam-tools';
 import { WeakSpotsPanel } from '@/components/exam/weak-spots-panel';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useExamRoom,
   useExamRoomActions,
@@ -25,6 +27,7 @@ import {
   LogOut,
   Plus,
   Target,
+  Upload,
   UserPlus,
   X,
 } from 'lucide-react';
@@ -55,13 +58,14 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
 
   const { room, isLoading: roomLoading } = useExamRoom(examRoomId);
   const { sessions } = useExamRoomSessions(examRoomId);
-  const { joinExamRoom, leaveExamRoom, archiveExamRoom } = useExamRoomActions();
+  const { joinExamRoom, leaveExamRoom, archiveExamRoom, addSession } = useExamRoomActions();
 
   useExamRoomHeartbeat(examRoomId);
 
   const [activeTab, setActiveTab] = useState<ExamTab>('sessions');
   const [sessionPickerOpen, setSessionPickerOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   if (roomLoading || !room) {
     return (
@@ -157,6 +161,15 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                 <Plus className="h-3 w-3" />
                 <span className="hidden sm:inline">Add Session</span>
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                <Upload className="h-3 w-3" />
+                <span className="hidden sm:inline">Upload Doc</span>
+              </Button>
               {isHost && (
                 <Button
                   variant="ghost"
@@ -249,6 +262,29 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
           existingMemberIds={room.members.map((m) => m.userId)}
         />
       )}
+
+      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+        <DialogContent className="glass sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Upload className="h-4 w-4" />
+              Upload Document
+            </DialogTitle>
+          </DialogHeader>
+          <DocumentUpload
+            newSessionOnly
+            onSessionCreated={async (sessionId) => {
+              try {
+                await addSession({ examRoomId, sessionId });
+                toast.success('Document uploaded and added to exam room');
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Failed to add session');
+              }
+              setUploadModalOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

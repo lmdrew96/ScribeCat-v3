@@ -1,3 +1,4 @@
+import { DocumentUpload } from '@/components/document-upload';
 import { GameLauncher } from '@/components/rooms/game-launcher';
 import { GameView } from '@/components/rooms/game-view';
 import { PinSessionModal } from '@/components/rooms/pin-session-modal';
@@ -9,6 +10,7 @@ import type { CatVariant } from '@/components/study-quest/cat-sprites';
 import { StudyTools } from '@/components/study-tools/index';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSessions } from '@/hooks/use-sessions';
 import { useActiveGame } from '@/hooks/use-study-games';
 import {
@@ -22,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
-import { DoorOpen, FileText, LogOut, Pin, X } from 'lucide-react';
+import { DoorOpen, FileText, LogOut, Pin, Upload, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../convex/_generated/api';
@@ -47,7 +49,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   const { room, isLoading: roomLoading } = useRoom(roomId);
   const { messages, isLoading: messagesLoading, sendMessage } = useRoomMessages(roomId);
   const { pinnedSession } = useRoomPinnedSession(roomId);
-  const { joinRoom, leaveRoom, closeRoom, inviteToRoom } = useRoomActions();
+  const { joinRoom, leaveRoom, closeRoom, pinSession } = useRoomActions();
   const { sessions } = useSessions();
 
   // Active game state
@@ -56,8 +58,9 @@ export function RoomView({ roomId }: RoomViewProps) {
   // Presence heartbeat
   useRoomHeartbeat(roomId);
 
-  // Pin session modal
+  // Modals
   const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   // Left panel tab
   const [activeTab, setActiveTab] = useState<'session' | 'notes'>('session');
@@ -197,15 +200,26 @@ export function RoomView({ roomId }: RoomViewProps) {
             <GameLauncher roomId={roomId} hasPinnedSession={!!pinnedSession} />
           )}
           {isHost && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={() => setPinModalOpen(true)}
-            >
-              <Pin className="h-3 w-3" />
-              <span className="hidden sm:inline">Pin Session</span>
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setPinModalOpen(true)}
+              >
+                <Pin className="h-3 w-3" />
+                <span className="hidden sm:inline">Pin Session</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                <Upload className="h-3 w-3" />
+                <span className="hidden sm:inline">Upload Doc</span>
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"
@@ -330,13 +344,37 @@ export function RoomView({ roomId }: RoomViewProps) {
 
       {/* Pin session modal */}
       {isHost && (
-        <PinSessionModal
-          open={pinModalOpen}
-          onOpenChange={setPinModalOpen}
-          roomId={roomId}
-          sessions={sessions}
-          pinnedSessionId={room.pinnedSessionId ?? null}
-        />
+        <>
+          <PinSessionModal
+            open={pinModalOpen}
+            onOpenChange={setPinModalOpen}
+            roomId={roomId}
+            sessions={sessions}
+            pinnedSessionId={room.pinnedSessionId ?? null}
+          />
+          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+            <DialogContent className="glass sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-base">
+                  <Upload className="h-4 w-4" />
+                  Upload Document
+                </DialogTitle>
+              </DialogHeader>
+              <DocumentUpload
+                newSessionOnly
+                onSessionCreated={async (sessionId) => {
+                  try {
+                    await pinSession({ roomId, sessionId });
+                    toast.success('Document uploaded and pinned');
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : 'Failed to pin session');
+                  }
+                  setUploadModalOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );

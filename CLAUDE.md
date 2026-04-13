@@ -14,7 +14,7 @@ ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** d
 
 **Tech Stack:** React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TipTap editor, Excalidraw diagrams, Convex backend, Clerk auth, AssemblyAI transcription, Claude AI
 
-**Current Version:** 4.27.0 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS, exam rooms)
+**Current Version:** 4.29.0 | **Current Phase:** 4 (Connect) — COMPLETE (friends, messaging, sharing, rooms, games, Canvas LMS, exam rooms)
 
 **Previous Version:** https://github.com/lmdrew96/scribecat-v2 (reference only — do NOT copy-paste code)
 
@@ -94,6 +94,7 @@ ScribeCat-v3/
 │   ├── citations.ts          # Citation parser for [cite:XXXXX] patterns
 │   ├── config.ts             # Shared AI model configuration
 │   ├── audioStorage.ts       # Audio file upload/storage
+│   ├── parseDocument.ts       # Document/image parsing via Claude Vision
 │   ├── uploadImage.ts        # Image upload handler
 │   ├── transcription.ts      # AssemblyAI token generation
 │   ├── productivity.ts       # Goals, streaks, achievements
@@ -134,6 +135,7 @@ ScribeCat-v3/
 │       │   ├── live-transcript.tsx   # Real-time transcript display
 │       │   ├── lecture-type-select.tsx # Lecture type dropdown
 │       │   ├── audio-waveform.tsx    # Waveform visualization
+│       │   ├── document-upload.tsx     # Document/image upload + AI parsing
 │       │   ├── file-upload-transcribe.tsx # File upload + transcription
 │       │   ├── theme-provider.tsx    # Theme context provider
 │       │   ├── landing-page.tsx      # Public landing page
@@ -218,6 +220,7 @@ ScribeCat-v3/
 │       │   ├── use-exam-tools.ts      # Exam study tool generation hook
 │       │   ├── use-exam-simulation.ts # Timed exam state + attempt tracking
 │       │   ├── use-weak-spots.ts      # Topic accuracy + targeted review
+│       │   ├── use-document-upload.ts    # Document upload + parse logic
 │       │   ├── use-debounced-callback.ts
 │       │   └── use-is-mobile.ts
 │       ├── lib/
