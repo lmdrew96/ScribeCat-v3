@@ -229,12 +229,18 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
         )}
 
         <div className="flex justify-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setShowResults(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border border-[var(--glass-border)]"
+            onClick={() => setShowResults(false)}
+          >
             Back
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
+            className="border border-[var(--glass-border)]"
             onClick={() => {
               sim.startSimulation(timeLimitMinutes);
               setShowResults(false);
@@ -312,10 +318,10 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
           </Button>
         )}
         <Button
-          variant={sim.hasQuestions ? 'secondary' : 'default'}
+          variant={sim.hasQuestions ? 'outline' : 'default'}
           onClick={() => void sim.generate(questionCount)}
           disabled={sim.isGenerating}
-          className="gap-2"
+          className="gap-2 border border-[var(--glass-border)]"
         >
           {sim.isGenerating ? (
             <>
