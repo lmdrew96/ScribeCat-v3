@@ -44,6 +44,20 @@ export function useExamRoomSessions(examRoomId: Id<'examRooms'> | null) {
   };
 }
 
+export function useExamRoomSessionContent(
+  examRoomId: Id<'examRooms'> | null,
+  sessionId: Id<'sessions'> | null,
+) {
+  const content = useQuery(
+    api.examRooms.getExamRoomSessionContent,
+    examRoomId && sessionId ? { examRoomId, sessionId } : 'skip',
+  );
+  return {
+    content: content ?? null,
+    isLoading: content === undefined,
+  };
+}
+
 export function usePendingExamRoomCount() {
   const count = useQuery(api.examRooms.pendingExamRoomCount);
   return count ?? 0;

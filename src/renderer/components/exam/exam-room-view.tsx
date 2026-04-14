@@ -1,4 +1,5 @@
 import { DocumentUpload } from '@/components/document-upload';
+import { EditExamRoomModal } from '@/components/exam/edit-exam-room-modal';
 import { ExamChat } from '@/components/exam/exam-chat';
 import { ExamInviteModal } from '@/components/exam/exam-invite-modal';
 import { ExamSessionList } from '@/components/exam/exam-session-list';
@@ -25,6 +26,7 @@ import {
   FileText,
   GraduationCap,
   LogOut,
+  Pencil,
   Plus,
   Target,
   Upload,
@@ -47,8 +49,10 @@ function formatCountdown(examDate: number): string {
   if (diff <= 0) return 'Exam day has passed';
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   if (days > 0) return `${days}d ${hours}h until exam`;
-  return `${hours}h until exam`;
+  if (hours > 0) return `${hours}h ${minutes}m until exam`;
+  return `${minutes}m until exam`;
 }
 
 export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
@@ -66,6 +70,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
   const [sessionPickerOpen, setSessionPickerOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   if (roomLoading || !room) {
     return (
@@ -175,6 +180,17 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                   variant="ghost"
                   size="sm"
                   className="h-7 text-xs gap-1"
+                  onClick={() => setEditModalOpen(true)}
+                >
+                  <Pencil className="h-3 w-3" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+              )}
+              {isHost && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
                   onClick={() => setInviteModalOpen(true)}
                 >
                   <UserPlus className="h-3 w-3" />
@@ -254,6 +270,15 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
         examRoomId={examRoomId}
         existingSessionIds={sessions.map((s) => s.sessionId)}
       />
+      {isHost && (
+        <EditExamRoomModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          examRoomId={examRoomId}
+          currentName={room.name}
+          currentExamDate={room.examDate}
+        />
+      )}
       {isHost && (
         <ExamInviteModal
           open={inviteModalOpen}

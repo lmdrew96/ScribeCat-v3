@@ -1,6 +1,8 @@
+import { ExamSessionViewer } from '@/components/exam/exam-session-viewer';
 import { Button } from '@/components/ui/button';
 import { useExamRoomActions } from '@/hooks/use-exam-room';
-import { CheckCircle, Clock, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, Clock, Eye, FileText, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '../../../../convex/_generated/dataModel';
 
@@ -40,6 +42,7 @@ export function ExamSessionList({
   isArchived,
   onAddSession,
 }: ExamSessionListProps) {
+  const [viewingSessionId, setViewingSessionId] = useState<Id<'sessions'> | null>(null);
   const { removeSession } = useExamRoomActions();
 
   const handleRemove = async (sessionId: Id<'sessions'>) => {
@@ -87,9 +90,11 @@ export function ExamSessionList({
       ) : (
         <div className="space-y-2">
           {sessions.map((session) => (
-            <div
+            <button
+              type="button"
               key={session.linkId}
-              className="flex items-center gap-3 rounded-lg p-3 glass-light border border-[var(--glass-border)]"
+              className="flex w-full items-center gap-3 rounded-lg p-3 glass-light border border-[var(--glass-border)] cursor-pointer hover:bg-[var(--glass-bg)] transition-colors text-left"
+              onClick={() => setViewingSessionId(session.sessionId)}
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--glass-bg)] shrink-0">
                 <FileText className="h-4 w-4 text-foreground" />
@@ -107,6 +112,9 @@ export function ExamSessionList({
                 </div>
               </div>
 
+              {/* View indicator */}
+              <Eye className="h-4 w-4 text-muted-foreground shrink-0" />
+
               {/* Brain index status */}
               <div className="shrink-0" title={session.hasTopicIndex ? 'Indexed' : 'Indexing...'}>
                 {session.hasTopicIndex ? (
@@ -122,15 +130,24 @@ export function ExamSessionList({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => void handleRemove(session.sessionId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleRemove(session.sessionId);
+                  }}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}
+      <ExamSessionViewer
+        examRoomId={examRoomId}
+        sessionId={viewingSessionId}
+        open={!!viewingSessionId}
+        onClose={() => setViewingSessionId(null)}
+      />
     </div>
   );
 }

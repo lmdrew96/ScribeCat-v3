@@ -220,6 +220,71 @@ export const getExamRoomSessions = query({
   },
 });
 
+/** Get full session content for viewing within an exam room (read-only). */
+export const getExamRoomSessionContent = query({
+  args: {
+    examRoomId: v.id('examRooms'),
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    await requireExamRoomMember(ctx, args.examRoomId, userId);
+
+    // Verify session is linked to this exam room
+    const link = await ctx.db
+      .query('examRoomSessions')
+      .withIndex('by_room_session', (q) =>
+        q.eq('examRoomId', args.examRoomId).eq('sessionId', args.sessionId),
+      )
+      .unique();
+    if (!link) throw new ConvexError('Session is not in this exam room');
+
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.isDeleted) throw new ConvexError('Session not found');
+
+    // Join notes from sessionNotes table (same pattern as getSharedSession)
+    const notesDoc = await ctx.db
+      .query('sessionNotes')
+      .withIndex('by_session', (q) => q.eq('sessionId', args.sessionId))
+      .unique();
+
+    const notes = notesDoc?.content ?? session.notes;
+    const notesPlainText = notesDoc?.plainText ?? session.notesPlainText;
+
+    // Get owner profile
+    const ownerProfile = await getProfileForUser(ctx, session.userId);
+
+    // Get who added it
+    const addedByProfile = await getProfileForUser(ctx, link.addedByUserId);
+
+    return {
+      sessionId: session._id,
+      title: session.title,
+      notes,
+      notesPlainText,
+      transcript: session.transcript,
+      transcriptSegments: session.transcriptSegments,
+      duration: session.duration,
+      lectureType: session.lectureType,
+      course: session.course,
+      // Only return audioStorageId if audio hasn't been deleted
+      audioStorageId: session.audioDeletedAt ? null : (session.audioStorageId ?? null),
+      nuggetNotes: session.nuggetNotes,
+      documentText: session.documentText,
+      createdAt: session.createdAt,
+      owner: {
+        userId: session.userId,
+        displayName: ownerProfile?.displayName ?? 'Unknown',
+        username: ownerProfile?.username ?? 'unknown',
+      },
+      addedBy: {
+        userId: link.addedByUserId,
+        displayName: addedByProfile?.displayName ?? 'Unknown',
+      },
+    };
+  },
+});
+
 /** Count of exam rooms the user has been invited to but hasn't joined yet. */
 export const pendingExamRoomCount = query({
   args: {},
@@ -522,7 +587,7 @@ export const updateExamRoom = mutation({
   args: {
     examRoomId: v.id('examRooms'),
     name: v.optional(v.string()),
-    examDate: v.optional(v.number()),
+    examDate: v.optional(v.union(v.number(), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
@@ -533,7 +598,9 @@ export const updateExamRoom = mutation({
       if (!args.name.trim()) throw new ConvexError('Room name is required');
       updates.name = args.name.trim();
     }
-    if (args.examDate !== undefined) updates.examDate = args.examDate;
+    if (args.examDate !== undefined) {
+      updates.examDate = args.examDate ?? undefined;
+    }
 
     await ctx.db.patch(args.examRoomId, updates);
   },
