@@ -8,8 +8,6 @@ import { ConvexError, v } from 'convex/values';
 import { action } from './_generated/server';
 import { AI_MODEL } from './config';
 
-type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
 const SUPPORTED_PDF_TYPES = new Set(['application/pdf']);
@@ -29,21 +27,6 @@ OUTPUT FORMAT:
 - Preserve the original organization (headings, bullet points, numbering)
 - If text is unclear or illegible, mark it as [illegible] or [unclear: best guess]
 - Do NOT add commentary, summaries, or interpretations — just extract what's there`;
-
-/** Convert ArrayBuffer to base64 using web-standard APIs (no Node.js Buffer needed) */
-function toBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  // Process in chunks to avoid stack overflow on large files
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    for (let j = 0; j < chunk.length; j++) {
-      binary += String.fromCharCode(chunk[j]);
-    }
-  }
-  return btoa(binary);
-}
 
 export const parseDocumentImages = action({
   args: {
@@ -66,47 +49,29 @@ export const parseDocumentImages = action({
 
     const contentBlocks: Anthropic.Messages.ContentBlockParam[] = [];
 
-    // Fetch each file from Convex storage and convert to base64
+    // Build URL-based content blocks — no file fetching, zero memory overhead
     for (let i = 0; i < args.storageIds.length; i++) {
       const storageId = args.storageIds[i];
       const mimeType = args.mimeTypes[i];
-
-      console.log(
-        `[parseDocument] Fetching file ${i + 1}/${args.storageIds.length}, type: ${mimeType}`,
-      );
 
       const url = await ctx.storage.getUrl(storageId);
       if (!url) {
         throw new ConvexError(`Failed to get storage URL for file ${i + 1}`);
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new ConvexError(`Failed to fetch file ${i + 1}: HTTP ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      console.log(`[parseDocument] File ${i + 1} fetched: ${arrayBuffer.byteLength} bytes`);
-
-      const base64Data = toBase64(arrayBuffer);
+      console.log(
+        `[parseDocument] File ${i + 1}/${args.storageIds.length}: ${mimeType} → URL source`,
+      );
 
       if (SUPPORTED_PDF_TYPES.has(mimeType)) {
         contentBlocks.push({
           type: 'document',
-          source: {
-            type: 'base64',
-            media_type: 'application/pdf',
-            data: base64Data,
-          },
+          source: { type: 'url', url },
         });
       } else if (SUPPORTED_IMAGE_TYPES.has(mimeType)) {
         contentBlocks.push({
           type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mimeType as ImageMediaType,
-            data: base64Data,
-          },
+          source: { type: 'url', url },
         });
       } else {
         throw new ConvexError(`Unsupported file type: ${mimeType}`);
