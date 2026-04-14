@@ -3,10 +3,9 @@
  * Each tool generates structured JSON output from session transcript/notes.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { action, internalMutation, mutation, query } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude as callClaudeShared } from './config';
 import {
   getConceptMapPrompt,
   getEli5Prompt,
@@ -41,26 +40,16 @@ export function extractJson(text: string): string {
 }
 
 /** Call Claude with the given prompt and settings */
-export async function callClaude(
+export const callClaude = (
   prompt: string,
   maxTokens: number,
   temperature: number,
-): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY not configured');
-  }
-
-  const anthropic = new Anthropic({ apiKey });
-  const message = await anthropic.messages.create({
-    model: AI_MODEL,
-    max_tokens: maxTokens,
+): Promise<string> =>
+  callClaudeShared({
+    maxTokens,
     temperature,
     messages: [{ role: 'user', content: prompt }],
   });
-
-  return message.content[0].type === 'text' ? message.content[0].text : '';
-}
 
 // ─── Queries ─────────────────────────────────────────────────
 

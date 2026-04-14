@@ -5,9 +5,8 @@
  * Now lecture-type-aware for better context extraction.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 import { type LectureType, getContextExtractionPrompt } from './prompts';
 
 const corsHeaders = {
@@ -33,16 +32,6 @@ const EMPTY_CONTEXT: LectureContext = {
 export const extractLectureContext = httpAction(async (_ctx, request) => {
   const { transcript, previousContext, lectureType, userNotes } = await request.json();
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const anthropic = new Anthropic({ apiKey });
-
   const prompt = getContextExtractionPrompt(
     transcript,
     previousContext,
@@ -51,19 +40,11 @@ export const extractLectureContext = httpAction(async (_ctx, request) => {
   );
 
   try {
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 300,
+    const responseText = await callClaude({
+      maxTokens: 300,
       temperature: 0.2,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+      messages: [{ role: 'user', content: prompt }],
     });
-
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
 
     // Parse the JSON response
     let context: LectureContext = EMPTY_CONTEXT;

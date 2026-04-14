@@ -5,9 +5,8 @@
  * Lecture-type-aware for context-specific note generation.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 import { type LectureType, getNuggetNotePrompt } from './prompts';
 
 const corsHeaders = {
@@ -41,16 +40,6 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
       recentNoteTexts?: string[];
     };
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const anthropic = new Anthropic({ apiKey });
-
   const prompt = getNuggetNotePrompt(
     transcript,
     context,
@@ -60,19 +49,11 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
   );
 
   try {
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 150,
+    const responseText = await callClaude({
+      maxTokens: 150,
       temperature: 0.2,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+      messages: [{ role: 'user', content: prompt }],
     });
-
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
 
     // Parse response into notes
     const lines = responseText

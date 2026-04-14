@@ -4,9 +4,8 @@
  * Operates on a sliding window of the last 800 words — fixed cost regardless of session length.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 import type { LectureContext } from './lectureContext';
 
 const corsHeaders = {
@@ -20,16 +19,6 @@ export const scrubTranscript = httpAction(async (_ctx, request) => {
     rawWindow: string;
     lectureContext: LectureContext;
   };
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const anthropic = new Anthropic({ apiKey });
 
   const systemPrompt = `You are a speech-to-text transcript editor. Your only job is to fix errors made by the speech recognition system.
 
@@ -51,21 +40,12 @@ Lecture context (use this to identify and correct domain-specific terms, names, 
 ${JSON.stringify(lectureContext)}`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 1024,
+    const scrubbedWindow = (await callClaude({
+      maxTokens: 1024,
       temperature: 0.1,
       system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: rawWindow,
-        },
-      ],
-    });
-
-    const scrubbedWindow =
-      message.content[0].type === 'text' ? message.content[0].text.trim() : rawWindow;
+      messages: [{ role: 'user', content: rawWindow }],
+    })).trim() || rawWindow;
 
     return new Response(
       JSON.stringify({

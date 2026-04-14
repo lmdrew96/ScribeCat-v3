@@ -1,6 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { httpAction } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,16 +9,6 @@ const corsHeaders = {
 
 export const generateNotes = httpAction(async (_ctx, request) => {
   const { transcript } = await request.json();
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const anthropic = new Anthropic({ apiKey });
 
   const prompt = `You are an expert note-taking assistant. Given the following lecture transcript, create comprehensive, well-structured notes in markdown format.
 
@@ -40,18 +29,10 @@ ${transcript}
 Please generate well-structured markdown notes from this transcript. Include diagram suggestions in HTML comments where visual aids would enhance understanding.`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const generatedNotes = await callClaude({
+      maxTokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
     });
-
-    const generatedNotes = message.content[0].type === 'text' ? message.content[0].text : '';
 
     return new Response(
       JSON.stringify({

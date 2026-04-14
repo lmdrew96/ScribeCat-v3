@@ -7,13 +7,12 @@
  * about which session content is relevant per interaction.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { internalAction, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import { AI_MODEL_SONNET } from './config';
+import { AI_MODEL_SONNET, callClaude } from './config';
 import { requireExamRoomMember } from './examRooms';
 import { extractJson } from './studyTools';
 
@@ -412,12 +411,6 @@ export const indexSession = internalAction({
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      console.error('ANTHROPIC_API_KEY not configured');
-      return;
-    }
-
     // Build input — truncate to keep prompt reasonable
     const transcriptSlice = session.transcript.slice(-6000);
     const notesSlice = session.notesPlainText.slice(0, 3000);
@@ -445,15 +438,12 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping):
 Extract 3-8 topics. Each topic should have 2-6 key concepts. Use clear, concise labels.`;
 
     try {
-      const anthropic = new Anthropic({ apiKey });
-      const message = await anthropic.messages.create({
+      const responseText = await callClaude({
         model: AI_MODEL_SONNET,
-        max_tokens: 1024,
+        maxTokens: 1024,
         temperature: 0.2,
         messages: [{ role: 'user', content: prompt }],
       });
-
-      const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
       const jsonStr = extractJson(responseText);
       const parsed = JSON.parse(jsonStr);
 

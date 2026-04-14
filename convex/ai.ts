@@ -1,8 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { action } from './_generated/server';
 import { parseCitations } from './citations';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 import {
   type LectureType,
   getNoteGenerationPrompt,
@@ -26,12 +25,6 @@ export const generateNotesFromTranscript = action({
     existingNotes: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
-    }
-
-    const anthropic = new Anthropic({ apiKey });
     const lectureType = (args.lectureType || 'general') as LectureType;
 
     // Use citation-aware prompt when segments are available
@@ -44,18 +37,10 @@ export const generateNotesFromTranscript = action({
           )
         : getNoteGenerationPrompt(args.transcript, lectureType, args.existingNotes);
 
-    const message = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const generatedNotes = await callClaude({
+      maxTokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
     });
-
-    const generatedNotes = message.content[0].type === 'text' ? message.content[0].text : '';
 
     // Parse citations if segments were provided
     const citations =

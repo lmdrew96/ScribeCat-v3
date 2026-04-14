@@ -3,10 +3,10 @@
  * Supports handwritten notes, diagrams, whiteboard photos, and PDF documents.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
 import { ConvexError, v } from 'convex/values';
 import { action } from './_generated/server';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
@@ -34,11 +34,6 @@ export const parseDocumentImages = action({
     mimeTypes: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new ConvexError('ANTHROPIC_API_KEY not configured');
-    }
-
     if (args.storageIds.length === 0) {
       throw new ConvexError('No files provided');
     }
@@ -84,15 +79,10 @@ export const parseDocumentImages = action({
     console.log(`[parseDocument] Calling Claude API with ${contentBlocks.length} content blocks`);
 
     try {
-      const anthropic = new Anthropic({ apiKey });
-
-      const message = await anthropic.messages.create({
-        model: AI_MODEL,
-        max_tokens: 8192,
+      const extractedText = await callClaude({
+        maxTokens: 8192,
         messages: [{ role: 'user', content: contentBlocks }],
       });
-
-      const extractedText = message.content[0].type === 'text' ? message.content[0].text : '';
       console.log(`[parseDocument] Extracted ${extractedText.length} chars`);
 
       if (!extractedText) {

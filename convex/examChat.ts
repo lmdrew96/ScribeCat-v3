@@ -4,12 +4,11 @@
  * Haiku handles per-message chat; the brain provides intelligent context routing.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { httpAction } from './_generated/server';
 import { mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import { AI_MODEL } from './config';
+import { callClaude } from './config';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,16 +26,6 @@ interface ChatMessage {
 export const examNuggetChat = httpAction(async (_ctx, request) => {
   const { message, conversationHistory, brainContext, sessionTitles, currentDateTime, examDate } =
     await request.json();
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-  }
-
-  const anthropic = new Anthropic({ apiKey });
 
   let systemPrompt = `You are Nugget, a friendly and expert AI study companion in ScribeCat's Exam Study Room. You're helping a student prepare for an exam by reviewing multiple lecture sessions at once.
 
@@ -90,17 +79,14 @@ ${(sessionTitles as string[])?.map((t: string, i: number) => `${i + 1}. ${t}`).j
   ];
 
   try {
-    const response = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 1024,
+    const responseText = await callClaude({
+      maxTokens: 1024,
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role,
         content: m.content,
       })),
     });
-
-    const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
 
     return new Response(JSON.stringify({ response: responseText, success: true }), {
       status: 200,
