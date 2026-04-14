@@ -24,6 +24,16 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
 
   // Get brain context (topic indexes) for the chat
   const brainData = useQuery(api.examBrain.getBrainContext, { examRoomId });
+  const reindexEmptySessions = useMutation(api.examBrain.reindexEmptySessions);
+  const hasTriggeredReindexRef = useRef(false);
+
+  // Auto-trigger re-indexing when brain context comes back with empty topic indexes
+  useEffect(() => {
+    if (brainData && brainData.brainContext.startsWith('SESSION CONTENT') && !hasTriggeredReindexRef.current) {
+      hasTriggeredReindexRef.current = true;
+      reindexEmptySessions({ examRoomId }).catch(console.error);
+    }
+  }, [brainData, examRoomId, reindexEmptySessions]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');

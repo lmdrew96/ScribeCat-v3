@@ -11,7 +11,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { internalAction, internalMutation, internalQuery, query } from './_generated/server';
+import { internalAction, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { AI_MODEL_SONNET } from './config';
 import { requireExamRoomMember } from './examRooms';
@@ -151,34 +151,69 @@ export const getBrainContext = query({
       }
     }
 
+    // Fetch session data (always needed for titles, and for fallback content)
     const sessions = await Promise.all(
       links.map(async (link) => {
         const session = await ctx.db.get(link.sessionId);
+        if (!session) return { title: 'Untitled', hasIndex: false, notesPreview: '', hasContent: false };
+
+        const sessionNotes = await ctx.db
+          .query('sessionNotes')
+          .withIndex('by_session', (q) => q.eq('sessionId', link.sessionId))
+          .unique();
+
+        const plainText = sessionNotes?.plainText ?? session.notesPlainText ?? '';
+        const transcript = session.transcript ?? '';
+
         return {
-          title: session?.title ?? 'Untitled',
+          title: session.title ?? 'Untitled',
           hasIndex: !!link.topicIndex,
+          // Truncate for context window — first 2000 chars of notes + first 2000 of transcript
+          notesPreview: plainText.slice(0, 2000),
+          transcriptPreview: transcript.slice(0, 2000),
+          hasContent: !!(plainText || transcript),
         };
       }),
     );
 
-    // Build the meta-context string
-    let brainContext = 'EXAM ROOM KNOWLEDGE MAP:\n\n';
-    const topicsBySession = new Map<string, TopicEntry[]>();
-    for (const topic of allTopics) {
-      const existing = topicsBySession.get(topic.sessionTitle) ?? [];
-      existing.push(topic);
-      topicsBySession.set(topic.sessionTitle, existing);
-    }
-    for (const [sessionTitle, topics] of topicsBySession) {
-      brainContext += `--- ${sessionTitle} ---\n`;
-      for (const t of topics) {
-        brainContext += `• ${t.topic}: ${t.concepts.join(', ')}\n`;
+    // If topic indexes have real content, use the structured brain context
+    if (allTopics.length > 0) {
+      let brainContext = 'EXAM ROOM KNOWLEDGE MAP:\n\n';
+      const topicsBySession = new Map<string, TopicEntry[]>();
+      for (const topic of allTopics) {
+        const existing = topicsBySession.get(topic.sessionTitle) ?? [];
+        existing.push(topic);
+        topicsBySession.set(topic.sessionTitle, existing);
       }
-      brainContext += '\n';
+      for (const [sessionTitle, topics] of topicsBySession) {
+        brainContext += `--- ${sessionTitle} ---\n`;
+        for (const t of topics) {
+          brainContext += `• ${t.topic}: ${t.concepts.join(', ')}\n`;
+        }
+        brainContext += '\n';
+      }
+
+      return {
+        brainContext,
+        sessionTitles: sessions.map((s) => s.title),
+      };
+    }
+
+    // Fallback: topic indexes are empty, give Nugget raw session content
+    let fallbackContext = 'SESSION CONTENT (no topic index available):\n\n';
+    for (const session of sessions) {
+      if (!session.hasContent) continue;
+      fallbackContext += `--- ${session.title} ---\n`;
+      if (session.notesPreview) {
+        fallbackContext += `NOTES:\n${session.notesPreview}\n\n`;
+      }
+      if (session.transcriptPreview) {
+        fallbackContext += `TRANSCRIPT:\n${session.transcriptPreview}\n\n`;
+      }
     }
 
     return {
-      brainContext: allTopics.length > 0 ? brainContext : '',
+      brainContext: fallbackContext,
       sessionTitles: sessions.map((s) => s.title),
     };
   },
@@ -280,6 +315,48 @@ export const getAllSessionContent = internalQuery({
     }
 
     return sessions;
+  },
+});
+
+// ─── Public Mutations ───────────────────────────────────────
+
+/** Re-index sessions with empty topic indexes (host or member can trigger). */
+export const reindexEmptySessions = mutation({
+  args: { examRoomId: v.id('examRooms') },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    await requireExamRoomMember(ctx, args.examRoomId, userId);
+
+    const links = await ctx.db
+      .query('examRoomSessions')
+      .withIndex('by_room', (q) => q.eq('examRoomId', args.examRoomId))
+      .collect();
+
+    let reindexed = 0;
+    for (const link of links) {
+      // Re-index if topic index is missing or has empty topics
+      let needsReindex = !link.topicIndex;
+      if (link.topicIndex) {
+        try {
+          const index: TopicIndex = JSON.parse(link.topicIndex);
+          needsReindex = index.topics.length === 0;
+        } catch {
+          needsReindex = true;
+        }
+      }
+
+      if (needsReindex) {
+        // Clear the stale empty index so it re-runs
+        await ctx.db.patch(link._id, { topicIndex: undefined });
+        await ctx.scheduler.runAfter(0, internal.examBrain.indexSession, {
+          examRoomId: args.examRoomId,
+          sessionId: link.sessionId,
+        });
+        reindexed++;
+      }
+    }
+
+    return { reindexed };
   },
 });
 
