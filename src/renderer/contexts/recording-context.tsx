@@ -13,6 +13,7 @@ import { type UseNuggetNotesReturn, useNuggetNotes } from '@/hooks/use-nugget-no
 import { useBreakReminder, useLogStudyTime, useStudySettings } from '@/hooks/use-productivity';
 import { useSession, useSessions } from '@/hooks/use-sessions';
 import { type TranscriptSegment, useTranscription } from '@/hooks/use-transcription';
+import { clearRecoveryData, saveAudioChunk, startRecoverySession } from '@/lib/audio-recovery';
 import { useMutation } from 'convex/react';
 import {
   type ReactNode,
@@ -138,6 +139,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     onScrubComplete: handleScrubComplete,
   });
 
+  // Stable ref for getLatestNotes — avoids re-creating intervals on every render
+  const getLatestNuggetNotesRef = useRef(nuggetNotes.getLatestNotes);
+  getLatestNuggetNotesRef.current = nuggetNotes.getLatestNotes;
+
   // ─── Audio Recorder ─────────────────────────────────────────────────────
 
   const {
@@ -156,6 +161,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   } = useAudioRecorder({
     onDataAvailable: async (audioBlob) => {
       if (currentSessionIdRef.current) {
+        const sessionId = currentSessionIdRef.current;
         try {
           const uploadUrl = await generateUploadUrl();
           const uploadResult = await fetch(uploadUrl, {
@@ -165,12 +171,23 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
           });
           const { storageId } = await uploadResult.json();
           await updateSession({
-            id: currentSessionIdRef.current,
+            id: sessionId,
             audioStorageId: storageId,
           });
+          // Audio uploaded successfully — clear recovery data
+          clearRecoveryData(sessionId).catch(console.warn);
         } catch (error) {
           console.error('Error uploading audio:', error);
         }
+      }
+    },
+    onChunkAvailable: (chunk) => {
+      // Fire-and-forget: save chunk to IndexedDB for crash recovery
+      const sessionId = currentSessionIdRef.current;
+      if (sessionId) {
+        saveAudioChunk(sessionId, chunk).catch(() => {
+          // Silently ignore — never interrupt recording for recovery saves
+        });
       }
     },
     onError: (error) => {
@@ -232,6 +249,32 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     saveTranscript();
   }, [segments, updateSession]);
 
+  // ─── Nugget notes periodic save effect ──────────────────────────────────
+
+  useEffect(() => {
+    if (!isRecording || !currentSessionIdRef.current) return;
+
+    const interval = setInterval(async () => {
+      if (!currentSessionIdRef.current) return;
+      const latestNotes = getLatestNuggetNotesRef.current();
+      if (latestNotes.length === 0) return;
+
+      try {
+        await updateSession({
+          id: currentSessionIdRef.current,
+          nuggetNotes: latestNotes.map((n) => ({
+            text: n.text,
+            recordingTime: n.recordingTime,
+          })),
+        });
+      } catch (error) {
+        console.error('Error saving nugget notes:', error);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isRecording, updateSession]);
+
   // ─── Nugget notes process effect ────────────────────────────────────────
 
   // We need the session for user notes context — use a query from the hook
@@ -287,6 +330,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       });
 
       setCurrentSessionId(sessionId);
+
+      // Start crash recovery session (fire-and-forget)
+      startRecoverySession(sessionId).catch(console.warn);
 
       // Clear previous state
       resetTranscription();

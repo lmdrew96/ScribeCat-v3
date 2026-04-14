@@ -71,7 +71,7 @@ export function StudyQuestWidget() {
     }
 
     return (
-      <div className="fixed bottom-4 left-4 z-40 w-64 glass rounded-xl glass-slide-up overflow-hidden">
+      <div className="fixed bottom-4 left-4 z-40 w-64 max-w-[calc(100vw-2rem)] glass rounded-xl glass-slide-up overflow-hidden">
         <div className="p-4 flex flex-col items-center gap-3">
           {/* Preview selected cat */}
           <CatDisplay mood="idle" variant={adoptVariant} size="large" />
@@ -159,7 +159,7 @@ export function StudyQuestWidget() {
 
   // ─── Expanded state ─────────────────────────────────────────
   return (
-    <div className="fixed bottom-4 left-4 z-40 w-60 glass rounded-xl glass-slide-up overflow-hidden">
+    <div className="fixed bottom-4 left-4 z-40 w-60 max-w-[calc(100vw-2rem)] glass rounded-xl glass-slide-up overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--glass-border)]">
         <CatNameEditor name={name} onRename={(n) => renameCat({ name: n })} />

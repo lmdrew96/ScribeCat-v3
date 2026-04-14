@@ -1,7 +1,7 @@
 import { CreateRoomModal } from '@/components/rooms/create-room-modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Plus, Users } from 'lucide-react';
+import { PanelLeftClose, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 import type { Id } from '../../../../convex/_generated/dataModel';
 
@@ -23,24 +23,38 @@ interface RoomListProps {
   rooms: RoomItem[];
   selectedId: Id<'studyRooms'> | null;
   onSelect: (roomId: Id<'studyRooms'>) => void;
+  onCollapse?: () => void;
 }
 
-export function RoomList({ rooms, selectedId, onSelect }: RoomListProps) {
+export function RoomList({ rooms, selectedId, onSelect, onCollapse }: RoomListProps) {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <>
       <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-4 py-3">
         <h2 className="text-sm font-medium text-foreground">Study Rooms</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setCreateOpen(true)}
-          title="Create room"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setCreateOpen(true)}
+            title="Create room"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          {onCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onCollapse}
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-y-auto" style={{ height: 'calc(100% - 49px)' }}>

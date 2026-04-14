@@ -5,6 +5,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { renderInline } from '@/lib/render-markdown';
 import type { QuizResult } from '@/types/study-tools';
 import { useMutation } from 'convex/react';
@@ -28,6 +29,7 @@ interface QuizAnswer {
 type QuizState = 'setup' | 'active' | 'review' | 'results';
 
 export function QuizTool({ sessionId }: QuizToolProps) {
+  const isMobile = useIsMobile();
   const { data, isGenerating, error, generate, hasData } = useStudyTool<QuizResult>(
     sessionId,
     'quiz',
@@ -180,7 +182,7 @@ export function QuizTool({ sessionId }: QuizToolProps) {
       {/* Question */}
       <Card className="p-2">
         <p className="text-xs font-medium text-foreground mb-2">{question.question}</p>
-        <div className="grid grid-cols-2 gap-1">
+        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-1`}>
           {question.options.map((option, i) => {
             let variant: 'secondary' | 'default' | 'destructive' = 'secondary';
             let icon = null;
@@ -199,7 +201,7 @@ export function QuizTool({ sessionId }: QuizToolProps) {
               <Button
                 key={option}
                 variant={variant}
-                className="justify-start h-auto min-h-[28px] text-xs px-2 py-1 gap-1 whitespace-normal text-left"
+                className={`justify-start h-auto ${isMobile ? 'min-h-[44px]' : 'min-h-[28px]'} text-xs px-2 py-1 gap-1 whitespace-normal text-left`}
                 onClick={() => handleSelectAnswer(i)}
                 disabled={selectedAnswer !== null}
               >

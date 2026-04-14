@@ -2,11 +2,13 @@ import type React from 'react';
 
 import { NotesPanel } from '@/components/notes-panel';
 import { RecordingPanel } from '@/components/recording-panel';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRecordingContext } from '@/contexts/recording-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useSessionRecovery } from '@/hooks/use-session-recovery';
 import { cn } from '@/lib/utils';
-import { FileText, GripVertical, Mic } from 'lucide-react';
+import { AlertTriangle, FileText, GripVertical, Mic } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
 // Type for NotesPanel ref
@@ -16,6 +18,8 @@ export interface NotesPanelRef {
 
 export function HomeView() {
   const { currentSessionId } = useRecordingContext();
+  const { hasRecoveryData, isRecovering, recover, dismiss } =
+    useSessionRecovery(currentSessionId);
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);
@@ -48,6 +52,25 @@ export function HomeView() {
     }
   }, []);
 
+  const recoveryBanner = hasRecoveryData ? (
+    <div className="mx-4 mt-2 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+        <p className="text-sm text-foreground">
+          Your last recording was interrupted. Audio can be recovered.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="ghost" onClick={dismiss} disabled={isRecovering}>
+          Dismiss
+        </Button>
+        <Button size="sm" onClick={recover} disabled={isRecovering}>
+          {isRecovering ? 'Recovering...' : 'Recover Audio'}
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
   if (isMobile) {
     return (
       <Tabs
@@ -55,6 +78,7 @@ export function HomeView() {
         onValueChange={(v) => setActiveTab(v as 'notes' | 'recording')}
         className="flex h-full flex-col"
       >
+        {recoveryBanner}
         <TabsList className="mx-3 mt-3 shrink-0">
           <TabsTrigger value="recording" className="gap-1.5">
             <Mic className="h-3.5 w-3.5" />
@@ -84,26 +108,29 @@ export function HomeView() {
   }
 
   return (
-    <div
-      className="flex h-full select-none gap-3 p-3"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <div style={{ width: `${leftWidth}%` }} className="min-w-0">
-        <NotesPanel sessionId={currentSessionId} ref={notesPanelRef} />
-      </div>
-
-      {/* Drag handle */}
+    <div className="flex h-full flex-col">
+      {recoveryBanner}
       <div
-        className="group flex w-1.5 cursor-col-resize items-center justify-center rounded-full glass-light hover:bg-[var(--glass-bg)] transition-colors"
-        onMouseDown={handleMouseDown}
+        className="flex flex-1 min-h-0 select-none gap-3 p-3"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
-        <GripVertical className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
+        <div style={{ width: `${leftWidth}%` }} className="min-w-0">
+          <NotesPanel sessionId={currentSessionId} ref={notesPanelRef} />
+        </div>
 
-      <div style={{ width: `${100 - leftWidth}%` }} className="min-w-[260px]">
-        <RecordingPanel onInsertNote={handleInsertNote} />
+        {/* Drag handle */}
+        <div
+          className="group flex w-1.5 cursor-col-resize items-center justify-center rounded-full glass-light hover:bg-[var(--glass-bg)] transition-colors"
+          onMouseDown={handleMouseDown}
+        >
+          <GripVertical className="h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+
+        <div style={{ width: `${100 - leftWidth}%` }} className="min-w-[260px]">
+          <RecordingPanel onInsertNote={handleInsertNote} />
+        </div>
       </div>
     </div>
   );

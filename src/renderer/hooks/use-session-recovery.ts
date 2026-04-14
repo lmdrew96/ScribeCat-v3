@@ -1,0 +1,92 @@
+/**
+ * useSessionRecovery — detects orphaned audio recovery data from a
+ * crashed/interrupted recording and offers to recover it.
+ */
+
+import { clearRecoveryData, getRecoverySessionId, recoverAudio } from '@/lib/audio-recovery';
+import { useMutation } from 'convex/react';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
+
+interface UseSessionRecoveryReturn {
+  hasRecoveryData: boolean;
+  recoverySessionId: string | null;
+  isRecovering: boolean;
+  recover: () => Promise<void>;
+  dismiss: () => Promise<void>;
+}
+
+export function useSessionRecovery(
+  currentRecordingSessionId: Id<'sessions'> | null,
+): UseSessionRecoveryReturn {
+  const [recoverySessionId, setRecoverySessionId] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const updateSession = useMutation(api.sessions.update);
+
+  // Check for orphaned recovery data on mount
+  useEffect(() => {
+    const storedId = getRecoverySessionId();
+    // Only show recovery if the stored session is NOT the one currently recording
+    if (storedId && storedId !== currentRecordingSessionId) {
+      setRecoverySessionId(storedId);
+    } else {
+      setRecoverySessionId(null);
+    }
+  }, [currentRecordingSessionId]);
+
+  const recover = useCallback(async () => {
+    if (!recoverySessionId) return;
+
+    setIsRecovering(true);
+    try {
+      const audioBlob = await recoverAudio(recoverySessionId);
+      if (!audioBlob) {
+        // No actual audio chunks found — just clean up
+        await clearRecoveryData(recoverySessionId);
+        setRecoverySessionId(null);
+        setIsRecovering(false);
+        return;
+      }
+
+      // Upload to Convex storage
+      const uploadUrl = await generateUploadUrl();
+      const uploadResult = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'audio/webm' },
+        body: audioBlob,
+      });
+      const { storageId } = await uploadResult.json();
+
+      // Attach to the session
+      await updateSession({
+        id: recoverySessionId as Id<'sessions'>,
+        audioStorageId: storageId,
+      });
+
+      // Clean up IndexedDB
+      await clearRecoveryData(recoverySessionId);
+      setRecoverySessionId(null);
+    } catch (error) {
+      console.error('Audio recovery failed:', error);
+    } finally {
+      setIsRecovering(false);
+    }
+  }, [recoverySessionId, generateUploadUrl, updateSession]);
+
+  const dismiss = useCallback(async () => {
+    if (!recoverySessionId) return;
+    await clearRecoveryData(recoverySessionId);
+    setRecoverySessionId(null);
+  }, [recoverySessionId]);
+
+  return {
+    hasRecoveryData: !!recoverySessionId,
+    recoverySessionId,
+    isRecovering,
+    recover,
+    dismiss,
+  };
+}

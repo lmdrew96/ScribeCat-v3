@@ -3,7 +3,7 @@ import { useMessages } from '@/hooks/use-messaging';
 import { useShareSession } from '@/hooks/use-session-sharing';
 import { cn } from '@/lib/utils';
 import { useNavigate } from '@tanstack/react-router';
-import { BookOpen, Copy, FileAudio, Send } from 'lucide-react';
+import { ArrowLeft, BookOpen, Copy, FileAudio, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -15,12 +15,14 @@ interface ConversationThreadProps {
     displayName: string;
     username: string;
   };
+  onBack?: () => void;
 }
 
 export function ConversationThread({
   conversationId,
   currentUserId,
   otherUser,
+  onBack,
 }: ConversationThreadProps) {
   const { messages, sendMessage, markRead, isLoading } = useMessages(conversationId);
   const { copyToLibrary } = useShareSession();
@@ -92,6 +94,16 @@ export function ConversationThread({
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-[var(--glass-border)] px-4 py-3">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={onBack}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <div>
           <p className="text-sm font-medium text-foreground">{otherUser.displayName}</p>
           <p className="text-xs text-muted-foreground">@{otherUser.username}</p>

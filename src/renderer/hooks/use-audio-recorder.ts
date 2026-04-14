@@ -7,6 +7,7 @@ export interface AudioDevice {
 
 export interface UseAudioRecorderOptions {
   onDataAvailable?: (data: Blob) => void;
+  onChunkAvailable?: (chunk: Blob) => void;
   onError?: (error: Error) => void;
 }
 
@@ -112,6 +113,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
+          optionsRef.current?.onChunkAvailable?.(event.data);
         }
       };
 

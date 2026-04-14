@@ -1,5 +1,6 @@
 import { ConversationList } from '@/components/messages/conversation-list';
 import { ConversationThread } from '@/components/messages/conversation-thread';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useConversations } from '@/hooks/use-messaging';
 import { useUser } from '@clerk/clerk-react';
 import { useMatch, useNavigate } from '@tanstack/react-router';
@@ -10,6 +11,7 @@ export function MessagesView() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { conversations, isLoading } = useConversations();
+  const isMobile = useIsMobile();
 
   // Read conversationId from route params
   const convoMatch = useMatch({ from: '/messages/$conversationId', shouldThrow: false });
@@ -24,6 +26,10 @@ export function MessagesView() {
     navigate({ to: '/messages/$conversationId', params: { conversationId } });
   };
 
+  const handleBack = () => {
+    navigate({ to: '/messages' });
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -32,6 +38,38 @@ export function MessagesView() {
     );
   }
 
+  // Mobile: show either the list OR the thread, not both
+  if (isMobile) {
+    return (
+      <div className="flex h-full flex-col p-3">
+        {selectedConvo ? (
+          <div className="flex-1 rounded-xl glass overflow-hidden min-w-0">
+            <ConversationThread
+              conversationId={selectedConvo.conversationId}
+              currentUserId={currentUserId}
+              otherUser={selectedConvo.otherUser}
+              onBack={handleBack}
+            />
+          </div>
+        ) : (
+          <div className="flex-1 rounded-xl glass overflow-hidden">
+            <div className="border-b border-[var(--glass-border)] px-4 py-3">
+              <h2 className="text-sm font-medium text-foreground">Messages</h2>
+            </div>
+            <div className="overflow-y-auto" style={{ height: 'calc(100% - 49px)' }}>
+              <ConversationList
+                conversations={validConversations}
+                selectedId={selectedId}
+                onSelect={handleSelect}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop: side-by-side layout
   return (
     <div className="flex h-full gap-3 p-3">
       {/* Conversation list (sidebar) */}

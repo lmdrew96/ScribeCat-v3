@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
@@ -52,6 +53,7 @@ interface StudyContentProps {
 export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   // Inline editing state
   const [editingTitle, setEditingTitle] = useState(false);
@@ -225,8 +227,12 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   return (
     <div className="h-full flex flex-col">
       <div className={`mb-2 ${sidebarCollapsed ? 'pl-8' : ''}`}>
-        {/* Editable title */}
-        {editingTitle ? (
+        {/* Editable title (desktop only) */}
+        {isMobile ? (
+          <h1 className="text-base font-semibold text-foreground mb-0.5">
+            {recording.title}
+          </h1>
+        ) : editingTitle ? (
           <div className="flex items-center gap-1 mb-0.5">
             <Input
               ref={titleInputRef}
@@ -283,8 +289,17 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
           )}
         </p>
 
-        {/* Editable course */}
-        {editingCourse ? (
+        {/* Editable course (desktop only) */}
+        {isMobile ? (
+          recording.course ? (
+            <div className="flex items-center gap-1 mt-1">
+              <BookOpen className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {recording.course}
+              </span>
+            </div>
+          ) : null
+        ) : editingCourse ? (
           <div className="flex items-center gap-1 mt-1">
             <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
             <Input

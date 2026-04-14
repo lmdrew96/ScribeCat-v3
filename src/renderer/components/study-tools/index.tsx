@@ -3,6 +3,7 @@
  */
 
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import type { StudyToolType } from '@/types/study-tools';
 import {
   BookOpen,
@@ -38,8 +39,9 @@ const TABS: Array<{ type: StudyToolType; label: string; icon: typeof FileText }>
 ];
 
 export function StudyTools({ sessionId }: StudyToolsProps) {
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<StudyToolType>('summary');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!isMobile);
 
   function handleTabClick(type: StudyToolType) {
     if (!expanded) {

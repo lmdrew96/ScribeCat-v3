@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "4.31.0",
+  "version": "5.0.0",
   "description": "ADHD-friendly study companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {
@@ -83,6 +83,7 @@
     "input-otp": "1.4.1",
     "interactjs": "^1.10.27",
     "lucide-react": "^0.454.0",
+    "radix-ui": "^1.4.3",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",
