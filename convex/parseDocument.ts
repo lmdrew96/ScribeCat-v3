@@ -10,13 +10,7 @@ import { AI_MODEL } from './config';
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
-const SUPPORTED_IMAGE_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/heic',
-]);
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
 const SUPPORTED_PDF_TYPES = new Set(['application/pdf']);
 
@@ -106,15 +100,11 @@ export const parseDocumentImages = action({
           },
         });
       } else if (SUPPORTED_IMAGE_TYPES.has(mimeType)) {
-        // HEIC gets re-mapped to jpeg (browsers convert on upload)
-        const mediaType: ImageMediaType =
-          mimeType === 'image/heic' ? 'image/jpeg' : (mimeType as ImageMediaType);
-
         contentBlocks.push({
           type: 'image',
           source: {
             type: 'base64',
-            media_type: mediaType,
+            media_type: mimeType as ImageMediaType,
             data: base64Data,
           },
         });

@@ -24,6 +24,21 @@ interface DocumentUploadResult {
   progress: string;
 }
 
+/** Convert any browser-decodable image to JPEG so Claude can always parse it */
+async function normalizeImageFile(file: File): Promise<File> {
+  if (file.type === 'application/pdf') return file;
+
+  const bitmap = await createImageBitmap(file);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to create canvas context');
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+
+  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 });
+  return new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+}
+
 export function useDocumentUpload(): DocumentUploadResult {
   const { createSession, updateSession } = useSessions();
   const generateUploadUrl = useMutation(api.uploadImage.generateUploadUrl);
@@ -45,15 +60,17 @@ export function useDocumentUpload(): DocumentUploadResult {
         const mimeTypes: string[] = [];
 
         for (const { file } of files) {
+          // Convert images to JPEG so Claude can always parse them (handles HEIC, BMP, etc.)
+          const normalized = await normalizeImageFile(file);
           const uploadUrl = await generateUploadUrl();
           const result = await fetch(uploadUrl, {
             method: 'POST',
-            headers: { 'Content-Type': file.type },
-            body: file,
+            headers: { 'Content-Type': normalized.type },
+            body: normalized,
           });
           const { storageId } = await result.json();
           storageIds.push(storageId);
-          mimeTypes.push(file.type || 'image/jpeg');
+          mimeTypes.push(normalized.type);
         }
 
         setProgress('Extracting text (this may take a moment)...');
