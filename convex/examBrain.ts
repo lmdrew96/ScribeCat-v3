@@ -1,7 +1,7 @@
 /**
  * Exam Room Brain — The "Session Conductor"
  *
- * Sonnet-powered meta-context layer that indexes each session when added to an exam room.
+ * AI-powered meta-context layer that indexes each session when added to an exam room.
  * Extracts structured topic indexes so downstream AI calls (chat, tools, games) get a
  * lightweight "brain" instead of raw transcripts — cheaper, more coherent, and smarter
  * about which session content is relevant per interaction.
@@ -12,7 +12,7 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { internalAction, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import { AI_MODEL_SONNET, callClaude } from './config';
+import { callClaude } from './config';
 import { requireExamRoomMember } from './examRooms';
 import { extractJson } from './studyTools';
 
@@ -439,7 +439,6 @@ Extract 3-8 topics. Each topic should have 2-6 key concepts. Use clear, concise 
 
     try {
       const responseText = await callClaude({
-        model: AI_MODEL_SONNET,
         maxTokens: 1024,
         temperature: 0.2,
         messages: [{ role: 'user', content: prompt }],
