@@ -61,7 +61,7 @@ export function renderInline(text: string): ReactNode {
 
 /**
  * Render block-level markdown into React elements.
- * Supports: headings (## ###), bullet/numbered lists, code blocks, paragraphs.
+ * Supports: headings (# ## ### ####), bullet/numbered lists, code blocks, paragraphs.
  */
 export function renderMarkdown(text: string): ReactNode[] {
   const lines = text.split('\n');
@@ -103,7 +103,15 @@ export function renderMarkdown(text: string): ReactNode[] {
       continue;
     }
 
-    // Headers
+    // Headers — check longest prefix first to avoid mis-matching
+    if (line.startsWith('#### ')) {
+      elements.push(
+        <p key={`h4-${i}`} className="font-semibold text-xs uppercase tracking-wide mt-2 mb-1">
+          {renderInline(line.slice(5))}
+        </p>,
+      );
+      continue;
+    }
     if (line.startsWith('### ')) {
       elements.push(
         <p key={`h3-${i}`} className="font-semibold text-sm mt-2 mb-1">
@@ -114,8 +122,16 @@ export function renderMarkdown(text: string): ReactNode[] {
     }
     if (line.startsWith('## ')) {
       elements.push(
-        <p key={`h2-${i}`} className="font-semibold text-sm mt-2 mb-1">
+        <p key={`h2-${i}`} className="font-bold text-base mt-3 mb-1">
           {renderInline(line.slice(3))}
+        </p>,
+      );
+      continue;
+    }
+    if (line.startsWith('# ')) {
+      elements.push(
+        <p key={`h1-${i}`} className="font-bold text-lg mt-3 mb-1.5">
+          {renderInline(line.slice(2))}
         </p>,
       );
       continue;
