@@ -56,8 +56,17 @@ ${(sessionTitles as string[])?.map((t: string, i: number) => `${i + 1}. ${t}`).j
   if (currentDateTime) {
     systemPrompt += `## Current Date & Time\n${currentDateTime}\n`;
     if (examDate) {
-      const daysLeft = Math.ceil((Number(examDate) - Date.now()) / (1000 * 60 * 60 * 24));
-      systemPrompt += `The exam is ${daysLeft > 0 ? `in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : 'today or has passed'}.\n`;
+      const examTs = Number(examDate);
+      const endOfExamDay = examTs + 24 * 60 * 60 * 1000 - 1;
+      const now = Date.now();
+      if (now > endOfExamDay) {
+        systemPrompt += 'The exam date has passed.\n';
+      } else if (now >= examTs) {
+        systemPrompt += 'The exam is TODAY!\n';
+      } else {
+        const daysLeft = Math.ceil((examTs - now) / (1000 * 60 * 60 * 24));
+        systemPrompt += `The exam is in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}.\n`;
+      }
     }
     systemPrompt += '\n';
   }

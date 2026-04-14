@@ -45,8 +45,15 @@ type ExamTab = 'sessions' | 'tools' | 'simulation' | 'chat' | 'weakSpots';
 
 function formatCountdown(examDate: number): string {
   const now = Date.now();
+  // examDate is stored as midnight (start of day). The exam day itself
+  // isn't "passed" until the end of that day (11:59:59 PM).
+  const endOfExamDay = examDate + 24 * 60 * 60 * 1000 - 1;
+  if (now > endOfExamDay) return 'Exam day has passed';
+
+  // If we're ON the exam day (past midnight but before end of day)
+  if (now >= examDate) return 'Exam day is today!';
+
   const diff = examDate - now;
-  if (diff <= 0) return 'Exam day has passed';
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
