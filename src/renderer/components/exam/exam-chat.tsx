@@ -22,8 +22,8 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
   const chatHistory = useQuery(api.examChat.getExamChatHistory, { examRoomId });
   const saveChatHistory = useMutation(api.examChat.saveExamChatHistory);
 
-  // Get brain context for the chat
-  const examRoomSessions = useQuery(api.examRooms.getExamRoomSessions, { examRoomId });
+  // Get brain context (topic indexes) for the chat
+  const brainData = useQuery(api.examBrain.getBrainContext, { examRoomId });
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -67,9 +67,6 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
     setIsLoading(true);
 
     try {
-      // Build brain context from session titles
-      const sessionTitles = (examRoomSessions ?? []).map((s) => s.title);
-
       // Call the exam chat HTTP action
       const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
       const baseUrl = convexUrl.replace('.cloud', '.site');
@@ -83,8 +80,8 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
             role: m.role,
             content: m.content,
           })),
-          brainContext: '',
-          sessionTitles,
+          brainContext: brainData?.brainContext ?? '',
+          sessionTitles: brainData?.sessionTitles ?? [],
           currentDateTime: new Date().toLocaleString('en-US', {
             dateStyle: 'full',
             timeStyle: 'short',
@@ -126,7 +123,7 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, examRoomId, examRoomSessions, saveChatHistory, examDate]);
+  }, [input, isLoading, messages, examRoomId, brainData, saveChatHistory, examDate]);
 
   return (
     <div className="flex h-full flex-col">

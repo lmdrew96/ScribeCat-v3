@@ -11,8 +11,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { internalAction, internalMutation, internalQuery } from './_generated/server';
+import { internalAction, internalMutation, internalQuery, query } from './_generated/server';
+import { requireAuth } from './authHelpers';
 import { AI_MODEL_SONNET } from './config';
+import { requireExamRoomMember } from './examRooms';
 import { extractJson } from './studyTools';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -120,6 +122,64 @@ export const getExamRoomBrain = internalQuery({
       sessions,
       allTopics,
       sessionCount: links.length,
+    };
+  },
+});
+
+/** Public query: get brain context for exam chat (auth'd by room membership). */
+export const getBrainContext = query({
+  args: { examRoomId: v.id('examRooms') },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    await requireExamRoomMember(ctx, args.examRoomId, userId);
+
+    const links = await ctx.db
+      .query('examRoomSessions')
+      .withIndex('by_room', (q) => q.eq('examRoomId', args.examRoomId))
+      .collect();
+
+    const allTopics: TopicEntry[] = [];
+
+    for (const link of links) {
+      if (link.topicIndex) {
+        try {
+          const index: TopicIndex = JSON.parse(link.topicIndex);
+          allTopics.push(...index.topics);
+        } catch {
+          // Skip malformed indexes
+        }
+      }
+    }
+
+    const sessions = await Promise.all(
+      links.map(async (link) => {
+        const session = await ctx.db.get(link.sessionId);
+        return {
+          title: session?.title ?? 'Untitled',
+          hasIndex: !!link.topicIndex,
+        };
+      }),
+    );
+
+    // Build the meta-context string
+    let brainContext = 'EXAM ROOM KNOWLEDGE MAP:\n\n';
+    const topicsBySession = new Map<string, TopicEntry[]>();
+    for (const topic of allTopics) {
+      const existing = topicsBySession.get(topic.sessionTitle) ?? [];
+      existing.push(topic);
+      topicsBySession.set(topic.sessionTitle, existing);
+    }
+    for (const [sessionTitle, topics] of topicsBySession) {
+      brainContext += `--- ${sessionTitle} ---\n`;
+      for (const t of topics) {
+        brainContext += `• ${t.topic}: ${t.concepts.join(', ')}\n`;
+      }
+      brainContext += '\n';
+    }
+
+    return {
+      brainContext: allTopics.length > 0 ? brainContext : '',
+      sessionTitles: sessions.map((s) => s.title),
     };
   },
 });
