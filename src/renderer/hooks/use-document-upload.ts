@@ -1,6 +1,7 @@
 import { useSessions } from '@/hooks/use-sessions';
 import { useAction, useMutation } from 'convex/react';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -55,7 +56,7 @@ export function useDocumentUpload(): DocumentUploadResult {
           mimeTypes.push(file.type || 'image/jpeg');
         }
 
-        setProgress('Extracting text from documents...');
+        setProgress('Extracting text (this may take a moment)...');
 
         // Parse all files with Claude Vision
         const parseResult = await parseDocument({ storageIds, mimeTypes });
@@ -76,7 +77,7 @@ export function useDocumentUpload(): DocumentUploadResult {
             transcript: parseResult.text,
           });
         } else {
-          // Create new session
+          // Create new session with transcript in one flow
           const title =
             files.length === 1
               ? files[0].file.name.replace(/\.[^.]+$/, '')
@@ -96,15 +97,18 @@ export function useDocumentUpload(): DocumentUploadResult {
         }
 
         setProgress('Done!');
+        toast.success('Document parsed successfully');
         options.onComplete?.(sessionId);
       } catch (error) {
         console.error('Document upload error:', error);
-        setProgress(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        toast.error(`Document upload failed: ${message}`);
+        setProgress(`Error: ${message}`);
       } finally {
         setTimeout(() => {
           setIsProcessing(false);
           setProgress('');
-        }, 2000);
+        }, 3000);
       }
     },
     [createSession, updateSession, generateUploadUrl, parseDocument],
