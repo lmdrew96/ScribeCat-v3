@@ -148,7 +148,9 @@ export const generateTargetedReview = action({
     });
 
     if (relevantSessions.length === 0) {
-      throw new ConvexError('No session content found for weak topics.');
+      throw new ConvexError(
+        'No session content available yet. Sessions may still be indexing — try again in a moment.',
+      );
     }
 
     // Get all sessions to determine lecture type

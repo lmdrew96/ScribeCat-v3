@@ -66,6 +66,7 @@ export function ExamSessionViewer({
   const hasTranscript = !!content?.transcript;
   const hasAudio = !!content?.audioStorageId;
   const hasNuggetNotes = !!(content?.nuggetNotes && content.nuggetNotes.length > 0);
+  const hasDocumentText = !!content?.documentText;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -118,7 +119,7 @@ export function ExamSessionViewer({
 
         {!isLoading && content && (
           <Tabs
-            defaultValue={hasNotes ? 'notes' : hasTranscript ? 'transcript' : 'audio'}
+            defaultValue={hasNotes ? 'notes' : hasDocumentText ? 'document' : hasTranscript ? 'transcript' : 'audio'}
             className="flex-1 flex flex-col min-h-0"
           >
             <TabsList className="shrink-0 w-full justify-start">
@@ -126,6 +127,12 @@ export function ExamSessionViewer({
                 <TabsTrigger value="notes" className="gap-1.5">
                   <FileText className="h-3.5 w-3.5" />
                   Notes
+                </TabsTrigger>
+              )}
+              {hasDocumentText && (
+                <TabsTrigger value="document" className="gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  Document
                 </TabsTrigger>
               )}
               {hasTranscript && (
@@ -160,6 +167,16 @@ export function ExamSessionViewer({
                           Notes available in rich text format only.
                         </p>
                       )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              )}
+
+              {hasDocumentText && (
+                <TabsContent value="document" className="h-full m-0">
+                  <ScrollArea className="h-[50vh]">
+                    <div className="pr-4 text-sm text-foreground space-y-1">
+                      {renderMarkdown(content.documentText!)}
                     </div>
                   </ScrollArea>
                 </TabsContent>
@@ -239,7 +256,7 @@ export function ExamSessionViewer({
             </div>
 
             {/* Empty state when no content at all */}
-            {!hasNotes && !hasTranscript && !hasAudio && !hasNuggetNotes && (
+            {!hasNotes && !hasDocumentText && !hasTranscript && !hasAudio && !hasNuggetNotes && (
               <div className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-10 w-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground mt-3">

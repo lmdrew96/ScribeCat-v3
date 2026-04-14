@@ -244,11 +244,16 @@ export const getSessionContentForTopics = internalQuery({
       if (link.topicIndex) {
         try {
           const index: TopicIndex = JSON.parse(link.topicIndex);
-          isRelevant = index.topics.some(
-            (t) =>
-              topicSet.has(t.topic.toLowerCase()) ||
-              t.concepts.some((c) => topicSet.has(c.toLowerCase())),
-          );
+          if (index.topics.length === 0) {
+            // Empty index (indexing ran before content existed) — include it
+            isRelevant = true;
+          } else {
+            isRelevant = index.topics.some(
+              (t) =>
+                topicSet.has(t.topic.toLowerCase()) ||
+                t.concepts.some((c) => topicSet.has(c.toLowerCase())),
+            );
+          }
         } catch {
           // If we can't parse, include it to be safe
           isRelevant = true;
