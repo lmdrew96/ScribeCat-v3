@@ -24,7 +24,7 @@ export function GameResults({ game, currentUserId, isHost }: GameResultsProps) {
     try {
       // Cancel/dismiss this finished game first, then create a new one
       await cancelGame({ gameId: game._id });
-      await createGame({ roomId: game.roomId, gameType: game.gameType });
+      await createGame({ roomId: game.roomId!, gameType: game.gameType });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start new game';
       toast.error(message);

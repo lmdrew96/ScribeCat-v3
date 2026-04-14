@@ -687,7 +687,6 @@ export const generateQuestions = internalAction({
 
       if (sessions.length === 0) throw new Error('No sessions in exam room');
 
-      const lt: LectureType = (sessions[0]?.lectureType as LectureType) ?? 'general';
       const combinedInput = buildExamInput(
         brain.brainContext,
         sessions.map((s) => ({ title: s.title, transcript: s.transcript, notes: s.notes })),

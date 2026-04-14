@@ -1,4 +1,4 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 
@@ -128,6 +128,8 @@ export const update = mutation({
       ),
     ),
     duration: v.optional(v.number()),
+    documentText: v.optional(v.string()),
+    documentStorageIds: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);

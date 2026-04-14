@@ -227,22 +227,25 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       return;
     }
 
-    if (!session.transcript || session.transcript.trim().length === 0) {
-      console.error('Transcript is empty or undefined');
+    // Use transcript if available, otherwise fall back to documentText
+    const sourceText = session.transcript?.trim() || session.documentText?.trim();
+
+    if (!sourceText || sourceText.length === 0) {
+      console.error('No transcript or document text available');
       alert(
-        'No transcript available yet. Please speak during the recording to generate a transcript, then try again.',
+        'No transcript or uploaded document text available. Record audio or upload a document first.',
       );
       return;
     }
 
-    console.log('Starting AI generation with transcript:', session.transcript.substring(0, 100));
+    console.log('Starting AI generation with source text:', sourceText.substring(0, 100));
     setIsGenerating(true);
 
     try {
       console.log('Calling generateNotesAction...');
       const data = await generateNotesAction({
-        transcript: session.transcript,
-        transcriptSegments: session.transcriptSegments,
+        transcript: sourceText,
+        transcriptSegments: session.transcript ? session.transcriptSegments : undefined,
         sessionId: sessionId as string,
         lectureType: session.lectureType,
         existingNotes: editor?.getText() || undefined,

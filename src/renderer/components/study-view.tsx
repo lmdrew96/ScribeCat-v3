@@ -46,6 +46,7 @@ export interface Recording {
   lectureType?: string;
   course?: string;
   nuggetNotes?: { text: string; recordingTime: number }[];
+  documentText?: string;
 }
 
 const formatDuration = (ms: number) => {
@@ -176,6 +177,7 @@ export function StudyView() {
         lectureType: fullSession.lectureType,
         course: fullSession.course,
         nuggetNotes: fullSession.nuggetNotes,
+        documentText: fullSession.documentText,
       }
     : null;
 

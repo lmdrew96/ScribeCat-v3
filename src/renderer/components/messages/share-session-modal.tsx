@@ -55,36 +55,38 @@ export function ShareSessionModal({ open, onOpenChange, sessionId }: ShareSessio
               Add friends to share sessions with them
             </p>
           ) : (
-            friends.map((friend) => {
-              const isShared = sharedUserIds.has(friend.userId);
-              return (
-                <UserCard
-                  key={friend.userId}
-                  username={friend.username}
-                  displayName={friend.displayName}
-                  avatarUrl={friend.avatarUrl}
-                  catVariant={friend.catVariant}
-                  catLevel={friend.catLevel}
-                  action={
-                    <Button
-                      variant={isShared ? 'secondary' : 'default'}
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => void handleToggleShare(friend.userId)}
-                    >
-                      {isShared ? (
-                        <>
-                          <Check className="h-3 w-3" />
-                          Shared
-                        </>
-                      ) : (
-                        'Share'
-                      )}
-                    </Button>
-                  }
-                />
-              );
-            })
+            friends
+              .filter((f): f is NonNullable<typeof f> => f != null)
+              .map((friend) => {
+                const isShared = sharedUserIds.has(friend.userId);
+                return (
+                  <UserCard
+                    key={friend.userId}
+                    username={friend.username}
+                    displayName={friend.displayName}
+                    avatarUrl={friend.avatarUrl}
+                    catVariant={friend.catVariant}
+                    catLevel={friend.catLevel}
+                    action={
+                      <Button
+                        variant={isShared ? 'secondary' : 'default'}
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => void handleToggleShare(friend.userId)}
+                      >
+                        {isShared ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            Shared
+                          </>
+                        ) : (
+                          'Share'
+                        )}
+                      </Button>
+                    }
+                  />
+                );
+              })
           )}
         </div>
       </DialogContent>

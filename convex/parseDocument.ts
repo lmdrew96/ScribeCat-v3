@@ -36,9 +36,19 @@ OUTPUT FORMAT:
 - If text is unclear or illegible, mark it as [illegible] or [unclear: best guess]
 - Do NOT add commentary, summaries, or interpretations — just extract what's there`;
 
-/** Convert an ArrayBuffer to a base64 string (works in Convex Node.js actions) */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  return Buffer.from(buffer).toString('base64');
+/** Convert ArrayBuffer to base64 using web-standard APIs (no Node.js Buffer needed) */
+function toBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  // Process in chunks to avoid stack overflow on large files
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    for (let j = 0; j < chunk.length; j++) {
+      binary += String.fromCharCode(chunk[j]);
+    }
+  }
+  return btoa(binary);
 }
 
 export const parseDocumentImages = action({
@@ -67,6 +77,10 @@ export const parseDocumentImages = action({
       const storageId = args.storageIds[i];
       const mimeType = args.mimeTypes[i];
 
+      console.log(
+        `[parseDocument] Fetching file ${i + 1}/${args.storageIds.length}, type: ${mimeType}`,
+      );
+
       const url = await ctx.storage.getUrl(storageId);
       if (!url) {
         throw new ConvexError(`Failed to get storage URL for file ${i + 1}`);
@@ -74,11 +88,13 @@ export const parseDocumentImages = action({
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new ConvexError(`Failed to fetch file ${i + 1}: ${response.status}`);
+        throw new ConvexError(`Failed to fetch file ${i + 1}: HTTP ${response.status}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const base64Data = arrayBufferToBase64(arrayBuffer);
+      console.log(`[parseDocument] File ${i + 1} fetched: ${arrayBuffer.byteLength} bytes`);
+
+      const base64Data = toBase64(arrayBuffer);
 
       if (SUPPORTED_PDF_TYPES.has(mimeType)) {
         contentBlocks.push({
@@ -110,6 +126,8 @@ export const parseDocumentImages = action({
     // Add the text prompt after all file blocks
     contentBlocks.push({ type: 'text', text: PARSE_PROMPT });
 
+    console.log(`[parseDocument] Calling Claude API with ${contentBlocks.length} content blocks`);
+
     try {
       const anthropic = new Anthropic({ apiKey });
 
@@ -120,6 +138,7 @@ export const parseDocumentImages = action({
       });
 
       const extractedText = message.content[0].type === 'text' ? message.content[0].text : '';
+      console.log(`[parseDocument] Extracted ${extractedText.length} chars`);
 
       if (!extractedText) {
         throw new ConvexError('Claude returned empty text — the document may be unreadable');
@@ -130,12 +149,9 @@ export const parseDocumentImages = action({
         success: true,
       };
     } catch (error: unknown) {
-      // Log the full error for Convex dashboard debugging
-      console.error('Anthropic API error in parseDocument:', error);
-
+      console.error('[parseDocument] Anthropic API error:', error);
       if (error instanceof ConvexError) throw error;
-
-      const message = error instanceof Error ? error.message : 'Unknown Anthropic API error';
+      const message = error instanceof Error ? error.message : 'Unknown API error';
       throw new ConvexError(`Failed to parse document: ${message}`);
     }
   },

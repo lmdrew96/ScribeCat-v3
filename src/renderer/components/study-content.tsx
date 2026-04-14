@@ -107,9 +107,14 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
     if (editingCourse) courseInputRef.current?.focus();
   }, [editingCourse]);
 
-  // Detect document-based sessions (uploaded images/PDFs, not audio recordings)
-  const isDocumentSession =
-    !!recording.transcript && !recording.audioUrl && !recording.audioStorageId;
+  const hasDocumentText = !!recording.documentText;
+  const hasTranscript =
+    !!recording.transcript ||
+    (recording.transcriptSegments && recording.transcriptSegments.length > 0);
+  const hasNuggetNotes = !!recording.nuggetNotes && recording.nuggetNotes.length > 0;
+
+  // Default tab: show extracted text if it's a doc-only session, otherwise transcript
+  const defaultTab = hasDocumentText && !hasTranscript ? 'document' : 'transcript';
 
   const { isPlaying, currentTime, duration, load, togglePlay, seek } = useAudioPlayer({
     onTimeUpdate: (time) => {
@@ -366,29 +371,23 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
         </div>
       )}
 
-      <Tabs
-        defaultValue={isDocumentSession ? 'transcript' : 'transcript'}
-        className="flex-1 min-h-0"
-      >
+      <Tabs defaultValue={defaultTab} className="flex-1 min-h-0">
         <TabsList className="mb-3 h-8">
+          {hasDocumentText && (
+            <TabsTrigger value="document" className="gap-1.5 text-xs h-7 px-3">
+              <FileImage className="h-3 w-3" />
+              Extracted Text
+            </TabsTrigger>
+          )}
           <TabsTrigger value="transcript" className="gap-1.5 text-xs h-7 px-3">
-            {isDocumentSession ? (
-              <>
-                <FileImage className="h-3 w-3" />
-                Extracted Text
-              </>
-            ) : (
-              <>
-                <Mic className="h-3 w-3" />
-                Transcript
-              </>
-            )}
+            <Mic className="h-3 w-3" />
+            Transcript
           </TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5 text-xs h-7 px-3">
             <FileText className="h-3 w-3" />
             Notes
           </TabsTrigger>
-          {!isDocumentSession && (
+          {hasNuggetNotes && (
             <TabsTrigger value="nugget-notes" className="gap-1.5 text-xs h-7 px-3">
               <Cat className="h-3 w-3" />
               Nugget Notes
@@ -396,18 +395,24 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
           )}
         </TabsList>
 
+        {/* Extracted Text tab — from uploaded documents/images */}
+        {hasDocumentText && (
+          <TabsContent value="document" className="h-[calc(100%-2rem)] mt-0">
+            <ScrollArea className="h-full rounded-xl glass p-4">
+              <div className="text-xs text-foreground/90 leading-relaxed space-y-0.5">
+                {renderMarkdown(recording.documentText!)}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        )}
+
+        {/* Transcript tab — from audio recordings */}
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
           <ScrollArea className="h-full rounded-xl glass p-4">
             {recording.transcript ? (
-              isDocumentSession ? (
-                <div className="text-xs text-foreground/90 leading-relaxed space-y-0.5">
-                  {renderMarkdown(recording.transcript)}
-                </div>
-              ) : (
-                <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
-                  {recording.transcript}
-                </p>
-              )
+              <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
+                {recording.transcript}
+              </p>
             ) : recording.transcriptSegments && recording.transcriptSegments.length > 0 ? (
               <div className="space-y-2">
                 {recording.transcriptSegments

@@ -185,7 +185,9 @@ export function RoomNotesEditor({
     if (!editor || roomNotes === undefined || isInitializedRef.current) return;
     if (roomNotes?.content) {
       try {
-        editor.commands.setContent(JSON.parse(roomNotes.content) as JSONContent, false);
+        editor.commands.setContent(JSON.parse(roomNotes.content) as JSONContent, {
+          emitUpdate: false,
+        });
       } catch {
         // invalid stored content
       }
@@ -201,7 +203,7 @@ export function RoomNotesEditor({
     try {
       const remoteContent = JSON.parse(roomNotes.content) as JSONContent;
       if (JSON.stringify(editor.getJSON()) !== roomNotes.content) {
-        editor.commands.setContent(remoteContent, false);
+        editor.commands.setContent(remoteContent, { emitUpdate: false });
       }
     } catch {
       // ignore malformed content

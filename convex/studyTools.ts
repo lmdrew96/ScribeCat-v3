@@ -4,7 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { action, internalMutation, mutation, query } from './_generated/server';
 import { AI_MODEL } from './config';
 import {
@@ -22,6 +22,16 @@ import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
 
 // ─── Helpers ─────────────────────────────────────────────────
+
+/** Get the text content for a session — prefers transcript, falls back to documentText */
+export function getSessionContent(session: {
+  transcript?: string | null;
+  documentText?: string | null;
+}): string {
+  const content = session.transcript || session.documentText;
+  if (!content) throw new Error('No transcript or document text available');
+  return content;
+}
 
 /** Strip markdown code fences that Claude sometimes wraps JSON in */
 export function extractJson(text: string): string {
@@ -300,10 +310,10 @@ export const generateSummary = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
-    const prompt = getSummaryPrompt(session.transcript, session.notesPlainText, lectureType);
+    const prompt = getSummaryPrompt(sessionContent, session.notesPlainText, lectureType);
     const response = await callClaude(prompt, 2048, 0.3);
     const parsed = JSON.parse(extractJson(response));
 
@@ -325,10 +335,10 @@ export const generateKeyConcepts = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
-    const prompt = getKeyConceptsPrompt(session.transcript, session.notesPlainText, lectureType);
+    const prompt = getKeyConceptsPrompt(sessionContent, session.notesPlainText, lectureType);
     const response = await callClaude(prompt, 2048, 0.2);
     const parsed = JSON.parse(extractJson(response));
 
@@ -353,16 +363,11 @@ export const generateFlashcards = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const count = args.count ?? 10;
     const lectureType = (session.lectureType || 'general') as LectureType;
-    const prompt = getFlashcardPrompt(
-      session.transcript,
-      session.notesPlainText,
-      lectureType,
-      count,
-    );
+    const prompt = getFlashcardPrompt(sessionContent, session.notesPlainText, lectureType, count);
     const response = await callClaude(prompt, 3072, 0.4);
     const parsed = JSON.parse(extractJson(response));
 
@@ -387,12 +392,12 @@ export const generateQuiz = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const questionCount = args.questionCount ?? 10;
     const lectureType = (session.lectureType || 'general') as LectureType;
     const prompt = getQuizPrompt(
-      session.transcript,
+      sessionContent,
       session.notesPlainText,
       lectureType,
       questionCount,
@@ -418,10 +423,10 @@ export const generateConceptMap = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
-    const prompt = getConceptMapPrompt(session.transcript, session.notesPlainText, lectureType);
+    const prompt = getConceptMapPrompt(sessionContent, session.notesPlainText, lectureType);
     const response = await callClaude(prompt, 2048, 0.2);
     const parsed = JSON.parse(extractJson(response));
 
@@ -443,10 +448,10 @@ export const generateEli5 = action({
   handler: async (ctx, args) => {
     const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
     if (!session) throw new Error('Session not found');
-    if (!session.transcript) throw new Error('No transcript available');
+    const sessionContent = getSessionContent(session);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
-    const prompt = getEli5Prompt(session.transcript, session.notesPlainText, lectureType);
+    const prompt = getEli5Prompt(sessionContent, session.notesPlainText, lectureType);
     const response = await callClaude(prompt, 2048, 0.5);
     const parsed = JSON.parse(extractJson(response));
 

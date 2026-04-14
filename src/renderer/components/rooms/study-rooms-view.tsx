@@ -28,7 +28,11 @@ export function StudyRoomsView() {
     <div className="flex h-full gap-3 p-3">
       {/* Room list (sidebar) */}
       <div className="w-72 shrink-0 rounded-xl glass overflow-hidden">
-        <RoomList rooms={rooms} selectedId={selectedId} onSelect={handleSelect} />
+        <RoomList
+          rooms={rooms.filter((r): r is NonNullable<typeof r> => r != null)}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+        />
       </div>
 
       {/* Active room */}

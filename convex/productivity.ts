@@ -1,4 +1,4 @@
-import { ConvexError, v } from 'convex/values';
+import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { awardXpHelper } from './studyQuest';
@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS = {
   courses: [] as string[],
   nuggetNotesEnabled: true,
   soundEnabled: true,
+  tosAcceptedAt: undefined as number | undefined,
+  tosVersion: undefined as string | undefined,
 };
 
 export const getSettings = query({

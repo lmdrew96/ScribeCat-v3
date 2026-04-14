@@ -95,34 +95,36 @@ export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
                   Add friends first to create a room
                 </p>
               ) : (
-                friends.map((friend) => {
-                  const isSelected = selectedFriends.has(friend.userId);
-                  return (
-                    <UserCard
-                      key={friend.userId}
-                      username={friend.username}
-                      displayName={friend.displayName}
-                      avatarUrl={friend.avatarUrl}
-                      catVariant={friend.catVariant}
-                      catLevel={friend.catLevel}
-                      className={cn('cursor-pointer', isSelected && 'border-accent bg-accent/10')}
-                      action={
-                        <button
-                          type="button"
-                          onClick={() => toggleFriend(friend.userId)}
-                          className={cn(
-                            'flex h-6 w-6 items-center justify-center rounded-md border transition-colors',
-                            isSelected
-                              ? 'bg-accent border-accent text-accent-foreground'
-                              : 'border-[var(--glass-border)] hover:border-accent',
-                          )}
-                        >
-                          {isSelected && <Check className="h-3.5 w-3.5" />}
-                        </button>
-                      }
-                    />
-                  );
-                })
+                friends
+                  .filter((f): f is NonNullable<typeof f> => f != null)
+                  .map((friend) => {
+                    const isSelected = selectedFriends.has(friend.userId);
+                    return (
+                      <UserCard
+                        key={friend.userId}
+                        username={friend.username}
+                        displayName={friend.displayName}
+                        avatarUrl={friend.avatarUrl}
+                        catVariant={friend.catVariant}
+                        catLevel={friend.catLevel}
+                        className={cn('cursor-pointer', isSelected && 'border-accent bg-accent/10')}
+                        action={
+                          <button
+                            type="button"
+                            onClick={() => toggleFriend(friend.userId)}
+                            className={cn(
+                              'flex h-6 w-6 items-center justify-center rounded-md border transition-colors',
+                              isSelected
+                                ? 'bg-accent border-accent text-accent-foreground'
+                                : 'border-[var(--glass-border)] hover:border-accent',
+                            )}
+                          >
+                            {isSelected && <Check className="h-3.5 w-3.5" />}
+                          </button>
+                        }
+                      />
+                    );
+                  })
               )}
             </div>
           </div>

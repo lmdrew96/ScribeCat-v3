@@ -16,7 +16,8 @@ export function MessagesView() {
   const selectedId = (convoMatch?.params.conversationId ?? null) as Id<'conversations'> | null;
 
   // Find the selected conversation for header info
-  const selectedConvo = conversations.find((c) => c.conversationId === selectedId);
+  const validConversations = conversations.filter((c): c is NonNullable<typeof c> => c != null);
+  const selectedConvo = validConversations.find((c) => c.conversationId === selectedId);
   const currentUserId = user?.id ?? '';
 
   const handleSelect = (conversationId: Id<'conversations'>) => {
@@ -40,7 +41,7 @@ export function MessagesView() {
         </div>
         <div className="overflow-y-auto" style={{ height: 'calc(100% - 49px)' }}>
           <ConversationList
-            conversations={conversations}
+            conversations={validConversations}
             selectedId={selectedId}
             onSelect={handleSelect}
           />

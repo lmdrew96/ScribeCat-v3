@@ -34,6 +34,8 @@ export default defineSchema({
     updatedAt: v.number(),
     isDeleted: v.boolean(),
     deletedAt: v.optional(v.number()),
+    documentText: v.optional(v.string()),
+    documentStorageIds: v.optional(v.array(v.string())),
     audioDeletedAt: v.optional(v.number()),
     audioRetentionExtendedAt: v.optional(v.number()),
   })

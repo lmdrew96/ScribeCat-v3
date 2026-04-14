@@ -128,6 +128,7 @@ export function RoomView({ roomId }: RoomViewProps) {
         transcriptSegments: pinnedSession.transcriptSegments,
         lectureType: pinnedSession.lectureType,
         nuggetNotes: pinnedSession.nuggetNotes,
+        documentText: pinnedSession.documentText,
       }
     : null;
 

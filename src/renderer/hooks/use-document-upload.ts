@@ -11,7 +11,7 @@ interface UploadedFile {
 }
 
 interface DocumentUploadOptions {
-  /** If set, appends extracted text to this session instead of creating a new one */
+  /** If set, saves extracted text to this session instead of creating a new one */
   targetSessionId?: Id<'sessions'> | null;
   lectureType?: string;
   onSessionCreated?: (sessionId: Id<'sessions'>) => void;
@@ -70,14 +70,15 @@ export function useDocumentUpload(): DocumentUploadResult {
         let sessionId: Id<'sessions'>;
 
         if (options.targetSessionId) {
-          // Append to existing session
+          // Save to existing session
           sessionId = options.targetSessionId;
           await updateSession({
             id: sessionId,
-            transcript: parseResult.text,
+            documentText: parseResult.text,
+            documentStorageIds: storageIds,
           });
         } else {
-          // Create new session with transcript in one flow
+          // Create new session
           const title =
             files.length === 1
               ? files[0].file.name.replace(/\.[^.]+$/, '')
@@ -90,7 +91,8 @@ export function useDocumentUpload(): DocumentUploadResult {
 
           await updateSession({
             id: sessionId,
-            transcript: parseResult.text,
+            documentText: parseResult.text,
+            documentStorageIds: storageIds,
           });
 
           options.onSessionCreated?.(sessionId);

@@ -53,29 +53,31 @@ export function FriendsList() {
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
         {friends.length} friend{friends.length !== 1 ? 's' : ''}
       </p>
-      {friends.map((friend) => (
-        <UserCard
-          key={friend.userId}
-          username={friend.username}
-          displayName={friend.displayName}
-          avatarUrl={friend.avatarUrl}
-          catVariant={friend.catVariant}
-          catLevel={friend.catLevel}
-          isOnline={friend.isOnline}
-          action={
-            <FriendActions
-              userId={friend.userId}
-              displayName={friend.displayName}
-              onMessage={async () => {
-                const conversationId = await startConversation({ otherUserId: friend.userId });
-                navigate({ to: '/messages/$conversationId', params: { conversationId } });
-              }}
-              onRemove={() => void removeFriend({ friendUserId: friend.userId })}
-              onBlock={() => void blockUser({ blockedId: friend.userId })}
-            />
-          }
-        />
-      ))}
+      {friends
+        .filter((f): f is NonNullable<typeof f> => f != null)
+        .map((friend) => (
+          <UserCard
+            key={friend.userId}
+            username={friend.username}
+            displayName={friend.displayName}
+            avatarUrl={friend.avatarUrl}
+            catVariant={friend.catVariant}
+            catLevel={friend.catLevel}
+            isOnline={friend.isOnline}
+            action={
+              <FriendActions
+                userId={friend.userId}
+                displayName={friend.displayName}
+                onMessage={async () => {
+                  const conversationId = await startConversation({ otherUserId: friend.userId });
+                  navigate({ to: '/messages/$conversationId', params: { conversationId } });
+                }}
+                onRemove={() => void removeFriend({ friendUserId: friend.userId })}
+                onBlock={() => void blockUser({ blockedId: friend.userId })}
+              />
+            }
+          />
+        ))}
     </div>
   );
 }
