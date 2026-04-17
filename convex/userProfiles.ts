@@ -66,9 +66,9 @@ export const isUsernameTaken = query({
 
 /** Create a new user profile (called on first-time username setup) */
 export const createProfile = mutation({
-  args: { username: v.string() },
+  args: { username: v.string(), displayName: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const { userId, displayName, avatarUrl } = await requireAuthWithProfile(ctx);
+    const { userId, displayName: jwtDisplayName, avatarUrl } = await requireAuthWithProfile(ctx);
 
     // Validate username format
     const username = args.username.toLowerCase();
@@ -77,6 +77,16 @@ export const createProfile = mutation({
         'Username must be 3-20 characters, letters, numbers, and underscores only',
       );
     }
+
+    // Resolve display name: user-provided value wins, then JWT, then fallback
+    const providedName = args.displayName?.trim();
+    if (providedName !== undefined && providedName.length === 0) {
+      throw new ConvexError('Display name cannot be empty');
+    }
+    if (providedName && providedName.length > 50) {
+      throw new ConvexError('Display name must be 50 characters or fewer');
+    }
+    const displayName = providedName || jwtDisplayName;
 
     // Check uniqueness
     const existing = await ctx.db
@@ -136,9 +146,19 @@ export const updateProfile = mutation({
       .unique();
     if (!profile) throw new ConvexError('Profile not found');
 
+    if (args.displayName !== undefined) {
+      const trimmed = args.displayName.trim();
+      if (trimmed.length === 0) {
+        throw new ConvexError('Display name cannot be empty');
+      }
+      if (trimmed.length > 50) {
+        throw new ConvexError('Display name must be 50 characters or fewer');
+      }
+    }
+
     await ctx.db.patch(profile._id, {
       ...(args.displayName !== undefined && {
-        displayName: args.displayName,
+        displayName: args.displayName.trim(),
       }),
       ...(args.avatarUrl !== undefined && { avatarUrl: args.avatarUrl }),
       updatedAt: Date.now(),

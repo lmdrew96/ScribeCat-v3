@@ -29,12 +29,15 @@ export function UsernameSetupModal({
   dismissible = true,
 }: UsernameSetupModalProps) {
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createProfile } = useUserProfile();
 
   const normalizedUsername = username.toLowerCase();
   const isValidFormat = USERNAME_REGEX.test(normalizedUsername);
+  const trimmedDisplayName = displayName.trim();
+  const isValidDisplayName = trimmedDisplayName.length >= 1 && trimmedDisplayName.length <= 50;
 
   // Only check availability if format is valid
   const isTaken = useQuery(
@@ -44,13 +47,17 @@ export function UsernameSetupModal({
 
   const isAvailable = isValidFormat && isTaken === false;
   const isChecking = isValidFormat && isTaken === undefined;
+  const canSubmit = isAvailable && isValidDisplayName;
 
   const handleSubmit = async () => {
-    if (!isAvailable || isSubmitting) return;
+    if (!canSubmit || isSubmitting) return;
     setError('');
     setIsSubmitting(true);
     try {
-      await createProfile({ username: normalizedUsername });
+      await createProfile({
+        username: normalizedUsername,
+        displayName: trimmedDisplayName,
+      });
       onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create profile');
@@ -93,6 +100,27 @@ export function UsernameSetupModal({
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
+            <Label className="text-sm text-foreground">Display name</Label>
+            <Input
+              value={displayName}
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+                setError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleSubmit();
+              }}
+              placeholder="Your name"
+              className="bg-background border-border"
+              maxLength={50}
+            />
+            <p className="text-xs text-muted-foreground">
+              How your name appears to friends, study rooms, and messages. You can change this
+              later.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label className="text-sm text-foreground">Username</Label>
             <div className="relative">
               <AtSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -127,7 +155,7 @@ export function UsernameSetupModal({
 
           <Button
             onClick={() => void handleSubmit()}
-            disabled={!isAvailable || isSubmitting}
+            disabled={!canSubmit || isSubmitting}
             className="w-full"
           >
             {isSubmitting ? (

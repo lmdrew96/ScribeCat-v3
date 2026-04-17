@@ -90,7 +90,38 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
   const { signOut } = useClerk();
   const { user } = useUser();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
+
+  // Editable display name (synced from profile)
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+
+  useEffect(() => {
+    if (profile?.displayName) {
+      setDisplayNameInput(profile.displayName);
+    }
+  }, [profile?.displayName]);
+
+  const trimmedDisplayName = displayNameInput.trim();
+  const isDisplayNameDirty =
+    !!profile && trimmedDisplayName.length > 0 && trimmedDisplayName !== profile.displayName;
+  const canSaveDisplayName =
+    isDisplayNameDirty && trimmedDisplayName.length <= 50 && !isSavingDisplayName;
+
+  const handleSaveDisplayName = async () => {
+    if (!canSaveDisplayName) return;
+    setDisplayNameError(null);
+    setIsSavingDisplayName(true);
+    try {
+      await updateProfile({ displayName: trimmedDisplayName });
+      toast.success('Name updated');
+    } catch (e) {
+      setDisplayNameError(e instanceof Error ? e.message : 'Failed to update name');
+    } finally {
+      setIsSavingDisplayName(false);
+    }
+  };
 
   // Study settings from Convex
   const { settings, updateSettings } = useStudySettings();
@@ -861,7 +892,56 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
                 <div className="space-y-2">
                   <Label className="text-sm text-foreground">Name</Label>
-                  <p className="text-sm text-muted-foreground">{user?.fullName ?? 'Student'}</p>
+                  {profile ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={displayNameInput}
+                          onChange={(e) => {
+                            setDisplayNameInput(e.target.value);
+                            setDisplayNameError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && canSaveDisplayName) {
+                              void handleSaveDisplayName();
+                            }
+                          }}
+                          placeholder="Your name"
+                          className="bg-background border-border"
+                          maxLength={50}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => void handleSaveDisplayName()}
+                          disabled={!canSaveDisplayName}
+                        >
+                          {isSavingDisplayName ? 'Saving...' : 'Save'}
+                        </Button>
+                      </div>
+                      {displayNameError && (
+                        <p className="text-xs text-destructive">{displayNameError}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Shown to friends, in study rooms, and in messages.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Set your name when you create your profile on the{' '}
+                      <button
+                        type="button"
+                        className="text-accent hover:underline"
+                        onClick={() => {
+                          onOpenChange(false);
+                          window.location.hash = '';
+                          window.location.pathname = '/friends';
+                        }}
+                      >
+                        Friends page
+                      </button>
+                      .
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
