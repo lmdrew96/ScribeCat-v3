@@ -1,7 +1,6 @@
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
 import { examNuggetChat } from './examChat';
-import { generateNotes } from './generateNotes';
 import { extractLectureContext } from './lectureContext';
 import { nuggetChat } from './nuggetChat';
 import { generateNuggetNotes } from './nuggetNotes';
@@ -21,19 +20,6 @@ const corsHandler = httpAction(async () => {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
-});
-
-// Generate Notes (full AI notes from transcript)
-http.route({
-  path: '/generateNotes',
-  method: 'OPTIONS',
-  handler: corsHandler,
-});
-
-http.route({
-  path: '/generateNotes',
-  method: 'POST',
-  handler: generateNotes,
 });
 
 // Lecture Context (Sonnet - every ~2 min during recording)

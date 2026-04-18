@@ -8,7 +8,7 @@ import { renderInline } from '@/lib/render-markdown';
 import type { FlashcardResult } from '@/types/study-tools';
 import { useMutation, useQuery } from 'convex/react';
 import { BookOpen, ChevronLeft, ChevronRight, GraduationCap, RotateCcw } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import { GenerateButton } from './generate-button';
@@ -26,6 +26,16 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   hard: 'text-red-500',
 };
 
+function formatTimeUntil(ms: number): string {
+  if (ms <= 0) return 'now';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
 export function FlashcardTool({ sessionId }: FlashcardToolProps) {
   const { data, isGenerating, error, generate, hasData } = useStudyTool<FlashcardResult>(
     sessionId,
@@ -34,28 +44,78 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
   const progress = useQuery(api.studyTools.getFlashcardProgress, { sessionId });
   const saveProgress = useMutation(api.studyTools.saveFlashcardProgress);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [browseIndex, setBrowseIndex] = useState(0);
+  const [learnPos, setLearnPos] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [mode, setMode] = useState<Mode>('browse');
 
+  const cardCount = data?.cards.length ?? 0;
+
+  const dueIndices = useMemo(() => {
+    if (!data) return [];
+    const now = Date.now();
+    return data.cards
+      .map((_, idx) => idx)
+      .filter((idx) => {
+        const p = progress?.find((pp) => pp.cardIndex === idx);
+        return !p || (p.nextReview ?? 0) <= now;
+      });
+  }, [data, progress]);
+
+  const nextDueAt = useMemo(() => {
+    if (!progress || progress.length === 0) return null;
+    const now = Date.now();
+    const futureReviews = progress
+      .map((p) => p.nextReview)
+      .filter((t): t is number => t !== undefined && t > now);
+    return futureReviews.length > 0 ? Math.min(...futureReviews) : null;
+  }, [progress]);
+
+  const currentIndex =
+    mode === 'learn' ? (dueIndices[learnPos] ?? dueIndices[0] ?? 0) : browseIndex;
+
   const handleNext = useCallback(() => {
-    if (!data) return;
-    setCurrentIndex((prev) => (prev + 1) % data.cards.length);
     setIsFlipped(false);
-  }, [data]);
+    if (mode === 'learn') {
+      if (dueIndices.length === 0) return;
+      setLearnPos((prev) => (prev + 1) % dueIndices.length);
+    } else {
+      if (cardCount === 0) return;
+      setBrowseIndex((prev) => (prev + 1) % cardCount);
+    }
+  }, [mode, dueIndices.length, cardCount]);
 
   const handlePrev = useCallback(() => {
-    if (!data) return;
-    setCurrentIndex((prev) => (prev - 1 + data.cards.length) % data.cards.length);
     setIsFlipped(false);
-  }, [data]);
+    if (mode === 'learn') {
+      if (dueIndices.length === 0) return;
+      setLearnPos((prev) => (prev - 1 + dueIndices.length) % dueIndices.length);
+    } else {
+      if (cardCount === 0) return;
+      setBrowseIndex((prev) => (prev - 1 + cardCount) % cardCount);
+    }
+  }, [mode, dueIndices.length, cardCount]);
+
+  const handleSetMode = useCallback((next: Mode) => {
+    setMode(next);
+    setIsFlipped(false);
+    if (next === 'learn') setLearnPos(0);
+  }, []);
 
   const handleConfidence = useCallback(
     async (confidence: string) => {
       await saveProgress({ sessionId, cardIndex: currentIndex, confidence });
-      handleNext();
+      setIsFlipped(false);
+      // After rating, the current card leaves dueIndices. Clamp learnPos
+      // to stay within the new (smaller) list. The reactive progress query
+      // re-runs, so dueIndices updates on the next render.
+      setLearnPos((prev) => {
+        const nextLen = Math.max(0, dueIndices.length - 1);
+        if (nextLen === 0) return 0;
+        return prev >= nextLen ? 0 : prev;
+      });
     },
-    [sessionId, currentIndex, saveProgress, handleNext],
+    [sessionId, currentIndex, saveProgress, dueIndices.length],
   );
 
   if (!data || isGenerating || error) {
@@ -71,6 +131,50 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
     );
   }
 
+  // Learn mode with nothing due: show caught-up state
+  if (mode === 'learn' && dueIndices.length === 0) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 h-6 px-2 text-[10px]"
+              onClick={() => handleSetMode('browse')}
+            >
+              <BookOpen className="h-3 w-3" />
+              Browse
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1 h-6 px-2 text-[10px]"
+              onClick={() => handleSetMode('learn')}
+            >
+              <GraduationCap className="h-3 w-3" />
+              Learn
+            </Button>
+          </div>
+          <GenerateButton
+            onGenerate={() => generate({ count: 10 })}
+            isGenerating={isGenerating}
+            hasData={hasData}
+            error={error}
+          />
+        </div>
+        <Card className="flex flex-col items-center justify-center p-4 min-h-[80px] text-center">
+          <p className="text-xs font-medium text-foreground">All caught up!</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {nextDueAt
+              ? `Next card due in ${formatTimeUntil(nextDueAt - Date.now())}`
+              : 'Switch to Browse to review any card.'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   const card = data.cards[currentIndex];
   const cardProgress = progress?.find((p: { cardIndex: number }) => p.cardIndex === currentIndex);
 
@@ -83,7 +187,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
             variant={mode === 'browse' ? 'secondary' : 'ghost'}
             size="sm"
             className="gap-1 h-6 px-2 text-[10px]"
-            onClick={() => setMode('browse')}
+            onClick={() => handleSetMode('browse')}
           >
             <BookOpen className="h-3 w-3" />
             Browse
@@ -92,7 +196,7 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
             variant={mode === 'learn' ? 'secondary' : 'ghost'}
             size="sm"
             className="gap-1 h-6 px-2 text-[10px]"
-            onClick={() => setMode('learn')}
+            onClick={() => handleSetMode('learn')}
           >
             <GraduationCap className="h-3 w-3" />
             Learn
@@ -164,11 +268,17 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
 
       {/* Footer: counter or confidence buttons */}
       <div className="flex items-center justify-center gap-2">
-        {mode === 'browse' ? (
+        {mode === 'browse' && (
           <span className="text-[10px] text-muted-foreground">
             {currentIndex + 1} / {data.cards.length}
           </span>
-        ) : isFlipped ? (
+        )}
+        {mode === 'learn' && !isFlipped && (
+          <span className="text-[10px] text-muted-foreground">
+            Tap card to reveal &middot; {learnPos + 1} / {dueIndices.length} due
+          </span>
+        )}
+        {mode === 'learn' && isFlipped && (
           <div className="flex gap-1">
             <Button
               variant="destructive"
@@ -204,10 +314,6 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
               Easy
             </Button>
           </div>
-        ) : (
-          <span className="text-[10px] text-muted-foreground">
-            Tap card to reveal &middot; {currentIndex + 1} / {data.cards.length}
-          </span>
         )}
       </div>
     </div>
