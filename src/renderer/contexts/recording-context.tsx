@@ -163,13 +163,27 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       if (currentSessionIdRef.current) {
         const sessionId = currentSessionIdRef.current;
         try {
+          if (audioBlob.size === 0) {
+            throw new Error('Recording produced an empty audio blob');
+          }
           const uploadUrl = await generateUploadUrl();
           const uploadResult = await fetch(uploadUrl, {
             method: 'POST',
             headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
             body: audioBlob,
           });
-          const { storageId } = await uploadResult.json();
+          if (!uploadResult.ok) {
+            const body = await uploadResult.text().catch(() => '');
+            throw new Error(
+              `Upload failed (${uploadResult.status} ${uploadResult.statusText}): ${
+                body.slice(0, 200) || 'no response body'
+              }`,
+            );
+          }
+          const { storageId } = (await uploadResult.json()) as { storageId?: string };
+          if (!storageId) {
+            throw new Error('Upload response missing storageId');
+          }
           await updateSession({
             id: sessionId,
             audioStorageId: storageId,
@@ -178,6 +192,11 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
           clearRecoveryData(sessionId).catch(console.warn);
         } catch (error) {
           console.error('Error uploading audio:', error);
+          const message = error instanceof Error ? error.message : String(error);
+          toast.error('Audio save failed', {
+            description: `${message}. Refresh the page — the "Recover Audio" banner will let you retry.`,
+            duration: 15000,
+          });
         }
       }
     },

@@ -6,6 +6,7 @@
 import { clearRecoveryData, getRecoverySessionId, recoverAudio } from '@/lib/audio-recovery';
 import { useMutation } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -43,11 +44,14 @@ export function useSessionRecovery(
     setIsRecovering(true);
     try {
       const audioBlob = await recoverAudio(recoverySessionId);
-      if (!audioBlob) {
-        // No actual audio chunks found — just clean up
+      if (!audioBlob || audioBlob.size === 0) {
+        // No actual audio chunks found — clean up and tell the user
         await clearRecoveryData(recoverySessionId);
         setRecoverySessionId(null);
-        setIsRecovering(false);
+        toast.info('No audio chunks were saved — nothing to recover.', {
+          description:
+            'The recording was interrupted before any audio could be written to local storage.',
+        });
         return;
       }
 
@@ -58,7 +62,18 @@ export function useSessionRecovery(
         headers: { 'Content-Type': 'audio/webm' },
         body: audioBlob,
       });
-      const { storageId } = await uploadResult.json();
+      if (!uploadResult.ok) {
+        const body = await uploadResult.text().catch(() => '');
+        throw new Error(
+          `Upload failed (${uploadResult.status} ${uploadResult.statusText}): ${
+            body.slice(0, 200) || 'no response body'
+          }`,
+        );
+      }
+      const { storageId } = (await uploadResult.json()) as { storageId?: string };
+      if (!storageId) {
+        throw new Error('Upload response missing storageId');
+      }
 
       // Attach to the session
       await updateSession({
@@ -69,8 +84,14 @@ export function useSessionRecovery(
       // Clean up IndexedDB
       await clearRecoveryData(recoverySessionId);
       setRecoverySessionId(null);
+      toast.success('Audio recovered and saved.');
     } catch (error) {
       console.error('Audio recovery failed:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error('Audio recovery failed', {
+        description: message,
+        duration: 15000,
+      });
     } finally {
       setIsRecovering(false);
     }
