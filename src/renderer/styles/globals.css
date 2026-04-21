@@ -680,6 +680,136 @@
   --font-color-8: #005577;
 }
 
+/* Nyan Cat Dark Theme */
+[data-theme="nyan-cat-dark"] {
+  --background: #0a0a1a;
+  --foreground: #ffffff;
+  --card: #12001f;
+  --card-foreground: #ffffff;
+  --popover: #12001f;
+  --popover-foreground: #ffffff;
+  --primary: #00ffff;
+  --primary-foreground: #0a0a1a;
+  --secondary: #12001f;
+  --secondary-foreground: #ffea00;
+  --muted: #12001f;
+  --muted-foreground: #c9a9ff;
+  --accent: #ff00ff;
+  --accent-foreground: #0a0a1a;
+  --destructive: #ff1744;
+  --destructive-foreground: #ffffff;
+  --success: #76ff03;
+  --success-foreground: #0a0a1a;
+  --border: #2a0044;
+  --input: #12001f;
+  --ring: #00ffff;
+  --record: #ff00ff;
+  --record-glow: rgba(255, 0, 255, 0.45);
+  --waveform: #00ffff;
+  --transcript-bg: #12001f;
+  --sidebar: #12001f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00ffff;
+  --sidebar-primary-foreground: #0a0a1a;
+  --sidebar-accent: #ff00ff;
+  --sidebar-accent-foreground: #0a0a1a;
+  --sidebar-border: #2a0044;
+  --sidebar-ring: #00ffff;
+
+  /* Glassmorphism - starry nyan dark */
+  --glass-bg: rgba(18, 0, 31, 0.62);
+  --glass-bg-heavy: rgba(18, 0, 31, 0.82);
+  --glass-bg-light: rgba(18, 0, 31, 0.38);
+  --glass-blur: 18px;
+  --glass-blur-heavy: 26px;
+  --glass-blur-light: 10px;
+  --glass-border: rgba(255, 0, 255, 0.14);
+  --glass-border-strong: rgba(255, 0, 255, 0.28);
+  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --glass-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.25);
+  --glass-shadow-inset: inset 0 1px 0 rgba(0, 255, 255, 0.08);
+  --glass-glow: rgba(0, 255, 255, 0.14);
+  --glass-glow-strong: rgba(255, 0, 255, 0.3);
+  --app-bg-from: #0a0a1a;
+  --app-bg-via: #12001f;
+  --app-bg-to: #05000f;
+  --orb-opacity: 0.28;
+
+  --font-color-1: #ffffff;
+  --font-color-2: #ff0000;
+  --font-color-3: #ff9900;
+  --font-color-4: #ffff00;
+  --font-color-5: #33ff00;
+  --font-color-6: #0099ff;
+  --font-color-7: #6633ff;
+  --font-color-8: #ff00ff;
+}
+
+/* Nyan Cat Light Theme */
+[data-theme="nyan-cat-light"] {
+  --background: #fff0ff;
+  --foreground: #330033;
+  --card: #ffe0ff;
+  --card-foreground: #330033;
+  --popover: #ffe0ff;
+  --popover-foreground: #330033;
+  --primary: #ff00aa;
+  --primary-foreground: #ffffff;
+  --secondary: #ffe0ff;
+  --secondary-foreground: #330033;
+  --muted: #ffe0ff;
+  --muted-foreground: #7a2a7a;
+  --accent: #7b00ff;
+  --accent-foreground: #ffffff;
+  --destructive: #d50000;
+  --destructive-foreground: #ffffff;
+  --success: #2e7d32;
+  --success-foreground: #ffffff;
+  --border: #f2c4ff;
+  --input: #ffe0ff;
+  --ring: #ff00aa;
+  --record: #ff00aa;
+  --record-glow: rgba(255, 0, 170, 0.4);
+  --waveform: #7b00ff;
+  --transcript-bg: #ffe0ff;
+  --sidebar: #ffe0ff;
+  --sidebar-foreground: #330033;
+  --sidebar-primary: #ff00aa;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #7b00ff;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #f2c4ff;
+  --sidebar-ring: #ff00aa;
+
+  /* Glassmorphism - sparkly pink light */
+  --glass-bg: rgba(255, 224, 255, 0.72);
+  --glass-bg-heavy: rgba(255, 224, 255, 0.9);
+  --glass-bg-light: rgba(255, 224, 255, 0.5);
+  --glass-blur: 14px;
+  --glass-blur-heavy: 22px;
+  --glass-blur-light: 8px;
+  --glass-border: rgba(255, 0, 170, 0.14);
+  --glass-border-strong: rgba(255, 0, 170, 0.28);
+  --glass-shadow: 0 4px 24px rgba(123, 0, 255, 0.08), 0 1px 2px rgba(51, 0, 51, 0.04);
+  --glass-shadow-lg: 0 8px 40px rgba(123, 0, 255, 0.14), 0 2px 4px rgba(51, 0, 51, 0.06);
+  --glass-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --glass-glow: rgba(255, 0, 170, 0.12);
+  --glass-glow-strong: rgba(123, 0, 255, 0.22);
+  --app-bg-from: #fff0ff;
+  --app-bg-via: #ffe0ff;
+  --app-bg-to: #ffd5f2;
+  --orb-opacity: 0.18;
+
+  --font-color-1: #330033;
+  --font-color-2: #d50000;
+  --font-color-3: #ef6c00;
+  --font-color-4: #c4b200;
+  --font-color-5: #2e7d32;
+  --font-color-6: #0277bd;
+  --font-color-7: #4a148c;
+  --font-color-8: #ad1457;
+}
+
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none;
@@ -839,4 +969,112 @@ button[data-active="true"] {
 
 .citation-mark:hover::after {
   opacity: 1;
+}
+
+/* ============================================================ */
+/* Easter Eggs                                                  */
+/* ============================================================ */
+
+/* Cat Party — falling cat emojis */
+.falling-cat {
+  position: fixed;
+  top: -50px;
+  font-size: 2rem;
+  pointer-events: none;
+  z-index: 60;
+  animation: cat-fall linear forwards;
+  transform: rotate(var(--rotation));
+  will-change: transform;
+}
+
+@keyframes cat-fall {
+  to {
+    transform: translateY(calc(100vh + 100px)) rotate(var(--rotation));
+  }
+}
+
+/* Study Buddy cat sprite container */
+.study-buddy-sprite {
+  position: fixed;
+  pointer-events: none;
+  z-index: 60;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  /* Hidden until JS sets its transform for the first time */
+  visibility: hidden;
+}
+
+.study-buddy-sprite[data-ready="true"] {
+  visibility: visible;
+}
+
+/* Nyan canvas overlay */
+.nyan-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Easter-egg activation pulse (for title on Study Buddy toggle) */
+.easter-egg-active {
+  animation: easter-egg-pulse 500ms ease-out;
+}
+
+@keyframes easter-egg-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Screen shake on nyan activation */
+.nyan-screen-shake {
+  animation: nyan-shake 0.5s ease-out;
+}
+
+@keyframes nyan-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(-4px, -2px);
+  }
+  30% {
+    transform: translate(4px, 2px);
+  }
+  45% {
+    transform: translate(-3px, -1px);
+  }
+  60% {
+    transform: translate(3px, 1px);
+  }
+  75% {
+    transform: translate(-2px, 0);
+  }
+  90% {
+    transform: translate(2px, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .falling-cat {
+    display: none;
+  }
+  .nyan-canvas {
+    display: none;
+  }
+  .nyan-screen-shake {
+    animation: none;
+  }
+  .easter-egg-active {
+    animation: none;
+  }
 }

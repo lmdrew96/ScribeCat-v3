@@ -83,6 +83,16 @@ const themes = [
     name: 'HC Light',
     colors: ['#FFFFFF', '#F0F0F0', '#0000CC', '#006600'],
   },
+  {
+    id: 'nyan-cat-dark',
+    name: 'Nyan Cat 🌈',
+    colors: ['#0a0a1a', '#12001f', '#ff00ff', '#00ffff'],
+  },
+  {
+    id: 'nyan-cat-light',
+    name: 'Nyan Cat Light 🌈',
+    colors: ['#fff0ff', '#ffe0ff', '#ff00aa', '#330033'],
+  },
 ];
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {

@@ -49,8 +49,11 @@ export function TopBar() {
   const isRooms = currentPath.startsWith('/rooms');
   const isExam = currentPath.startsWith('/exam');
 
-  const totalBadgeCount = (pendingCount || 0) + (unreadCount || 0)
-    + (pendingRoomCount || 0) + (pendingExamRoomCount || 0);
+  const totalBadgeCount =
+    (pendingCount || 0) +
+    (unreadCount || 0) +
+    (pendingRoomCount || 0) +
+    (pendingExamRoomCount || 0);
 
   const navItems: NavItem[] = [
     { to: '/', icon: <Home className="h-4 w-4" />, label: 'Home', isActive: isHome },
@@ -90,7 +93,7 @@ export function TopBar() {
       <header className="glass relative z-40 flex h-[4.5rem] items-center justify-between border-b border-[var(--glass-border)] px-3 sm:px-6">
         {/* Left side - Logo */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 select-none" data-easter-egg-trigger>
             <img
               src="/nuggy-baby-boy.png"
               alt="ScribeCat logo"

@@ -4,6 +4,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { AuthLoading, Authenticated, Unauthenticated } from 'convex/react';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
+import { EasterEggs } from './components/easter-eggs/easter-eggs';
 import { LandingPage } from './components/landing-page';
 import { router } from './router';
 
@@ -41,6 +42,7 @@ function AuthenticatedApp() {
         <RouterProvider router={router} />
       </SessionProvider>
       <Toaster position="top-right" richColors closeButton />
+      <EasterEggs />
     </>
   );
 }

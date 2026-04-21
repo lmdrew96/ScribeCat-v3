@@ -6,7 +6,9 @@ export type Theme =
   | 'blackout'
   | 'chaos-cat'
   | 'high-contrast-dark'
-  | 'high-contrast-light';
+  | 'high-contrast-light'
+  | 'nyan-cat-dark'
+  | 'nyan-cat-light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -56,5 +58,7 @@ function isValidTheme(value: string): value is Theme {
     'chaos-cat',
     'high-contrast-dark',
     'high-contrast-light',
+    'nyan-cat-dark',
+    'nyan-cat-light',
   ].includes(value);
 }
