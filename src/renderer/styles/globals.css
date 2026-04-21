@@ -680,69 +680,69 @@
   --font-color-8: #005577;
 }
 
-/* Nyan Cat Dark Theme */
+/* Nyan Cat Dark Theme — deep-space navy with pink + yellow accents */
 [data-theme="nyan-cat-dark"] {
-  --background: #0a0a1a;
+  --background: #00062e;
   --foreground: #ffffff;
-  --card: #12001f;
+  --card: #0b1547;
   --card-foreground: #ffffff;
-  --popover: #12001f;
+  --popover: #0b1547;
   --popover-foreground: #ffffff;
-  --primary: #00ffff;
-  --primary-foreground: #0a0a1a;
-  --secondary: #12001f;
+  --primary: #ff6ec7;
+  --primary-foreground: #00062e;
+  --secondary: #0b1547;
   --secondary-foreground: #ffea00;
-  --muted: #12001f;
-  --muted-foreground: #c9a9ff;
-  --accent: #ff00ff;
-  --accent-foreground: #0a0a1a;
+  --muted: #0b1547;
+  --muted-foreground: #a4b8ff;
+  --accent: #ffea00;
+  --accent-foreground: #00062e;
   --destructive: #ff1744;
   --destructive-foreground: #ffffff;
   --success: #76ff03;
-  --success-foreground: #0a0a1a;
-  --border: #2a0044;
-  --input: #12001f;
-  --ring: #00ffff;
-  --record: #ff00ff;
-  --record-glow: rgba(255, 0, 255, 0.45);
-  --waveform: #00ffff;
-  --transcript-bg: #12001f;
-  --sidebar: #12001f;
+  --success-foreground: #00062e;
+  --border: #1a2e5e;
+  --input: #0b1547;
+  --ring: #ff6ec7;
+  --record: #ff6ec7;
+  --record-glow: rgba(255, 110, 199, 0.45);
+  --waveform: #ffea00;
+  --transcript-bg: #0b1547;
+  --sidebar: #0b1547;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #00ffff;
-  --sidebar-primary-foreground: #0a0a1a;
-  --sidebar-accent: #ff00ff;
-  --sidebar-accent-foreground: #0a0a1a;
-  --sidebar-border: #2a0044;
-  --sidebar-ring: #00ffff;
+  --sidebar-primary: #ff6ec7;
+  --sidebar-primary-foreground: #00062e;
+  --sidebar-accent: #ffea00;
+  --sidebar-accent-foreground: #00062e;
+  --sidebar-border: #1a2e5e;
+  --sidebar-ring: #ff6ec7;
 
-  /* Glassmorphism - starry nyan dark */
-  --glass-bg: rgba(18, 0, 31, 0.62);
-  --glass-bg-heavy: rgba(18, 0, 31, 0.82);
-  --glass-bg-light: rgba(18, 0, 31, 0.38);
+  /* Glassmorphism - starry navy glass with pink glow */
+  --glass-bg: rgba(11, 21, 71, 0.6);
+  --glass-bg-heavy: rgba(11, 21, 71, 0.82);
+  --glass-bg-light: rgba(11, 21, 71, 0.36);
   --glass-blur: 18px;
   --glass-blur-heavy: 26px;
   --glass-blur-light: 10px;
-  --glass-border: rgba(255, 0, 255, 0.14);
-  --glass-border-strong: rgba(255, 0, 255, 0.28);
+  --glass-border: rgba(255, 234, 0, 0.14);
+  --glass-border-strong: rgba(255, 234, 0, 0.28);
   --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
   --glass-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.25);
-  --glass-shadow-inset: inset 0 1px 0 rgba(0, 255, 255, 0.08);
-  --glass-glow: rgba(0, 255, 255, 0.14);
-  --glass-glow-strong: rgba(255, 0, 255, 0.3);
-  --app-bg-from: #0a0a1a;
-  --app-bg-via: #12001f;
-  --app-bg-to: #05000f;
-  --orb-opacity: 0.28;
+  --glass-shadow-inset: inset 0 1px 0 rgba(255, 234, 0, 0.06);
+  --glass-glow: rgba(255, 110, 199, 0.16);
+  --glass-glow-strong: rgba(255, 110, 199, 0.32);
+  --app-bg-from: #00062e;
+  --app-bg-via: #0b1547;
+  --app-bg-to: #00031a;
+  --orb-opacity: 0.3;
 
   --font-color-1: #ffffff;
   --font-color-2: #ff0000;
   --font-color-3: #ff9900;
-  --font-color-4: #ffff00;
+  --font-color-4: #ffea00;
   --font-color-5: #33ff00;
-  --font-color-6: #0099ff;
+  --font-color-6: #00d4ff;
   --font-color-7: #6633ff;
-  --font-color-8: #ff00ff;
+  --font-color-8: #ff6ec7;
 }
 
 /* Nyan Cat Light Theme */

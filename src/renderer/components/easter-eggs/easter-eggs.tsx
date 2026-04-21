@@ -6,6 +6,7 @@ import { NyanMode } from './nyan-mode';
 import { StudyBuddy } from './study-buddy';
 import { useKeyboardSequence } from './use-keyboard-sequence';
 import { useKonamiCode } from './use-konami-code';
+import { unlockNyanThemes } from './use-nyan-unlock';
 
 /**
  * Top-level easter-egg orchestrator. Mounted once inside AuthenticatedApp
@@ -23,7 +24,12 @@ export function EasterEggs() {
   useKeyboardSequence('nyan', () => {
     if (nyanActive) return;
     setNyanActive(true);
-    toast('✨ NYAN! SUPER RAINBOW MODE! ✨');
+    const firstUnlock = unlockNyanThemes();
+    toast(
+      firstUnlock
+        ? '✨ NYAN! SUPER RAINBOW MODE! ✨ New themes unlocked in Settings →'
+        : '✨ NYAN! SUPER RAINBOW MODE! ✨',
+    );
   });
 
   // Konami detector: ↑↑↓↓←→←→BA.

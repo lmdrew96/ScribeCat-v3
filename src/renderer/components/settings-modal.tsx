@@ -1,3 +1,4 @@
+import { useNyanUnlocked } from '@/components/easter-eggs/use-nyan-unlock';
 import { LegalDocModal } from '@/components/legal-doc-modal';
 import { type Theme, useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -86,18 +87,25 @@ const themes = [
   {
     id: 'nyan-cat-dark',
     name: 'Nyan Cat 🌈',
-    colors: ['#0a0a1a', '#12001f', '#ff00ff', '#00ffff'],
+    colors: ['#00062e', '#0b1547', '#ffea00', '#ff6ec7'],
+    secret: true,
   },
   {
     id: 'nyan-cat-light',
     name: 'Nyan Cat Light 🌈',
     colors: ['#fff0ff', '#ffe0ff', '#ff00aa', '#330033'],
+    secret: true,
   },
 ];
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('appearance');
   const { theme, setTheme } = useTheme();
+  const nyanUnlocked = useNyanUnlocked();
+  // Hide secret (unlockable) themes from the picker until their trigger has fired —
+  // BUT keep the currently-selected theme visible so users aren't stranded on a
+  // theme they can no longer re-select.
+  const visibleThemes = themes.filter((t) => !t.secret || nyanUnlocked || t.id === theme);
   const { signOut } = useClerk();
   const { user } = useUser();
   const { profile, updateProfile } = useUserProfile();
@@ -308,7 +316,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-foreground">Theme</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {themes.map((themeOption) => (
+                    {visibleThemes.map((themeOption) => (
                       <button
                         type="button"
                         key={themeOption.id}
