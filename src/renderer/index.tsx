@@ -35,7 +35,7 @@ if (!root) {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={clerkPubKey}>
+    <ClerkProvider publishableKey={clerkPubKey} telemetry={false}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <ThemeProvider>
           <App />
