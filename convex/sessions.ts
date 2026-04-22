@@ -34,6 +34,7 @@ export const listMetadata = query({
       lectureType: s.lectureType,
       course: s.course,
       audioStorageId: s.audioStorageId,
+      audioStorageIds: s.audioStorageIds,
     }));
   },
 });
@@ -165,6 +166,28 @@ export const update = mutation({
 
     return await ctx.db.patch(id, {
       ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// Append an audio chunk storageId to a session's audioStorageIds array.
+// Used by the progressive uploader during recording and by the recovery flow.
+// Atomic per-mutation — Convex serializes mutations on the same document.
+export const appendAudioChunk = mutation({
+  args: {
+    id: v.id('sessions'),
+    storageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const session = await ctx.db.get(args.id);
+    if (!session || session.userId !== userId) {
+      throw new Error('Session not found or unauthorized');
+    }
+    const existing = session.audioStorageIds ?? [];
+    await ctx.db.patch(args.id, {
+      audioStorageIds: [...existing, args.storageId],
       updatedAt: Date.now(),
     });
   },

@@ -10,11 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useExamRoomSessionContent } from '@/hooks/use-exam-room';
+import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
 import { renderMarkdown } from '@/lib/render-markdown';
-import { useQuery } from 'convex/react';
 import { BookOpen, Clock, FileText, Loader2, Mic, Pause, Play, User } from 'lucide-react';
 import { useEffect } from 'react';
-import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 
 interface ExamSessionViewerProps {
@@ -48,9 +47,13 @@ export function ExamSessionViewer({
     open ? sessionId : null,
   );
 
-  const audioUrl = useQuery(
-    api.audioStorage.getAudioUrl,
-    content?.audioStorageId ? { storageId: content.audioStorageId } : 'skip',
+  const audioUrl = useSessionAudioUrl(
+    content
+      ? {
+          audioStorageId: content.audioStorageId ?? undefined,
+          audioStorageIds: content.audioStorageIds ?? undefined,
+        }
+      : null,
   );
 
   const { isPlaying, currentTime, duration, load, togglePlay, seek } = useAudioPlayer();
@@ -64,7 +67,10 @@ export function ExamSessionViewer({
 
   const hasNotes = !!(content?.notesPlainText || content?.notes);
   const hasTranscript = !!content?.transcript;
-  const hasAudio = !!content?.audioStorageId;
+  const hasAudio = !!(
+    content?.audioStorageId ||
+    (content?.audioStorageIds && content.audioStorageIds.length > 0)
+  );
   const hasNuggetNotes = !!(content?.nuggetNotes && content.nuggetNotes.length > 0);
   const hasDocumentText = !!content?.documentText;
 
@@ -119,7 +125,15 @@ export function ExamSessionViewer({
 
         {!isLoading && content && (
           <Tabs
-            defaultValue={hasNotes ? 'notes' : hasDocumentText ? 'document' : hasTranscript ? 'transcript' : 'audio'}
+            defaultValue={
+              hasNotes
+                ? 'notes'
+                : hasDocumentText
+                  ? 'document'
+                  : hasTranscript
+                    ? 'transcript'
+                    : 'audio'
+            }
             className="flex-1 flex flex-col min-h-0"
           >
             <TabsList className="shrink-0 w-full justify-start">

@@ -13,7 +13,12 @@ import { type UseNuggetNotesReturn, useNuggetNotes } from '@/hooks/use-nugget-no
 import { useBreakReminder, useLogStudyTime, useStudySettings } from '@/hooks/use-productivity';
 import { useSession, useSessions } from '@/hooks/use-sessions';
 import { type TranscriptSegment, useTranscription } from '@/hooks/use-transcription';
-import { clearRecoveryData, saveAudioChunk, startRecoverySession } from '@/lib/audio-recovery';
+import {
+  clearChunksUpTo,
+  clearRecoveryData,
+  saveAudioChunk,
+  startRecoverySession,
+} from '@/lib/audio-recovery';
 import { useMutation } from 'convex/react';
 import {
   type ReactNode,
@@ -35,6 +40,8 @@ interface RecordingContextValue {
   // Recording state
   isRecording: boolean;
   isPaused: boolean;
+  /** True while the final post-stop audio chunk is being flushed to Convex. */
+  isSavingAudio: boolean;
   recordingTime: number;
   audioLevel: number;
   currentSessionId: Id<'sessions'> | null;
@@ -85,6 +92,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const { createSession, updateSession } = useSessions();
   const logStudyTime = useLogStudyTime();
   const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const appendAudioChunk = useMutation(api.sessions.appendAudioChunk);
 
   // Session state
   const currentSessionIdRef = useRef<Id<'sessions'> | null>(null);
@@ -96,6 +104,19 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   // Consent modal
   const [showConsentModal, setShowConsentModal] = useState(false);
+
+  // True while the post-stop audio flush is still in flight.
+  const [isSavingAudio, setIsSavingAudio] = useState(false);
+
+  // Monotonic count of chunks successfully uploaded so far this session.
+  // Used as the exclusive upper bound when clearing IndexedDB after a
+  // successful periodic upload.
+  const uploadedChunkCountRef = useRef(0);
+
+  // Promise for the periodic uploader's in-flight request, if any.
+  // handleStop awaits this before snapshotting the final unuploaded
+  // chunks, so the two can't race on overlapping chunk ranges.
+  const activeUploadRef = useRef<Promise<void> | null>(null);
 
   // Pre-record config
   const [lectureType, setLectureType] = useSimpleState<LectureType>('general');
@@ -158,53 +179,17 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     setSelectedDeviceId,
     reset: resetRecorder,
     getStream,
+    getUnuploadedChunks,
+    markChunksUploaded,
   } = useAudioRecorder({
-    onDataAvailable: async (audioBlob) => {
-      if (currentSessionIdRef.current) {
-        const sessionId = currentSessionIdRef.current;
-        try {
-          if (audioBlob.size === 0) {
-            throw new Error('Recording produced an empty audio blob');
-          }
-          const uploadUrl = await generateUploadUrl();
-          const uploadResult = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
-            body: audioBlob,
-          });
-          if (!uploadResult.ok) {
-            const body = await uploadResult.text().catch(() => '');
-            throw new Error(
-              `Upload failed (${uploadResult.status} ${uploadResult.statusText}): ${
-                body.slice(0, 200) || 'no response body'
-              }`,
-            );
-          }
-          const { storageId } = (await uploadResult.json()) as { storageId?: string };
-          if (!storageId) {
-            throw new Error('Upload response missing storageId');
-          }
-          await updateSession({
-            id: sessionId,
-            audioStorageId: storageId,
-          });
-          // Audio uploaded successfully — clear recovery data
-          clearRecoveryData(sessionId).catch(console.warn);
-        } catch (error) {
-          console.error('Error uploading audio:', error);
-          const message = error instanceof Error ? error.message : String(error);
-          toast.error('Audio save failed', {
-            description: `${message}. Refresh the page — the "Recover Audio" banner will let you retry.`,
-            duration: 15000,
-          });
-        }
-      }
-    },
-    onChunkAvailable: (chunk) => {
-      // Fire-and-forget: save chunk to IndexedDB for crash recovery
+    onChunkAvailable: (chunk, index) => {
+      // Fire-and-forget: save chunk to IndexedDB for crash recovery.
+      // The progressive uploader clears chunks below uploadedChunkCountRef
+      // after each successful periodic upload, so IDB only holds the
+      // "since last upload" tail.
       const sessionId = currentSessionIdRef.current;
       if (sessionId) {
-        saveAudioChunk(sessionId, chunk).catch(() => {
+        saveAudioChunk(sessionId, chunk, index).catch(() => {
           // Silently ignore — never interrupt recording for recovery saves
         });
       }
@@ -267,6 +252,75 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     };
     saveTranscript();
   }, [segments, updateSession]);
+
+  // ─── Progressive audio upload effect ────────────────────────────────────
+  // Every ~30s during recording, flush any accumulated audio chunks to
+  // Convex storage as a separate file and append the storageId to the
+  // session's audioStorageIds array. This keeps the "upload at stop" cost
+  // near-zero even for multi-hour sessions, and means the recovery flow
+  // only ever needs to ship the last ~30s when a crash happens.
+
+  useEffect(() => {
+    if (!isRecording || !currentSessionIdRef.current) return;
+
+    const UPLOAD_INTERVAL_MS = 30_000; // 30s — matches notes periodic save cadence
+    const MIN_UPLOAD_SIZE = 50_000; // skip sub-50KB flushes to avoid churn
+
+    const interval = setInterval(() => {
+      // Skip this tick if a previous upload is still in flight — prevents
+      // overlapping snapshots of chunksRef and duplicate appendAudioChunk calls.
+      if (activeUploadRef.current) return;
+
+      const sessionId = currentSessionIdRef.current;
+      if (!sessionId) return;
+
+      const pending = getUnuploadedChunks();
+      if (!pending || pending.blob.size < MIN_UPLOAD_SIZE) return;
+
+      const newTotal = uploadedChunkCountRef.current + pending.count;
+
+      const uploadPromise = (async () => {
+        try {
+          const uploadUrl = await generateUploadUrl();
+          const res = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': pending.blob.type || 'audio/webm' },
+            body: pending.blob,
+          });
+          if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            throw new Error(
+              `Upload failed (${res.status} ${res.statusText}): ${
+                body.slice(0, 200) || 'no response body'
+              }`,
+            );
+          }
+          const { storageId } = (await res.json()) as { storageId?: string };
+          if (!storageId) throw new Error('Upload response missing storageId');
+
+          await appendAudioChunk({ id: sessionId, storageId });
+          markChunksUploaded(pending.count);
+          uploadedChunkCountRef.current = newTotal;
+          // Drop now-persisted chunks from IndexedDB so recovery only ever
+          // has to upload the tail after the most recent successful flush.
+          clearChunksUpTo(sessionId, newTotal).catch(() => {});
+        } catch (err) {
+          // Leave chunks in place — they'll be retried on the next tick, and
+          // the final flush in handleStop covers anything still pending.
+          console.warn('Periodic audio upload failed (will retry):', err);
+        }
+      })();
+
+      activeUploadRef.current = uploadPromise;
+      uploadPromise.finally(() => {
+        if (activeUploadRef.current === uploadPromise) {
+          activeUploadRef.current = null;
+        }
+      });
+    }, UPLOAD_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isRecording, generateUploadUrl, appendAudioChunk, getUnuploadedChunks, markChunksUploaded]);
 
   // ─── Nugget notes periodic save effect ──────────────────────────────────
 
@@ -354,6 +408,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       startRecoverySession(sessionId).catch(console.warn);
 
       // Clear previous state
+      uploadedChunkCountRef.current = 0;
       resetTranscription();
       nuggetNotes.clearNotes();
       nuggetNotes.startRecording();
@@ -388,27 +443,97 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   ]);
 
   const handleStop = useCallback(async () => {
-    stopRecording();
+    const capturedSessionId = currentSessionIdRef.current;
+    const capturedRecordingTime = recordingTime;
+
+    setIsSavingAudio(true);
+
+    // Stop the recorder and wait for `onstop` to flush remaining data into
+    // chunksRef. Any final partial-second of audio is now in the in-memory
+    // buffer and in IndexedDB.
+    await stopRecording();
     await stopTranscription();
 
-    const finalTranscript = getFullTranscript();
-    await nuggetNotes.stopRecording(finalTranscript);
-
-    if (currentSessionIdRef.current) {
-      await updateSession({
-        id: currentSessionIdRef.current,
-        duration: recordingTime * 1000,
-        transcript: getFullTranscript(),
-        transcriptSegments: segments,
-        nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
-          text: n.text,
-          recordingTime: n.recordingTime,
-        })),
-      });
+    // If the periodic uploader has an in-flight request, wait for it to
+    // finish before we snapshot the final unuploaded chunks — otherwise
+    // the two would race and could both upload overlapping ranges.
+    if (activeUploadRef.current) {
+      try {
+        await activeUploadRef.current;
+      } catch {
+        /* error already logged inside the upload */
+      }
     }
 
-    // Log study time
-    const durationMinutes = Math.round(recordingTime / 60);
+    const finalTranscript = getFullTranscript();
+
+    // Flush any chunks that arrived since the last periodic upload.
+    // Typically small (<30s of audio, < 2 MB) so this completes quickly.
+    let finalUploadSucceeded = true;
+    if (capturedSessionId) {
+      const pending = getUnuploadedChunks();
+      if (pending) {
+        const newTotal = uploadedChunkCountRef.current + pending.count;
+        try {
+          const uploadUrl = await generateUploadUrl();
+          const res = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': pending.blob.type || 'audio/webm' },
+            body: pending.blob,
+          });
+          if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            throw new Error(
+              `Upload failed (${res.status} ${res.statusText}): ${
+                body.slice(0, 200) || 'no response body'
+              }`,
+            );
+          }
+          const { storageId } = (await res.json()) as { storageId?: string };
+          if (!storageId) throw new Error('Upload response missing storageId');
+
+          await appendAudioChunk({ id: capturedSessionId, storageId });
+          markChunksUploaded(pending.count);
+          uploadedChunkCountRef.current = newTotal;
+        } catch (err) {
+          console.error('Final audio chunk upload failed:', err);
+          const message = err instanceof Error ? err.message : String(err);
+          toast.error('Audio save failed', {
+            description: `${message}. Refresh the page — the "Recover Audio" banner will let you retry.`,
+            duration: 15000,
+          });
+          finalUploadSucceeded = false;
+        }
+      }
+    }
+
+    // Clear IndexedDB recovery data only if the full upload chain succeeded.
+    // If the final chunk failed, leave the IDB state so the recovery banner
+    // can retry the tail on next load.
+    if (finalUploadSucceeded && capturedSessionId) {
+      clearRecoveryData(capturedSessionId).catch(console.warn);
+    }
+
+    // Save session metadata.
+    if (capturedSessionId) {
+      try {
+        await updateSession({
+          id: capturedSessionId,
+          duration: capturedRecordingTime * 1000,
+          transcript: finalTranscript,
+          transcriptSegments: segments,
+          nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
+            text: n.text,
+            recordingTime: n.recordingTime,
+          })),
+        });
+      } catch (error) {
+        console.error('Error saving final session metadata:', error);
+      }
+    }
+
+    // Log study time + achievements.
+    const durationMinutes = Math.round(capturedRecordingTime / 60);
     if (durationMinutes > 0) {
       try {
         const result = await logStudyTime({
@@ -435,14 +560,46 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     // Clean up refs
     lastSavedTranscriptRef.current = '';
     lastNuggetProcessRef.current = '';
+    uploadedChunkCountRef.current = 0;
 
     // Reset title for next recording
     setSessionTitle('');
     resetRecorder();
+    setIsSavingAudio(false);
+
+    // Nugget Notes catch-up runs in the background so it doesn't hold up
+    // handleStop. When it finishes we persist any new tail-notes, since
+    // the 30s periodic save interval has already stopped.
+    if (capturedSessionId) {
+      const beforeCount = nuggetNotes.getLatestNotes().length;
+      nuggetNotes
+        .stopRecording(finalTranscript)
+        .then(async () => {
+          const afterNotes = nuggetNotes.getLatestNotes();
+          if (afterNotes.length > beforeCount) {
+            try {
+              await updateSession({
+                id: capturedSessionId,
+                nuggetNotes: afterNotes.map((n) => ({
+                  text: n.text,
+                  recordingTime: n.recordingTime,
+                })),
+              });
+            } catch (err) {
+              console.warn('Failed to save final Nugget tail-notes:', err);
+            }
+          }
+        })
+        .catch((err) => console.warn('Nugget catch-up failed:', err));
+    }
   }, [
     stopRecording,
     stopTranscription,
     getFullTranscript,
+    getUnuploadedChunks,
+    markChunksUploaded,
+    generateUploadUrl,
+    appendAudioChunk,
     nuggetNotes,
     updateSession,
     recordingTime,
@@ -461,6 +618,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const value: RecordingContextValue = {
     isRecording,
     isPaused,
+    isSavingAudio,
     recordingTime,
     audioLevel,
     currentSessionId,

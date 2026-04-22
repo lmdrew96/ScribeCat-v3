@@ -2,6 +2,7 @@ import { StudyContent } from '@/components/study-content';
 import { StudyTools } from '@/components/study-tools/index';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
+import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
 import { useShareSession } from '@/hooks/use-session-sharing';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useQuery } from 'convex/react';
@@ -16,10 +17,7 @@ export function SharedSessionView() {
   const sessionId = match?.params.sessionId as Id<'sessions'> | undefined;
 
   const session = useQuery(api.sessionSharing.getSharedSession, sessionId ? { sessionId } : 'skip');
-  const audioUrl = useQuery(
-    api.audioStorage.getAudioUrl,
-    session?.audioStorageId ? { storageId: session.audioStorageId } : 'skip',
-  );
+  const audioUrl = useSessionAudioUrl(session);
   const { copyToLibrary } = useShareSession();
 
   const handleCopy = async () => {

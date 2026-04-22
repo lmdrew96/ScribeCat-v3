@@ -300,6 +300,7 @@ export const copyToLibrary = mutation({
       title: `${original.title} (copy)`,
       lectureType: original.lectureType,
       audioStorageId: original.audioStorageId, // Reference same audio file
+      audioStorageIds: original.audioStorageIds, // Reference same chunk sequence
       transcript: original.transcript,
       transcriptSegments: original.transcriptSegments,
       nuggetNotes: original.nuggetNotes,

@@ -25,7 +25,7 @@ export function useSessionRecovery(
   const [isRecovering, setIsRecovering] = useState(false);
 
   const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
-  const updateSession = useMutation(api.sessions.update);
+  const appendAudioChunk = useMutation(api.sessions.appendAudioChunk);
 
   // Check for orphaned recovery data on mount
   useEffect(() => {
@@ -75,10 +75,13 @@ export function useSessionRecovery(
         throw new Error('Upload response missing storageId');
       }
 
-      // Attach to the session
-      await updateSession({
+      // Append to the session's audioStorageIds array. This preserves any
+      // chunks that were successfully uploaded by the progressive uploader
+      // during the original recording — the recovered blob is just the tail
+      // that didn't make it before the crash/tab-close.
+      await appendAudioChunk({
         id: recoverySessionId as Id<'sessions'>,
-        audioStorageId: storageId,
+        storageId,
       });
 
       // Clean up IndexedDB
@@ -95,7 +98,7 @@ export function useSessionRecovery(
     } finally {
       setIsRecovering(false);
     }
-  }, [recoverySessionId, generateUploadUrl, updateSession]);
+  }, [recoverySessionId, generateUploadUrl, appendAudioChunk]);
 
   const dismiss = useCallback(async () => {
     if (!recoverySessionId) return;

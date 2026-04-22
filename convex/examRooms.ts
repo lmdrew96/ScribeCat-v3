@@ -267,8 +267,9 @@ export const getExamRoomSessionContent = query({
       duration: session.duration,
       lectureType: session.lectureType,
       course: session.course,
-      // Only return audioStorageId if audio hasn't been deleted
+      // Only return audio references if audio hasn't been deleted
       audioStorageId: session.audioDeletedAt ? null : (session.audioStorageId ?? null),
+      audioStorageIds: session.audioDeletedAt ? null : (session.audioStorageIds ?? null),
       nuggetNotes: session.nuggetNotes,
       documentText: session.documentText,
       createdAt: session.createdAt,

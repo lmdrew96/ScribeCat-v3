@@ -19,6 +19,18 @@ export const getAudioUrl = query({
   },
 });
 
+/**
+ * Get playable URLs for multiple stored audio files, preserving order.
+ * Used for multi-part sessions where audio is stored as a sequence of
+ * storageIds that the client concatenates on playback.
+ */
+export const getAudioUrls = query({
+  args: { storageIds: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    return await Promise.all(args.storageIds.map((id) => ctx.storage.getUrl(id)));
+  },
+});
+
 /** Get audio URL imperatively (for use in callbacks) */
 export const getAudioUrlMutation = mutation({
   args: { storageId: v.string() },

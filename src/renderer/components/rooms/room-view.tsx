@@ -11,6 +11,7 @@ import { StudyTools } from '@/components/study-tools/index';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
 import { useSessions } from '@/hooks/use-sessions';
 import { useActiveGame } from '@/hooks/use-study-games';
 import {
@@ -23,11 +24,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/clerk-react';
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery } from 'convex/react';
 import { DoorOpen, FileText, LogOut, Pin, Upload, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
 
 interface RoomViewProps {
@@ -65,11 +64,8 @@ export function RoomView({ roomId }: RoomViewProps) {
   // Left panel tab
   const [activeTab, setActiveTab] = useState<'session' | 'notes'>('session');
 
-  // Audio URL for pinned session
-  const audioUrl = useQuery(
-    api.audioStorage.getAudioUrl,
-    pinnedSession?.audioStorageId ? { storageId: pinnedSession.audioStorageId } : 'skip',
-  );
+  // Audio URL for pinned session (handles legacy single-file + multi-part)
+  const audioUrl = useSessionAudioUrl(pinnedSession);
 
   if (roomLoading || !room) {
     return (

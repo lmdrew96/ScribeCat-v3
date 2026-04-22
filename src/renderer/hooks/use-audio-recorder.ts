@@ -6,9 +6,16 @@ export interface AudioDevice {
 }
 
 export interface UseAudioRecorderOptions {
-  onDataAvailable?: (data: Blob) => void;
-  onChunkAvailable?: (chunk: Blob) => void;
+  /** Called for every chunk with (chunk, absoluteIndex) — use for IndexedDB recovery save. */
+  onChunkAvailable?: (chunk: Blob, index: number) => void;
   onError?: (error: Error) => void;
+}
+
+/** Snapshot of chunks waiting to be uploaded. */
+export interface PendingChunks {
+  blob: Blob;
+  /** How many chunks the blob contains. Pass this to markChunksUploaded. */
+  count: number;
 }
 
 export function useAudioRecorder(options?: UseAudioRecorderOptions) {
@@ -23,7 +30,12 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // In-memory buffer of un-uploaded chunks. Shifts as chunks are uploaded,
+  // so memory stays bounded for long recordings.
   const chunksRef = useRef<Blob[]>([]);
+  // Monotonic per-session counter so IndexedDB records have stable indices
+  // even after in-memory chunks are shifted away.
+  const chunkIndexCounterRef = useRef<number>(0);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const startTimeRef = useRef<number>(0);
@@ -72,6 +84,54 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, []);
 
   /**
+   * Disconnect audio processing graph, stop stream tracks, and close context.
+   * Does NOT touch chunksRef — callers may still need it for upload.
+   */
+  const cleanupAudioGraph = useCallback(() => {
+    if (streamRef.current) {
+      for (const track of streamRef.current.getTracks()) {
+        track.stop();
+      }
+      streamRef.current = null;
+    }
+
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+      sourceNodeRef.current = null;
+    }
+
+    if (analyserRef.current) {
+      try {
+        analyserRef.current.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+      analyserRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {
+        /* ignore */
+      });
+      audioContextRef.current = null;
+    }
+
+    if (animationFrameRef.current !== undefined) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = undefined;
+    }
+
+    if (timerIntervalRef.current !== undefined) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = undefined;
+    }
+  }, []);
+
+  /**
    * Start recording
    */
   const startRecording = useCallback(async () => {
@@ -109,18 +169,14 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       });
 
       chunksRef.current = [];
+      chunkIndexCounterRef.current = 0;
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
-          optionsRef.current?.onChunkAvailable?.(event.data);
+          const absoluteIndex = chunkIndexCounterRef.current++;
+          optionsRef.current?.onChunkAvailable?.(event.data, absoluteIndex);
         }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        optionsRef.current?.onDataAvailable?.(audioBlob);
-        chunksRef.current = [];
       };
 
       mediaRecorder.onerror = (event) => {
@@ -152,71 +208,51 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, [selectedDeviceId, updateAudioLevel, loadDevices]);
 
   /**
-   * Stop recording
+   * Stop recording. Resolves after `onstop` fires and any final buffered
+   * data has been pushed into chunksRef — callers can then read pending
+   * chunks via getUnuploadedChunks() to upload the remainder.
    */
-  const stopRecording = useCallback(() => {
-    // Mark as not recording immediately
-    isRecordingRef.current = false;
+  const stopRecording = useCallback((): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      isRecordingRef.current = false;
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    mediaRecorderRef.current = null;
-
-    if (streamRef.current) {
-      for (const track of streamRef.current.getTracks()) {
-        track.stop();
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === 'inactive') {
+        cleanupAudioGraph();
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+        setAudioLevel(0);
+        console.log('🧹 Audio recorder cleanup complete');
+        resolve();
+        return;
       }
-      streamRef.current = null;
-    }
 
-    // Disconnect source node first
-    if (sourceNodeRef.current) {
+      // Hook onstop — fires after any final `ondataavailable` has flushed,
+      // so chunksRef is guaranteed up-to-date when we resolve.
+      recorder.onstop = () => {
+        cleanupAudioGraph();
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+        setAudioLevel(0);
+        console.log('🧹 Audio recorder cleanup complete');
+        resolve();
+      };
+
       try {
-        sourceNodeRef.current.disconnect();
-      } catch (e) {
-        // Ignore - may already be disconnected
+        recorder.stop();
+      } catch (err) {
+        console.warn('MediaRecorder.stop() threw:', err);
+        cleanupAudioGraph();
+        mediaRecorderRef.current = null;
+        setIsRecording(false);
+        setIsPaused(false);
+        setAudioLevel(0);
+        resolve();
       }
-      sourceNodeRef.current = null;
-    }
-
-    // Disconnect analyser
-    if (analyserRef.current) {
-      try {
-        analyserRef.current.disconnect();
-      } catch (e) {
-        // Ignore - may already be disconnected
-      }
-      analyserRef.current = null;
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => {
-        /* ignore */
-      });
-      audioContextRef.current = null;
-    }
-
-    if (animationFrameRef.current !== undefined) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = undefined;
-    }
-
-    if (timerIntervalRef.current !== undefined) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = undefined;
-    }
-
-    // Don't clear chunksRef here — onstop fires async after stop()
-    // and needs the chunks to build the final blob. Chunks are cleared
-    // in onstop (line 117) and at the start of the next recording.
-
-    setIsRecording(false);
-    setIsPaused(false);
-    setAudioLevel(0);
-
-    console.log('🧹 Audio recorder cleanup complete');
-  }, []);
+    });
+  }, [cleanupAudioGraph]);
 
   /**
    * Pause/Resume recording
@@ -244,12 +280,35 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, [isPaused, updateAudioLevel]);
 
   /**
-   * Reset recording state
+   * Reset recording state (timer + in-memory chunk buffer).
+   * Call after a successful full stop-and-upload cycle.
    */
   const reset = useCallback(() => {
     setRecordingTime(0);
     startTimeRef.current = 0;
     pausedTimeRef.current = 0;
+    chunksRef.current = [];
+    chunkIndexCounterRef.current = 0;
+  }, []);
+
+  /**
+   * Snapshot of chunks currently in-memory waiting to be uploaded.
+   * Returns null if nothing pending.
+   */
+  const getUnuploadedChunks = useCallback((): PendingChunks | null => {
+    const count = chunksRef.current.length;
+    if (count === 0) return null;
+    const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+    return { blob, count };
+  }, []);
+
+  /**
+   * Mark the first `count` chunks as uploaded and drop them from memory.
+   * Use the count returned by getUnuploadedChunks — captured at snapshot
+   * time, so any chunks that arrived during the upload are preserved.
+   */
+  const markChunksUploaded = useCallback((count: number) => {
+    chunksRef.current = chunksRef.current.slice(count);
   }, []);
 
   /**
@@ -302,13 +361,12 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     return () => {
       // Use ref to check recording state to avoid stale closure
       if (isRecordingRef.current || mediaRecorderRef.current || audioContextRef.current) {
-        // Inline cleanup to avoid calling stopRecording() with stale closure
         isRecordingRef.current = false;
 
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           try {
             mediaRecorderRef.current.stop();
-          } catch (e) {
+          } catch {
             /* ignore */
           }
         }
@@ -324,7 +382,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
         if (sourceNodeRef.current) {
           try {
             sourceNodeRef.current.disconnect();
-          } catch (e) {
+          } catch {
             /* ignore */
           }
           sourceNodeRef.current = null;
@@ -333,7 +391,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
         if (analyserRef.current) {
           try {
             analyserRef.current.disconnect();
-          } catch (e) {
+          } catch {
             /* ignore */
           }
           analyserRef.current = null;
@@ -356,7 +414,8 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
           timerIntervalRef.current = undefined;
         }
 
-        // Don't clear chunks — onstop may still fire and needs them for upload
+        // Don't clear chunks — onstop may still fire and the recovery
+        // flow may need them for retry.
       }
     };
   }, []);
@@ -381,5 +440,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     setSelectedDeviceId,
     reset,
     getStream,
+    getUnuploadedChunks,
+    markChunksUploaded,
   };
 }

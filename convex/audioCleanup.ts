@@ -21,7 +21,9 @@ export const cleanupExpiredAudio = internalMutation({
       .withIndex('by_deleted_at', (q) => q.eq('isDeleted', false))
       .collect();
 
-    const sessionsWithAudio = sessions.filter((s) => s.audioStorageId);
+    const sessionsWithAudio = sessions.filter(
+      (s) => s.audioStorageId || (s.audioStorageIds && s.audioStorageIds.length > 0),
+    );
     if (sessionsWithAudio.length === 0) return { deletedCount: 0 };
 
     // Group by user to look up retention settings
@@ -49,9 +51,18 @@ export const cleanupExpiredAudio = internalMutation({
       const cutoff = baseTime + retentionMs;
 
       if (now >= cutoff) {
-        await ctx.storage.delete(session.audioStorageId as string);
+        // Delete both legacy single-file and multi-part chunk storage
+        if (session.audioStorageId) {
+          await ctx.storage.delete(session.audioStorageId as string);
+        }
+        if (session.audioStorageIds) {
+          for (const id of session.audioStorageIds) {
+            await ctx.storage.delete(id as string);
+          }
+        }
         await ctx.db.patch(session._id, {
           audioStorageId: undefined,
+          audioStorageIds: undefined,
           audioDeletedAt: now,
         });
         deletedCount++;
@@ -94,7 +105,8 @@ export const getSessionsApproachingDeletion = query({
 
     return sessions
       .filter((s) => {
-        if (!s.audioStorageId) return false;
+        const hasAudio = s.audioStorageId || (s.audioStorageIds && s.audioStorageIds.length > 0);
+        if (!hasAudio) return false;
         const baseTime = s.audioRetentionExtendedAt ?? s.createdAt;
         const cutoff = baseTime + retentionMs;
         const daysUntilDeletion = cutoff - now;
@@ -122,7 +134,10 @@ export const extendRetention = mutation({
 
     for (const id of args.sessionIds) {
       const session = await ctx.db.get(id);
-      if (session && session.userId === userId && session.audioStorageId) {
+      const hasAudio =
+        session &&
+        (session.audioStorageId || (session.audioStorageIds && session.audioStorageIds.length > 0));
+      if (session && session.userId === userId && hasAudio) {
         await ctx.db.patch(id, { audioRetentionExtendedAt: now });
       }
     }

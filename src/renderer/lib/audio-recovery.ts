@@ -3,7 +3,8 @@
  * so they can be recovered after a crash/tab close.
  *
  * Uses localStorage to track the "active" recovery session ID.
- * IndexedDB stores the actual audio blobs keyed by session + index.
+ * IndexedDB stores the actual audio blobs keyed by session + explicit
+ * monotonic index (assigned by the recorder per-chunk).
  */
 
 const DB_NAME = 'scribecat-audio-recovery';
@@ -32,26 +33,21 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-/** Save a single audio chunk to IndexedDB. Fire-and-forget safe. */
-export async function saveAudioChunk(sessionId: string, chunk: Blob): Promise<void> {
+/**
+ * Save a single audio chunk to IndexedDB with an explicit monotonic index.
+ * Fire-and-forget safe. The index is supplied by the recorder so ordering
+ * is preserved even after chunks below a threshold have been cleared.
+ */
+export async function saveAudioChunk(sessionId: string, chunk: Blob, index: number): Promise<void> {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
 
-    // Get current count for this session to determine index
-    const index = store.index('by_session');
-    const countRequest = index.count(IDBKeyRange.only(sessionId));
-
-    const currentCount = await new Promise<number>((resolve, reject) => {
-      countRequest.onsuccess = () => resolve(countRequest.result);
-      countRequest.onerror = () => reject(countRequest.error);
-    });
-
     const record: AudioChunkRecord = {
       sessionId,
       chunk,
-      index: currentCount,
+      index,
     };
 
     const addRequest = store.add(record);
@@ -80,7 +76,8 @@ export function getRecoverySessionId(): string | null {
 }
 
 /**
- * Reassemble all audio chunks for a session into a single Blob.
+ * Reassemble all audio chunks for a session into a single Blob,
+ * ordered by their explicit index (ascending).
  * Returns null if no chunks are found.
  */
 export async function recoverAudio(sessionId: string): Promise<Blob | null> {
@@ -100,7 +97,7 @@ export async function recoverAudio(sessionId: string): Promise<Blob | null> {
 
     if (records.length === 0) return null;
 
-    // Sort by index to ensure correct order
+    // Sort by explicit index to ensure correct order
     records.sort((a, b) => a.index - b.index);
     const chunks = records.map((r) => r.chunk);
 
@@ -108,6 +105,43 @@ export async function recoverAudio(sessionId: string): Promise<Blob | null> {
   } catch (error) {
     console.error('Failed to recover audio from IndexedDB:', error);
     return null;
+  }
+}
+
+/**
+ * Delete IndexedDB chunks for a session whose index is below `upToExclusive`.
+ * Used by the progressive uploader after a successful periodic upload,
+ * so the IDB buffer only holds chunks that haven't been persisted to Convex yet.
+ */
+export async function clearChunksUpTo(sessionId: string, upToExclusive: number): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const index = store.index('by_session');
+    const cursorRequest = index.openCursor(IDBKeyRange.only(sessionId));
+
+    await new Promise<void>((resolve, reject) => {
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (!cursor) {
+          resolve();
+          return;
+        }
+        const record = cursor.value as AudioChunkRecord;
+        if (record.index < upToExclusive) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      cursorRequest.onerror = () => reject(cursorRequest.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+
+    db.close();
+  } catch (error) {
+    console.warn('Failed to clear uploaded chunks from IndexedDB:', error);
   }
 }
 

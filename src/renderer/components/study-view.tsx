@@ -7,13 +7,12 @@ import { StudyTools } from '@/components/study-tools/index';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
 import { useSession, useSessions, useTrash } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { useMatch, useNavigate } from '@tanstack/react-router';
-import { useQuery } from 'convex/react';
 import { PanelLeft } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 type SessionId = Id<'sessions'>;
@@ -126,10 +125,7 @@ export function StudyView() {
   // Fetch full session data for the selected recording only
   // (sessions.get joins notes from the separate sessionNotes table)
   const fullSession = useSession(selectedId as SessionId | null);
-  const audioUrl = useQuery(
-    api.audioStorage.getAudioUrl,
-    fullSession?.audioStorageId ? { storageId: fullSession.audioStorageId } : 'skip',
-  );
+  const audioUrl = useSessionAudioUrl(fullSession);
 
   // Sidebar gets lightweight metadata only — no transcript/notes/segments
   const sidebarRecordings: SessionSummary[] = sessions.map((session) => ({
