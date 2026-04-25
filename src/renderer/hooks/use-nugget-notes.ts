@@ -39,8 +39,10 @@ interface UseNuggetNotesConfig {
   convexUrl?: string;
   /** Initial enabled state from user settings (default: true) */
   initialEnabled?: boolean;
-  /** Called when a scrub pass completes with the full stitched transcript */
-  onScrubComplete?: (scrubbedTranscript: string) => void;
+  /** Called when a scrub pass completes with the full stitched transcript and the
+   *  boundary timestamp (Date.now() at scrub start). Segments with timestamp > boundary
+   *  are NOT yet represented in scrubbedTranscript and should be appended as the live tail. */
+  onScrubComplete?: (scrubbedTranscript: string, boundary: number) => void;
 }
 
 const DEFAULT_CONFIG: Required<Omit<UseNuggetNotesConfig, 'onScrubComplete'>> = {
@@ -69,6 +71,11 @@ export interface UseNuggetNotesReturn {
   isProcessing: boolean;
   isScrubbing: boolean;
   lastScrubAt: number | null;
+  /** The full transcript with all completed scrub passes applied. Empty until first scrub. */
+  scrubbedText: string;
+  /** Date.now() snapshot at the start of the most recent scrub.
+   *  Segments with timestamp > this value have NOT been folded into scrubbedText yet. */
+  scrubBoundaryAt: number;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
   stopRecording: (finalTranscript?: string) => Promise<void>;
@@ -103,6 +110,17 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const [isProcessing, setIsProcessing] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [lastScrubAt, setLastScrubAt] = useState<number | null>(null);
+  const [scrubbedText, setScrubbedText] = useState<string>('');
+  const [scrubBoundaryAt, setScrubBoundaryAt] = useState<number>(0);
+
+  // Refs mirroring scrubbed text so scrubTranscriptWindow can read latest values
+  // without becoming a new useCallback identity on every scrub.
+  const scrubbedTextRef = useRef<string>('');
+  scrubbedTextRef.current = scrubbedText;
+  // Length of the raw transcript (as-passed-into-the-hook) at the moment of the last
+  // successful scrub. Used to compute the "new raw tail since last scrub" so each
+  // iteration's scrub input is `prior scrubbed text + new raw tail`, not raw all the way.
+  const lastScrubbedRawLengthRef = useRef<number>(0);
 
   // Synchronous ref for latest notes (React state is async, so this
   // ensures callers can read the up-to-date list immediately after stopRecording)
@@ -291,11 +309,28 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     [cfg.scrubIntervalMs, cfg.minWordsForScrub],
   );
 
-  // Scrub the last SCRUB_WINDOW_WORDS of transcript, stitch with stable prefix, call onScrubComplete
+  // Scrub the last SCRUB_WINDOW_WORDS of transcript, stitch with already-scrubbed prefix,
+  // call onScrubComplete. Each iteration uses `priorScrubbedText + newRawTailSinceLastScrub`
+  // as input — so successive passes clean older portions instead of leaving them raw forever.
   const scrubTranscriptWindow = useCallback(
     async (fullTranscript: string, currentContext: LectureContext): Promise<void> => {
       if (!isRecordingRef.current) return;
-      const words = fullTranscript.trim().split(/\s+/);
+
+      // Boundary captured at scrub START (not completion) so segments arriving during
+      // the network round-trip are properly attributed as "after this scrub" / live tail.
+      const boundary = Date.now();
+
+      // Build the input: prior scrubbed text + the new raw tail since the last scrub.
+      // First pass (no prior scrubbed text) just uses the raw transcript.
+      const priorScrubbed = scrubbedTextRef.current;
+      const rawTailSinceLastScrub = fullTranscript.slice(lastScrubbedRawLengthRef.current).trim();
+      const combined = priorScrubbed
+        ? rawTailSinceLastScrub
+          ? `${priorScrubbed} ${rawTailSinceLastScrub}`
+          : priorScrubbed
+        : fullTranscript;
+
+      const words = combined.trim().split(/\s+/);
       const windowStart = Math.max(0, words.length - SCRUB_WINDOW_WORDS);
       const prefix = words.slice(0, windowStart).join(' ');
       const rawWindow = words.slice(windowStart).join(' ');
@@ -317,8 +352,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             windowStart > 0 ? `${prefix} ${data.scrubbedWindow}` : data.scrubbedWindow;
           lastScrubTimeRef.current = Date.now();
           wordsSinceScrubRef.current = 0;
+          lastScrubbedRawLengthRef.current = fullTranscript.length;
+          setScrubbedText(stitched);
+          setScrubBoundaryAt(boundary);
           setLastScrubAt(Date.now());
-          onScrubCompleteRef.current?.(stitched);
+          onScrubCompleteRef.current?.(stitched, boundary);
           console.log('✨ Transcript window scrubbed');
         }
       } catch (error) {
@@ -407,6 +445,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     setIsRecording(true);
     setIsScrubbing(false);
     setLastScrubAt(null);
+    setScrubbedText('');
+    setScrubBoundaryAt(0);
+    lastScrubbedRawLengthRef.current = 0;
     recordingStartTimeRef.current = Date.now();
     transcriptBufferRef.current = '';
     lastNoteTimeRef.current = 0;
@@ -505,6 +546,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     setContext(EMPTY_CONTEXT);
     setIsScrubbing(false);
     setLastScrubAt(null);
+    setScrubbedText('');
+    setScrubBoundaryAt(0);
+    lastScrubbedRawLengthRef.current = 0;
     transcriptBufferRef.current = '';
     lastNoteTimeRef.current = 0;
     lastContextTimeRef.current = 0;
@@ -545,6 +589,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     isProcessing,
     isScrubbing,
     lastScrubAt,
+    scrubbedText,
+    scrubBoundaryAt,
     setEnabled: handleSetEnabled,
     startRecording,
     stopRecording,

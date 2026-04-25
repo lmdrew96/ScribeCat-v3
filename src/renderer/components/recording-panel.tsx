@@ -62,6 +62,8 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           segments={segments}
           isScrubbing={nuggetNotes.isScrubbing}
           lastScrubAt={nuggetNotes.lastScrubAt}
+          scrubbedText={nuggetNotes.scrubbedText}
+          scrubBoundaryAt={nuggetNotes.scrubBoundaryAt}
         />
       </div>
 

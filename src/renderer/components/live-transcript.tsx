@@ -1,11 +1,16 @@
 import type { TranscriptSegment } from '@/hooks/use-transcription';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 interface LiveTranscriptProps {
   isRecording: boolean;
   segments: TranscriptSegment[];
   isScrubbing?: boolean;
   lastScrubAt?: number | null;
+  /** Cleaned transcript prefix (everything up to scrubBoundaryAt). Empty until first scrub. */
+  scrubbedText?: string;
+  /** Date.now() at scrub start. Segments with timestamp > this are NOT in scrubbedText
+   *  and must render as the live raw tail so the user keeps seeing real-time STT output. */
+  scrubBoundaryAt?: number;
 }
 
 const SCROLL_THRESHOLD = 80; // px from bottom to count as "near bottom"
@@ -15,6 +20,8 @@ export function LiveTranscript({
   segments,
   isScrubbing,
   lastScrubAt,
+  scrubbedText,
+  scrubBoundaryAt,
 }: LiveTranscriptProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -26,13 +33,22 @@ export function LiveTranscript({
     isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD;
   }, []);
 
-  // Auto-scroll only when user is near the bottom
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Need to scroll when segments changes
+  // Auto-scroll only when user is near the bottom — also re-run on scrub completion
+  // since the scrubbed prefix replaces a chunk of visible text and can shift layout.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Need to scroll when segments or scrubbedText changes
   useEffect(() => {
     if (isNearBottomRef.current && viewportRef.current) {
       viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
-  }, [segments]);
+  }, [segments, scrubbedText]);
+
+  // Tail = segments that arrived AFTER the most recent scrub boundary. These haven't
+  // been folded into scrubbedText yet, so they render as raw STT (with the cursor on
+  // the in-flight non-final segment). Falls back to all segments when no scrub yet.
+  const tailSegments = useMemo(() => {
+    if (!scrubbedText || !scrubBoundaryAt) return segments;
+    return segments.filter((s) => s.timestamp > scrubBoundaryAt);
+  }, [segments, scrubbedText, scrubBoundaryAt]);
 
   if (!isRecording && segments.length === 0) {
     return (
@@ -74,7 +90,12 @@ export function LiveTranscript({
           onScroll={handleScroll}
           className="h-full overflow-y-auto pr-2 space-y-2"
         >
-          {segments.map((segment, index) => (
+          {scrubbedText && (
+            <div className="text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+              {scrubbedText}
+            </div>
+          )}
+          {tailSegments.map((segment, index) => (
             <div
               key={`${segment.timestamp}-${segment.text.substring(0, 20)}`}
               className={`text-xs leading-relaxed ${
@@ -82,7 +103,7 @@ export function LiveTranscript({
               }`}
             >
               {segment.text}
-              {!segment.isFinal && index === segments.length - 1 && (
+              {!segment.isFinal && index === tailSegments.length - 1 && (
                 <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-primary" />
               )}
             </div>

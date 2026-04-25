@@ -134,6 +134,15 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const isMountedRef = useRef(true);
   const nuggetEffectActiveRef = useRef(true);
 
+  // Scrub state mirrored as refs so both the segment-save effect and the stop flow
+  // can build `scrubbedPrefix + post-boundary tail` without depending on hook state
+  // (which would re-run effects and risk losing latest values during stop).
+  const scrubbedTextRef = useRef<string>('');
+  const scrubBoundaryAtRef = useRef<number>(0);
+  // Bumped after each scrub completes so the segment-save effect re-runs and
+  // immediately writes the freshly-scrubbed prefix to the DB.
+  const [scrubVersion, setScrubVersion] = useState(0);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -144,15 +153,16 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   // ─── Nugget Notes hook ──────────────────────────────────────────────────
 
   const handleScrubComplete = useCallback(
-    async (scrubbedTranscript: string) => {
-      if (!currentSessionIdRef.current) return;
-      try {
-        await updateSession({ id: currentSessionIdRef.current, transcript: scrubbedTranscript });
-      } catch (error) {
-        console.error('Error saving scrubbed transcript:', error);
-      }
+    (scrubbedTranscript: string, boundary: number) => {
+      // Update refs synchronously. The segment-save effect picks up the new prefix
+      // on its next run (triggered by either new segments OR the bumped scrubVersion)
+      // and writes `scrubbedPrefix + tail` — avoiding the prior race where this
+      // effect-driven save fought a separate segment-effect save.
+      scrubbedTextRef.current = scrubbedTranscript;
+      scrubBoundaryAtRef.current = boundary;
+      setScrubVersion((v) => v + 1);
     },
-    [updateSession],
+    [],
   );
 
   const nuggetNotes = useNuggetNotes({
@@ -228,15 +238,33 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   }, [currentSessionId, setActiveSessionId]);
 
   // ─── Transcript save effect ─────────────────────────────────────────────
-
+  // Single writer for `session.transcript`. Builds the saved string as
+  // `scrubbedPrefix + tail-segments-after-boundary` whenever a scrub has
+  // produced cleaned text; otherwise falls back to raw concat. Re-runs on
+  // both new segments AND scrubVersion bumps, so a fresh scrub flushes to
+  // the DB immediately. Replaces the prior race where this effect's raw
+  // write would clobber a separate scrub-driven write within milliseconds.
   useEffect(() => {
     const saveTranscript = async () => {
-      if (!currentSessionIdRef.current || segments.length === 0) return;
+      if (!currentSessionIdRef.current) return;
+      if (segments.length === 0 && !scrubbedTextRef.current) return;
 
       const finalSegments = segments.filter((s) => s.isFinal);
-      if (finalSegments.length === 0) return;
+      const scrubbedPrefix = scrubbedTextRef.current;
+      const boundary = scrubBoundaryAtRef.current;
 
-      const fullTranscript = finalSegments.map((s) => s.text).join(' ');
+      let fullTranscript: string;
+      if (scrubbedPrefix) {
+        const tailText = finalSegments
+          .filter((s) => s.timestamp > boundary)
+          .map((s) => s.text)
+          .join(' ');
+        fullTranscript = tailText ? `${scrubbedPrefix} ${tailText}` : scrubbedPrefix;
+      } else {
+        if (finalSegments.length === 0) return;
+        fullTranscript = finalSegments.map((s) => s.text).join(' ');
+      }
+
       if (fullTranscript === lastSavedTranscriptRef.current) return;
       lastSavedTranscriptRef.current = fullTranscript;
 
@@ -251,7 +279,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       }
     };
     saveTranscript();
-  }, [segments, updateSession]);
+  }, [segments, scrubVersion, updateSession]);
 
   // ─── Progressive audio upload effect ────────────────────────────────────
   // Every ~30s during recording, flush any accumulated audio chunks to
@@ -414,6 +442,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       nuggetNotes.startRecording();
       lastNuggetProcessRef.current = '';
       lastSavedTranscriptRef.current = '';
+      scrubbedTextRef.current = '';
+      scrubBoundaryAtRef.current = 0;
 
       await startRecording();
 
@@ -465,7 +495,20 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const finalTranscript = getFullTranscript();
+    // Prefer the scrubbed prefix + post-boundary tail for the final saved transcript,
+    // so a long recording that completed scrub passes is saved as cleaned text — not
+    // overwritten by the raw segment concat.
+    const scrubbedPrefix = scrubbedTextRef.current;
+    const boundary = scrubBoundaryAtRef.current;
+    const finalTranscript = scrubbedPrefix
+      ? (() => {
+          const tailText = segments
+            .filter((s) => s.isFinal && s.timestamp > boundary)
+            .map((s) => s.text)
+            .join(' ');
+          return tailText ? `${scrubbedPrefix} ${tailText}` : scrubbedPrefix;
+        })()
+      : getFullTranscript();
 
     // Flush any chunks that arrived since the last periodic upload.
     // Typically small (<30s of audio, < 2 MB) so this completes quickly.
@@ -561,6 +604,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     lastSavedTranscriptRef.current = '';
     lastNuggetProcessRef.current = '';
     uploadedChunkCountRef.current = 0;
+    scrubbedTextRef.current = '';
+    scrubBoundaryAtRef.current = 0;
 
     // Reset title for next recording
     setSessionTitle('');
