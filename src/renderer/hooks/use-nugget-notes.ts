@@ -40,8 +40,9 @@ interface UseNuggetNotesConfig {
   /** Initial enabled state from user settings (default: true) */
   initialEnabled?: boolean;
   /** Called when a scrub pass completes with the full stitched transcript and the
-   *  boundary timestamp (Date.now() at scrub start). Segments with timestamp > boundary
-   *  are NOT yet represented in scrubbedTranscript and should be appended as the live tail. */
+   *  boundary timestamp (ms since recording start, matching segment.timestamp units).
+   *  Segments with timestamp > boundary are NOT yet represented in scrubbedTranscript
+   *  and should be appended as the live tail. */
   onScrubComplete?: (scrubbedTranscript: string, boundary: number) => void;
 }
 
@@ -73,8 +74,9 @@ export interface UseNuggetNotesReturn {
   lastScrubAt: number | null;
   /** The full transcript with all completed scrub passes applied. Empty until first scrub. */
   scrubbedText: string;
-  /** Date.now() snapshot at the start of the most recent scrub.
-   *  Segments with timestamp > this value have NOT been folded into scrubbedText yet. */
+  /** Ms since recording start, captured at the start of the most recent scrub.
+   *  Same units as segment.timestamp — segments with timestamp > this value have
+   *  NOT been folded into scrubbedText yet and must render as the live raw tail. */
   scrubBoundaryAt: number;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
@@ -318,7 +320,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
       // Boundary captured at scrub START (not completion) so segments arriving during
       // the network round-trip are properly attributed as "after this scrub" / live tail.
-      const boundary = Date.now();
+      // Stored as ms-since-recording-start to match segment.timestamp units — comparing
+      // against absolute Date.now() would always evaluate false and freeze the live tail.
+      const boundary = Date.now() - recordingStartTimeRef.current;
 
       // Build the input: prior scrubbed text + the new raw tail since the last scrub.
       // First pass (no prior scrubbed text) just uses the raw transcript.

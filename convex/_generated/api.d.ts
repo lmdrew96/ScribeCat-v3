@@ -24,7 +24,6 @@ import type * as examSimulation from "../examSimulation.js";
 import type * as examToolPrompts from "../examToolPrompts.js";
 import type * as examTools from "../examTools.js";
 import type * as friends from "../friends.js";
-import type * as generateNotes from "../generateNotes.js";
 import type * as http from "../http.js";
 import type * as lectureContext from "../lectureContext.js";
 import type * as messaging from "../messaging.js";
@@ -73,7 +72,6 @@ declare const fullApi: ApiFromModules<{
   examToolPrompts: typeof examToolPrompts;
   examTools: typeof examTools;
   friends: typeof friends;
-  generateNotes: typeof generateNotes;
   http: typeof http;
   lectureContext: typeof lectureContext;
   messaging: typeof messaging;
