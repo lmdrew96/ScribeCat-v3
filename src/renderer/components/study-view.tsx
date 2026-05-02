@@ -41,11 +41,14 @@ export interface Recording {
   notes: string;
   audioUrl?: string | null;
   audioStorageId?: string;
+  audioStorageIds?: string[];
   transcriptSegments?: TranscriptSegment[];
   lectureType?: string;
   course?: string;
   nuggetNotes?: { text: string; recordingTime: number }[];
   documentText?: string;
+  speakerLabelsStatus?: 'processing' | 'labeled' | 'failed';
+  speakerLabelsError?: string;
 }
 
 const formatDuration = (ms: number) => {
@@ -169,11 +172,14 @@ export function StudyView() {
         notes: fullSession.notes || '',
         audioUrl: audioUrl,
         audioStorageId: fullSession.audioStorageId,
+        audioStorageIds: fullSession.audioStorageIds,
         transcriptSegments: fullSession.transcriptSegments,
         lectureType: fullSession.lectureType,
         course: fullSession.course,
         nuggetNotes: fullSession.nuggetNotes,
         documentText: fullSession.documentText,
+        speakerLabelsStatus: fullSession.speakerLabelsStatus,
+        speakerLabelsError: fullSession.speakerLabelsError,
       }
     : null;
 

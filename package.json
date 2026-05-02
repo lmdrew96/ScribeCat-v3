@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "5.4.3",
+  "version": "5.5.0",
   "description": "ADHD-friendly study companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {

@@ -39,6 +39,10 @@ export default defineSchema({
     documentStorageIds: v.optional(v.array(v.string())),
     audioDeletedAt: v.optional(v.number()),
     audioRetentionExtendedAt: v.optional(v.number()),
+    speakerLabelsStatus: v.optional(
+      v.union(v.literal('processing'), v.literal('labeled'), v.literal('failed')),
+    ),
+    speakerLabelsError: v.optional(v.string()),
   })
     .index('by_user', ['userId'])
     .index('by_user_deleted', ['userId', 'isDeleted'])

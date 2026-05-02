@@ -28,17 +28,20 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useMutation } from 'convex/react';
+import { useAction, useMutation } from 'convex/react';
 import {
+  AlertCircle,
   BookOpen,
   Cat,
   Check,
   FileImage,
   FileText,
+  Loader2,
   Mic,
   Pause,
   Pencil,
   Play,
+  Users,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -64,6 +67,21 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   const courseInputRef = useRef<HTMLInputElement>(null);
 
   const updateSession = useMutation(api.sessions.update);
+  const submitSpeakerDetection = useAction(api.speakerDetection.submit);
+  const [speakerSubmitError, setSpeakerSubmitError] = useState<string | null>(null);
+
+  const speakerStatus = recording.speakerLabelsStatus;
+  const isSpeakerProcessing = speakerStatus === 'processing';
+  const hasAudio = !!recording.audioStorageId || (recording.audioStorageIds?.length ?? 0) > 0;
+  const speakerError = speakerSubmitError ?? recording.speakerLabelsError ?? null;
+
+  const handleDetectSpeakers = useCallback(async () => {
+    setSpeakerSubmitError(null);
+    const result = await submitSpeakerDetection({ sessionId: recording.id as Id<'sessions'> });
+    if (!result.ok) {
+      setSpeakerSubmitError(result.error);
+    }
+  }, [submitSpeakerDetection, recording.id]);
 
   const startEditTitle = () => {
     setTitleDraft(recording.title);
@@ -422,8 +440,56 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
         )}
 
         {/* Transcript tab — from audio recordings */}
-        <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0">
-          <ScrollArea className="h-full rounded-xl glass p-4">
+        <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0 flex flex-col gap-2">
+          {hasTranscript && hasAudio && (
+            <div className="flex items-center justify-between gap-2 rounded-xl glass-light px-3 py-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                {speakerStatus === 'labeled' ? (
+                  <span>Speaker labels applied</span>
+                ) : speakerStatus === 'processing' ? (
+                  <span>Detecting speakers — this can take several minutes</span>
+                ) : speakerError ? (
+                  <span className="flex items-center gap-1 truncate text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{speakerError}</span>
+                  </span>
+                ) : (
+                  <span>Tag who's speaking with a second AI pass</span>
+                )}
+              </div>
+              <Button
+                onClick={handleDetectSpeakers}
+                disabled={isSpeakerProcessing}
+                variant="secondary"
+                size="sm"
+                className="gap-1.5 h-7 text-xs flex-shrink-0"
+              >
+                {isSpeakerProcessing ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Detecting...
+                  </>
+                ) : speakerStatus === 'labeled' ? (
+                  <>
+                    <Users className="h-3.5 w-3.5" />
+                    Re-detect
+                  </>
+                ) : speakerStatus === 'failed' ? (
+                  <>
+                    <Users className="h-3.5 w-3.5" />
+                    Retry
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-3.5 w-3.5" />
+                    Detect speakers
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+          <ScrollArea className="flex-1 min-h-0 rounded-xl glass p-4">
             {recording.transcript ? (
               <p className="whitespace-pre-wrap leading-relaxed text-xs text-foreground/90">
                 {recording.transcript}
