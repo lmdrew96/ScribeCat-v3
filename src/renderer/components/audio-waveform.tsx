@@ -10,6 +10,13 @@ export function AudioWaveform({ isActive, audioLevel = 0 }: AudioWaveformProps) 
   const animationFrameRef = useRef<number | undefined>(undefined);
   const dataArrayRef = useRef<number[]>(Array(64).fill(0));
 
+  // Mirror props into refs so the rAF loop reads the latest values without
+  // tearing down and rebuilding the effect on every render.
+  const isActiveRef = useRef(isActive);
+  const audioLevelRef = useRef(audioLevel);
+  isActiveRef.current = isActive;
+  audioLevelRef.current = audioLevel;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -17,53 +24,71 @@ export function AudioWaveform({ isActive, audioLevel = 0 }: AudioWaveformProps) 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const { width, height } = canvas;
+    const barWidth = width / dataArrayRef.current.length;
+    const barGap = 1;
+
+    // Build gradients once — they're static per state and creating them per
+    // frame was a real cost.
+    const activeGradient = ctx.createLinearGradient(0, 0, 0, height);
+    activeGradient.addColorStop(0, 'hsl(262.1, 83.3%, 57.8%)');
+    activeGradient.addColorStop(1, 'hsl(262.1, 83.3%, 57.8%, 0.6)');
+
+    const idleGradient = ctx.createLinearGradient(0, 0, 0, height);
+    idleGradient.addColorStop(0, 'rgba(100, 116, 139, 0.3)');
+    idleGradient.addColorStop(1, 'rgba(100, 116, 139, 0.1)');
+
     const draw = () => {
-      const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const barWidth = width / dataArrayRef.current.length;
-      const barGap = 1;
-
-      // Shift array left and add new value
-      if (isActive) {
+      if (isActiveRef.current) {
         dataArrayRef.current.shift();
-        dataArrayRef.current.push(audioLevel);
+        dataArrayRef.current.push(audioLevelRef.current);
       } else {
         // Decay to zero when inactive
-        dataArrayRef.current = dataArrayRef.current.map((v) => v * 0.9);
+        for (let i = 0; i < dataArrayRef.current.length; i++) {
+          dataArrayRef.current[i] *= 0.9;
+        }
       }
 
-      // Draw bars
-      dataArrayRef.current.forEach((value, i) => {
-        const barHeight = Math.max(height * value, 2); // Minimum 2px height
+      ctx.fillStyle = isActiveRef.current ? activeGradient : idleGradient;
+      for (let i = 0; i < dataArrayRef.current.length; i++) {
+        const value = dataArrayRef.current[i];
+        const barHeight = Math.max(height * value, 2);
         const x = i * barWidth;
         const y = (height - barHeight) / 2;
-
-        // Gradient based on activity
-        const gradient = ctx.createLinearGradient(0, 0, 0, height);
-        if (isActive) {
-          gradient.addColorStop(0, 'hsl(262.1, 83.3%, 57.8%)');
-          gradient.addColorStop(1, 'hsl(262.1, 83.3%, 57.8%, 0.6)');
-        } else {
-          gradient.addColorStop(0, 'rgba(100, 116, 139, 0.3)');
-          gradient.addColorStop(1, 'rgba(100, 116, 139, 0.1)');
-        }
-
-        ctx.fillStyle = gradient;
         ctx.fillRect(x, y, barWidth - barGap, barHeight);
-      });
+      }
 
       animationFrameRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+    const start = () => {
+      if (animationFrameRef.current === undefined) {
+        animationFrameRef.current = requestAnimationFrame(draw);
       }
     };
-  }, [isActive, audioLevel]);
+
+    const stop = () => {
+      if (animationFrameRef.current !== undefined) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      stop();
+    };
+  }, []);
 
   return (
     <div className="flex h-[4.5rem] items-center justify-center rounded-xl glass-light px-4">

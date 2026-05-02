@@ -69,10 +69,18 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, []);
 
   /**
-   * Update audio level visualization
+   * Update audio level visualization. Bails when the tab is hidden — no UI is
+   * reading audioLevel in that case, so the analyser sample is wasted CPU.
+   * The visibilitychange effect below restarts the loop when the tab is
+   * visible again.
    */
   const updateAudioLevel = useCallback(() => {
     if (!analyserRef.current) return;
+
+    if (document.hidden) {
+      animationFrameRef.current = undefined;
+      return;
+    }
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
@@ -193,7 +201,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       timerIntervalRef.current = setInterval(() => {
         const elapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
         setRecordingTime(Math.floor(elapsed / 1000));
-      }, 100);
+      }, 1000);
 
       // Start audio level monitoring
       updateAudioLevel();
@@ -353,6 +361,28 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       navigator.mediaDevices.removeEventListener('devicechange', loadDevices);
     };
   }, [loadDevices]);
+
+  /**
+   * Restart the audio level rAF loop when the tab becomes visible again,
+   * if we're actively recording (and not paused) and the loop has bailed.
+   */
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (
+        !document.hidden &&
+        isRecordingRef.current &&
+        !isPaused &&
+        analyserRef.current &&
+        animationFrameRef.current === undefined
+      ) {
+        updateAudioLevel();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isPaused, updateAudioLevel]);
 
   /**
    * Cleanup on unmount
