@@ -130,7 +130,7 @@ export function RecordingsSidebar({
           </div>
         )}
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-1">
             {activeList.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
