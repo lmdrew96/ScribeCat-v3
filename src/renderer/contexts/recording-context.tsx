@@ -152,18 +152,15 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   // ─── Nugget Notes hook ──────────────────────────────────────────────────
 
-  const handleScrubComplete = useCallback(
-    (scrubbedTranscript: string, boundary: number) => {
-      // Update refs synchronously. The segment-save effect picks up the new prefix
-      // on its next run (triggered by either new segments OR the bumped scrubVersion)
-      // and writes `scrubbedPrefix + tail` — avoiding the prior race where this
-      // effect-driven save fought a separate segment-effect save.
-      scrubbedTextRef.current = scrubbedTranscript;
-      scrubBoundaryAtRef.current = boundary;
-      setScrubVersion((v) => v + 1);
-    },
-    [],
-  );
+  const handleScrubComplete = useCallback((scrubbedTranscript: string, boundary: number) => {
+    // Update refs synchronously. The segment-save effect picks up the new prefix
+    // on its next run (triggered by either new segments OR the bumped scrubVersion)
+    // and writes `scrubbedPrefix + tail` — avoiding the prior race where this
+    // effect-driven save fought a separate segment-effect save.
+    scrubbedTextRef.current = scrubbedTranscript;
+    scrubBoundaryAtRef.current = boundary;
+    setScrubVersion((v) => v + 1);
+  }, []);
 
   const nuggetNotes = useNuggetNotes({
     initialEnabled: nuggetNotesInitialEnabled,
@@ -222,6 +219,25 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   // Break reminder toasts during recording
   useBreakReminder(isRecording);
+
+  // Surface unrecoverable transcription failures during an active recording.
+  // Most likely trigger: iPadOS multi-window audio session interruption
+  // killed the AssemblyAI WebSocket. We can't auto-recover the v3 session,
+  // so warn the user immediately so they can stop + restart.
+  const lastSurfacedTranscriptionErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isRecording) {
+      lastSurfacedTranscriptionErrorRef.current = null;
+      return;
+    }
+    if (!transcriptionError) return;
+    if (transcriptionError === lastSurfacedTranscriptionErrorRef.current) return;
+    lastSurfacedTranscriptionErrorRef.current = transcriptionError;
+    toast.error('Recording interrupted', {
+      description: transcriptionError,
+      duration: 15000,
+    });
+  }, [isRecording, transcriptionError]);
 
   // ─── Sync to SessionContext ─────────────────────────────────────────────
 

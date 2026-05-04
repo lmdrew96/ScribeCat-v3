@@ -144,6 +144,19 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
    */
   const startRecording = useCallback(async () => {
     try {
+      // On iPadOS 17+ / iOS 17+ Safari, declare this as a recording session so
+      // the OS doesn't auto-interrupt the AudioContext when the user enters
+      // Split View / Stage Manager. No-op everywhere else.
+      try {
+        const audioSession = (navigator as Navigator & { audioSession?: { type: string } })
+          .audioSession;
+        if (audioSession) {
+          audioSession.type = 'play-and-record';
+        }
+      } catch {
+        /* feature-detect failure is fine — older browsers just lack the API */
+      }
+
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -163,6 +176,21 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       // Set up audio context for visualization
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
+
+      // Auto-resume if iPadOS suspends the context during a multi-window
+      // transition. Without this, the analyser silently freezes after the
+      // user enters Split View / Stage Manager.
+      audioContext.addEventListener('statechange', () => {
+        if (
+          audioContext.state === 'suspended' &&
+          isRecordingRef.current &&
+          audioContextRef.current === audioContext
+        ) {
+          audioContext.resume().catch((err) => {
+            console.warn('Failed to resume visualization AudioContext:', err);
+          });
+        }
+      });
 
       const source = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = source;

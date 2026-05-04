@@ -81,8 +81,23 @@ export function useTranscription(options?: UseTranscriptionOptions) {
 
         ws.onclose = (event) => {
           console.log('AssemblyAI connection closed:', event.code, event.reason);
+          const wasActivelyTranscribing = isConnectedRef.current;
           isConnectedRef.current = false;
           setIsConnected(false);
+
+          // If the WS died while we were still actively transcribing, the
+          // session is unrecoverable — AssemblyAI v3 sessions can't be
+          // continued. Surface an error so the UI can prompt the user to
+          // stop and start over instead of trusting a dead pipeline. The
+          // most common trigger is an iPadOS audio session interruption
+          // (Split View / Stage Manager) starving the WS of audio frames
+          // until AssemblyAI's idle timeout closes the session.
+          if (wasActivelyTranscribing && mediaStreamRef.current) {
+            const errorMessage =
+              'Recording interrupted — transcription stopped. Stop and start a new recording to continue capturing.';
+            setError(errorMessage);
+            options?.onError?.(new Error(errorMessage));
+          }
         };
 
         ws.onmessage = (event) => {
@@ -124,6 +139,21 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         // (44100 or 48000 Hz). We detect the actual rate and downsample ourselves.
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
+
+        // Auto-resume if iPadOS suspends the context during a multi-window
+        // transition. Without this, the AudioWorklet stops emitting frames
+        // and AssemblyAI silently times out the session.
+        audioContext.addEventListener('statechange', () => {
+          if (
+            audioContext.state === 'suspended' &&
+            isConnectedRef.current &&
+            audioContextRef.current === audioContext
+          ) {
+            audioContext.resume().catch((err) => {
+              console.warn('Failed to resume transcription AudioContext:', err);
+            });
+          }
+        });
 
         const source = audioContext.createMediaStreamSource(stream);
         sourceNodeRef.current = source;
