@@ -14,6 +14,7 @@ import type { CatMood } from '../cat-sprites';
 export type GameEvent =
   | { type: 'xp-gained'; amount: number; source: string }
   | { type: 'battle-won'; enemyId: string }
+  | { type: 'battle-lost'; enemyId: string }
   | { type: 'mood-change'; mood: CatMood }
   | { type: 'item-found'; itemId: string }
   | { type: 'quest-complete'; questId: string };
@@ -25,11 +26,20 @@ type Listener<T extends GameEventType> = (event: EventOfType<T>) => void;
 
 export interface GameState {
   mood: CatMood;
+  /** Player HP — survives across battles, resets on dungeon entry. */
+  playerHp: number;
+  playerMaxHp: number;
 }
+
+export const PLAYER_MAX_HP = 100;
 
 class GameBridge {
   private listeners = new Map<GameEventType, Set<(event: GameEvent) => void>>();
-  readonly state: GameState = { mood: 'idle' };
+  readonly state: GameState = {
+    mood: 'idle',
+    playerHp: PLAYER_MAX_HP,
+    playerMaxHp: PLAYER_MAX_HP,
+  };
 
   on<T extends GameEventType>(type: T, listener: Listener<T>): () => void {
     let set = this.listeners.get(type);

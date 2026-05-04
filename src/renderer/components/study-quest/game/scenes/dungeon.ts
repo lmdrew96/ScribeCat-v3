@@ -5,15 +5,18 @@
  * door tile clears the room's entities and rebuilds the next one in-place.
  * Crossing onto the exit room's center portal returns to TownScene.
  *
- * Phase 2 scope: navigation only — the Enemy/Boss actors are placeholders.
- * Battle integration arrives in Phase 3; the comment-hook below marks the
- * spot where per-floor state will get persisted across re-entries.
+ * State preservation across battle: `onDeactivate` is intentionally a no-op
+ * so a battle round-trip (`goToScene('battle') → goToScene('dungeon')`)
+ * keeps the floor + player intact. `onActivate` decides whether to reset:
+ *   - data.from === 'battle' → keep floor, mark current room cleared if won
+ *   - otherwise (town entry, undefined) → reset and generate a fresh floor.
  */
 
 import * as ex from 'excalibur';
 import { type CatVariant } from '../../cat-sprites';
 import { Enemy } from '../actors/enemy';
 import { Player } from '../actors/player';
+import { gameBridge, PLAYER_MAX_HP } from '../bridge';
 import { Minimap } from '../systems/minimap';
 import { generateFloor } from '../world/dungeon-gen';
 import {
@@ -33,14 +36,16 @@ import {
 import { TILE_SIZE } from '../world/tiles';
 
 export interface DungeonSceneActivationData {
-  from?: 'town';
+  from?: 'town' | 'battle';
+  /** Set when from === 'battle': did the player win the fight just played? */
+  won?: boolean;
 }
 
 export interface DungeonSceneOptions {
   variant: CatVariant;
 }
 
-const DOOR_DEBOUNCE_FRAMES = 2;
+const TRANSITION_DEBOUNCE_FRAMES = 2;
 const ROOM_CENTER = {
   x: Math.floor(ROOM_COLS / 2),
   y: Math.floor(ROOM_ROWS / 2),
@@ -54,12 +59,12 @@ export class DungeonScene extends ex.Scene {
   /** Entities that belong to the current room and get cleared on transition. */
   private roomEntities: ex.Entity[] = [];
   private dungeonDoors: Partial<Record<DoorDir, { x: number; y: number }>> = {};
-  private doorDebounceFrames = 0;
+  private transitionDebounceFrames = 0;
   private minimap?: Minimap;
-
-  // Phase 3 hook: persist `{ floor, roomId, playerPos }` here so a return
-  // visit from town drops the player back where they left off.
-  // private persistedFloor: { floor: Floor; roomId: string } | null = null;
+  /** Rooms whose enemy/boss has been defeated this floor. */
+  private clearedRooms = new Set<string>();
+  /** Tracks the active enemy actor (if any) so onPostUpdate can do tile checks. */
+  private currentEnemyId?: string;
 
   constructor(options: DungeonSceneOptions) {
     super();
@@ -72,28 +77,40 @@ export class DungeonScene extends ex.Scene {
     this.add(this.minimap);
   }
 
-  override onActivate(_ctx: ex.SceneActivationContext<DungeonSceneActivationData>): void {
-    // Phase 2: always start with a fresh floor (Phase 3 will check persisted state).
+  override onActivate(ctx: ex.SceneActivationContext<DungeonSceneActivationData>): void {
+    const from = ctx.data?.from;
+
+    if (from === 'battle' && this.floor && this.currentRoomId) {
+      // Returning from a fight in the current room.
+      if (ctx.data?.won) {
+        this.clearedRooms.add(this.currentRoomId);
+      }
+      this.buildRoom(this.currentRoomId);
+      if (this.minimap) this.minimap.setCurrentRoom(this.currentRoomId, this.clearedRooms);
+      return;
+    }
+
+    // Fresh floor (entry from town, or first activation, or after defeat reset).
+    this.resetForFreshFloor();
     this.floor = generateFloor();
+    this.clearedRooms = new Set();
+    gameBridge.setState({ playerHp: PLAYER_MAX_HP, playerMaxHp: PLAYER_MAX_HP });
     this.buildRoom(this.floor.startRoomId);
-    if (this.minimap) this.minimap.setFloor(this.floor, this.floor.startRoomId);
+    if (this.minimap) {
+      this.minimap.setFloor(this.floor, this.floor.startRoomId, this.clearedRooms);
+    }
   }
 
   override onDeactivate(): void {
-    this.clearRoom();
-    if (this.player) {
-      this.player.kill();
-      this.player = undefined;
-    }
-    this.floor = undefined;
-    this.currentRoomId = undefined;
+    // Intentional no-op — preserves floor + player so battle round-trips
+    // can resume in place. Fresh-floor logic lives in onActivate.
   }
 
   override onPostUpdate(engine: ex.Engine): void {
     if (!this.player || !this.floor || !this.currentRoomId) return;
 
-    if (this.doorDebounceFrames > 0) {
-      this.doorDebounceFrames--;
+    if (this.transitionDebounceFrames > 0) {
+      this.transitionDebounceFrames--;
       return;
     }
 
@@ -101,6 +118,23 @@ export class DungeonScene extends ex.Scene {
     if (!room) return;
 
     const playerTile = this.worldToTile(this.player.pos);
+
+    // Enemy / Boss collision → start battle.
+    if (
+      (room.type.kind === 'enemy' || room.type.kind === 'boss') &&
+      !this.clearedRooms.has(this.currentRoomId) &&
+      playerTile.x === ROOM_CENTER.x &&
+      playerTile.y === ROOM_CENTER.y &&
+      this.currentEnemyId
+    ) {
+      void engine.goToScene('battle', {
+        sceneActivationData: {
+          enemyId: this.currentEnemyId,
+          roomId: this.currentRoomId,
+        },
+      });
+      return;
+    }
 
     // Exit room: stepping on the center tile returns to town.
     if (room.type.kind === 'exit') {
@@ -124,12 +158,24 @@ export class DungeonScene extends ex.Scene {
 
   // ─── Setup ─────────────────────────────────────────────────
 
+  private resetForFreshFloor(): void {
+    this.clearRoom();
+    if (this.player) {
+      this.player.kill();
+      this.player = undefined;
+    }
+    this.floor = undefined;
+    this.currentRoomId = undefined;
+    this.currentEnemyId = undefined;
+  }
+
   private clearRoom(): void {
     for (const entity of this.roomEntities) {
       entity.kill();
     }
     this.roomEntities = [];
     this.dungeonDoors = {};
+    this.currentEnemyId = undefined;
   }
 
   private buildRoom(roomId: string, fromDir?: DoorDir): void {
@@ -160,28 +206,31 @@ export class DungeonScene extends ex.Scene {
 
     this.spawnRoomFeatures(room);
 
-    if (this.minimap) this.minimap.setCurrentRoom(roomId);
+    if (this.minimap) this.minimap.setCurrentRoom(roomId, this.clearedRooms);
 
-    // Ignore door triggers for a couple frames so the entry tile we *just*
-    // came from doesn't immediately re-fire (extra defense beyond the
-    // one-tile-inside spawn offset).
-    this.doorDebounceFrames = DOOR_DEBOUNCE_FRAMES;
+    // Ignore door triggers + battle re-trigger for a couple frames.
+    this.transitionDebounceFrames = TRANSITION_DEBOUNCE_FRAMES;
   }
 
   private spawnRoomFeatures(room: Room): void {
+    const cleared = this.clearedRooms.has(room.id);
+
     switch (room.type.kind) {
       case 'start':
         return;
       case 'enemy': {
+        if (cleared) return;
         const enemy = new Enemy({
           name: room.type.enemyId,
           pos: tileToRoomWorld(ROOM_CENTER.x, ROOM_CENTER.y),
         });
         this.add(enemy);
         this.roomEntities.push(enemy);
+        this.currentEnemyId = room.type.enemyId;
         return;
       }
       case 'boss': {
+        if (cleared) return;
         const boss = new Enemy({
           name: 'BOSS',
           pos: tileToRoomWorld(ROOM_CENTER.x, ROOM_CENTER.y),
@@ -189,6 +238,7 @@ export class DungeonScene extends ex.Scene {
         });
         this.add(boss);
         this.roomEntities.push(boss);
+        this.currentEnemyId = room.type.bossId;
         return;
       }
       case 'treasure': {
@@ -209,6 +259,8 @@ export class DungeonScene extends ex.Scene {
         );
         this.add(fire);
         this.roomEntities.push(fire);
+        // Rest tile auto-heals the player to full on entry.
+        gameBridge.setState({ playerHp: gameBridge.state.playerMaxHp });
         return;
       }
       case 'exit': {

@@ -128,3 +128,35 @@ export const awardXp = internalMutation({
     return await awardXpHelper(ctx, args.userId, args.amount, args.source, args.label);
   },
 });
+
+// ─── Public: StudyQuest game XP grants ──────────────────────
+
+/**
+ * Allow the StudyQuest game (Excalibur scenes via the bridge) to award XP
+ * for in-game events like battle victories. Sources are validated against
+ * an allowlist so this can't be used as a generic XP firehose.
+ */
+const GAME_XP_SOURCES = new Set([
+  'battle-victory',
+  'boss-victory',
+  'treasure-found',
+  'floor-cleared',
+]);
+const GAME_XP_MAX_PER_CALL = 100;
+
+export const awardGameXp = mutation({
+  args: {
+    amount: v.number(),
+    source: v.string(),
+    label: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    if (!GAME_XP_SOURCES.has(args.source)) {
+      throw new ConvexError(`Invalid game XP source: ${args.source}`);
+    }
+    const amount = Math.max(0, Math.min(GAME_XP_MAX_PER_CALL, Math.round(args.amount)));
+    if (amount === 0) return null;
+    return await awardXpHelper(ctx, userId, amount, args.source, args.label);
+  },
+});

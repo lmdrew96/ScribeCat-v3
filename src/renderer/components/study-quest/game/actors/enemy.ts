@@ -26,7 +26,10 @@ export class Enemy extends ex.Actor {
       pos: options.pos,
       width: ENEMY_SIZE,
       height: ENEMY_SIZE,
-      collisionType: ex.CollisionType.Fixed,
+      // Passive so the player can walk *onto* the enemy tile — the dungeon
+      // scene listens for that overlap to trigger the battle. Fixed would
+      // block the player one tile short and the trigger would never fire.
+      collisionType: ex.CollisionType.Passive,
     });
     this.displayName = options.name;
 

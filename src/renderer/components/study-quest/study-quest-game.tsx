@@ -5,7 +5,9 @@
  * survives React 19 strict-mode double-effects without leaking engines.
  */
 
+import { useMutation } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
+import { api } from '../../../../convex/_generated/api';
 import type { CatMood, CatVariant } from './cat-sprites';
 import { gameBridge } from './game/bridge';
 import { createGameEngine, type GameHandle } from './game/engine';
@@ -46,6 +48,24 @@ export function StudyQuestGame({ variant, mood, width = 640, height = 480 }: Stu
   useEffect(() => {
     gameBridge.setState({ mood });
   }, [mood]);
+
+  const awardGameXp = useMutation(api.studyQuest.awardGameXp);
+  useEffect(() => {
+    const off = gameBridge.on('xp-gained', (event) => {
+      const label =
+        event.source === 'boss-victory'
+          ? 'Defeated a floor boss'
+          : event.source === 'battle-victory'
+            ? 'Won a battle'
+            : event.source === 'treasure-found'
+              ? 'Found treasure'
+              : 'Cleared a floor';
+      awardGameXp({ amount: event.amount, source: event.source, label }).catch((err) => {
+        console.error('Failed to award game XP:', err);
+      });
+    });
+    return off;
+  }, [awardGameXp]);
 
   return (
     <div className="relative inline-block">

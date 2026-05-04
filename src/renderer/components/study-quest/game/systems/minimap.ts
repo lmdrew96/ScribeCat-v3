@@ -31,6 +31,7 @@ const TYPE_COLOR: Record<RoomType['kind'], string> = {
 export class Minimap extends ex.ScreenElement {
   private floor?: Floor;
   private currentRoomId?: string;
+  private clearedRooms: Set<string> = new Set();
   private cells: ex.Actor[] = [];
   private viewportWidth: number;
 
@@ -45,14 +46,16 @@ export class Minimap extends ex.ScreenElement {
     this.viewportWidth = viewportWidth;
   }
 
-  setFloor(floor: Floor, currentRoomId: string): void {
+  setFloor(floor: Floor, currentRoomId: string, clearedRooms: Set<string>): void {
     this.floor = floor;
     this.currentRoomId = currentRoomId;
+    this.clearedRooms = clearedRooms;
     this.rebuild();
   }
 
-  setCurrentRoom(roomId: string): void {
+  setCurrentRoom(roomId: string, clearedRooms: Set<string>): void {
     this.currentRoomId = roomId;
+    this.clearedRooms = clearedRooms;
     this.rebuild();
   }
 
@@ -100,6 +103,12 @@ export class Minimap extends ex.ScreenElement {
       const cellX = PADDING + dx;
       const cellY = PADDING + dy;
       const isCurrent = room.id === this.currentRoomId;
+      const isCleared = this.clearedRooms.has(room.id);
+      const baseColor = ex.Color.fromHex(TYPE_COLOR[room.type.kind]);
+      // Cleared rooms dim by ~50% to show progress without changing the type cue.
+      const cellColor = isCleared
+        ? new ex.Color(baseColor.r * 0.4, baseColor.g * 0.4, baseColor.b * 0.4, 1)
+        : baseColor;
       const cell = new ex.Actor({
         pos: ex.vec(cellX, cellY),
         width: CELL_SIZE,
@@ -110,7 +119,7 @@ export class Minimap extends ex.ScreenElement {
         new ex.Rectangle({
           width: CELL_SIZE,
           height: CELL_SIZE,
-          color: ex.Color.fromHex(TYPE_COLOR[room.type.kind]),
+          color: cellColor,
           strokeColor: isCurrent ? HIGHLIGHT : ex.Color.Transparent,
           lineWidth: isCurrent ? 2 : 0,
         }),
