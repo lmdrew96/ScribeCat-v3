@@ -5,6 +5,7 @@ import { HomeView } from '@/components/home-view';
 import { MessagesView } from '@/components/messages/messages-view';
 import { StudyRoomsView } from '@/components/rooms/study-rooms-view';
 import { SharedSessionView } from '@/components/shared-session-view';
+import { StudyQuestPage } from '@/components/study-quest/study-quest-page';
 import { StudyView } from '@/components/study-view';
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 
@@ -78,6 +79,12 @@ const sharedSessionRoute = createRoute({
   component: SharedSessionView,
 });
 
+const studyQuestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/study-quest',
+  component: StudyQuestPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   studyIndexRoute,
@@ -90,6 +97,7 @@ const routeTree = rootRoute.addChildren([
   examRoute,
   examRoomRoute,
   sharedSessionRoute,
+  studyQuestRoute,
 ]);
 
 export const router = createRouter({ routeTree });

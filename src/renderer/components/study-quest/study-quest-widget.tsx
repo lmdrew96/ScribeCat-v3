@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { useNotificationSounds } from '@/hooks/use-notification-sounds';
 import { useStudyQuest } from '@/hooks/use-study-quest';
-import { ChevronDown, Palette, Sparkles } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { ChevronDown, Gamepad2, Palette, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CatDisplay } from './cat-display';
@@ -39,6 +40,7 @@ export function StudyQuestWidget() {
   const [adoptVariant, setAdoptVariant] = useState<CatVariant>('grey');
   const prevLevelRef = useRef<number | null>(null);
   const { playSound } = useNotificationSounds();
+  const navigate = useNavigate();
 
   // Level-up toast + sound — only fires after initial data load, never on restart
   useEffect(() => {
@@ -164,6 +166,15 @@ export function StudyQuestWidget() {
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--glass-border)]">
         <CatNameEditor name={name} onRename={(n) => renameCat({ name: n })} />
         <div className="flex items-center gap-0.5 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => navigate({ to: '/study-quest' })}
+            title="Play StudyQuest"
+          >
+            <Gamepad2 className="h-3 w-3" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
