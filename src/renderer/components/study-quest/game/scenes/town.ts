@@ -8,6 +8,7 @@
  * Input flow:
  *   - Movement (WASD/arrows) handled inside the Player actor
  *   - Space (interact / advance dialogue) handled by this scene each tick
+ *   - Walking onto the Dungeon Entry tile transitions to DungeonScene
  */
 
 import * as ex from 'excalibur';
@@ -15,18 +16,34 @@ import type { CatVariant } from '../../cat-sprites';
 import { Npc } from '../actors/npc';
 import { Player } from '../actors/player';
 import { DialogueOverlay } from '../systems/dialogue';
-import { BUILDINGS, PLAYER_SPAWN_TILE, TOWN_COLUMNS, TOWN_ROWS, buildTownGrid, tileToWorld } from '../world/town-map';
+import {
+  BUILDINGS,
+  PLAYER_SPAWN_TILE,
+  TOWN_COLUMNS,
+  TOWN_DUNGEON_ENTRY,
+  TOWN_DUNGEON_RETURN,
+  TOWN_ROWS,
+  buildTownGrid,
+  tileToWorld,
+} from '../world/town-map';
 import { TILE_SIZE, isSolid, tileGraphic } from '../world/tiles';
 
 export interface TownSceneOptions {
   variant: CatVariant;
 }
 
+export interface TownSceneActivationData {
+  from?: 'dungeon';
+}
+
+const ENTRY_DEBOUNCE_FRAMES = 2;
+
 export class TownScene extends ex.Scene {
   private variant: CatVariant;
   private player?: Player;
   private dialogue?: DialogueOverlay;
   private npcs: Npc[] = [];
+  private entryDebounceFrames = 0;
 
   constructor(options: TownSceneOptions) {
     super();
@@ -43,6 +60,17 @@ export class TownScene extends ex.Scene {
     this.setupCamera();
   }
 
+  override onActivate(ctx: ex.SceneActivationContext<TownSceneActivationData>): void {
+    if (!this.player) return;
+    if (ctx.data?.from === 'dungeon') {
+      this.player.pos = tileToWorld(TOWN_DUNGEON_RETURN.x, TOWN_DUNGEON_RETURN.y);
+      this.player.vel = ex.vec(0, 0);
+      // Ignore the entry-trigger for a couple frames so we don't immediately
+      // bounce back into the dungeon.
+      this.entryDebounceFrames = ENTRY_DEBOUNCE_FRAMES;
+    }
+  }
+
   override onPostUpdate(engine: ex.Engine): void {
     if (!this.player || !this.dialogue) return;
     const kb = engine.input.keyboard;
@@ -57,6 +85,16 @@ export class TownScene extends ex.Scene {
     }
 
     this.player.inputEnabled = !this.dialogue.isOpen;
+
+    // Dungeon entry trigger.
+    if (this.entryDebounceFrames > 0) {
+      this.entryDebounceFrames--;
+    } else if (!this.dialogue.isOpen) {
+      const tile = this.worldToTile(this.player.pos);
+      if (tile.x === TOWN_DUNGEON_ENTRY.x && tile.y === TOWN_DUNGEON_ENTRY.y) {
+        void engine.goToScene('dungeon', { sceneActivationData: { from: 'town' } });
+      }
+    }
   }
 
   // ─── Setup ─────────────────────────────────────────────────
@@ -124,8 +162,8 @@ export class TownScene extends ex.Scene {
       pos: tileToWorld(BUILDINGS.dungeon.npcSpawn.x, BUILDINGS.dungeon.npcSpawn.y),
       color: ex.Color.fromHex('#88739e'),
       lines: [
-        'The dungeon gate is sealed for now.',
-        'Coming soon — Phase 2 will open these doors.',
+        'The dungeon awaits, brave cat.',
+        'Step onto the purple tile to the south to descend.',
       ],
     });
     this.npcs = [homeNpc, librarian, shopkeeper, dungeonGuard];
@@ -152,5 +190,12 @@ export class TownScene extends ex.Scene {
       if (!best || d < best.dist) best = { npc, dist: d };
     }
     return best?.npc ?? null;
+  }
+
+  private worldToTile(pos: ex.Vector): { x: number; y: number } {
+    return {
+      x: Math.floor(pos.x / TILE_SIZE),
+      y: Math.floor(pos.y / TILE_SIZE),
+    };
   }
 }

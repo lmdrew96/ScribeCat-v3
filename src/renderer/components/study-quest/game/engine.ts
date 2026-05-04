@@ -9,6 +9,7 @@
 import * as ex from 'excalibur';
 import type { CatVariant } from '../cat-sprites';
 import { buildLoader } from './resources';
+import { DungeonScene } from './scenes/dungeon';
 import { TownScene } from './scenes/town';
 
 export interface CreateGameOptions {
@@ -40,6 +41,7 @@ export function createGameEngine(options: CreateGameOptions): GameHandle {
   });
 
   engine.addScene('town', new TownScene({ variant }));
+  engine.addScene('dungeon', new DungeonScene({ variant }));
 
   const loader = buildLoader(variant);
   const ready = engine

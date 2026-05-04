@@ -42,6 +42,10 @@ export class Player extends ex.Actor {
       width: SPRITE_CONFIG.idle.frameSize,
       height: SPRITE_CONFIG.idle.frameSize,
       collisionType: ex.CollisionType.Active,
+      // Above tilemap (z=0) so room transitions don't bury the cat under
+      // a freshly-inserted tilemap. Features (chests/portals) sit at z=0
+      // too, which keeps the cat visible when standing on them.
+      z: 10,
     });
     this.variant = options.variant;
   }

@@ -61,6 +61,12 @@ export const BUILDINGS: Record<'home' | 'library' | 'shop' | 'dungeon', Building
 
 export const PLAYER_SPAWN_TILE = { x: 20, y: 15 };
 
+/** Tile coord of the dungeon-entry trigger (just south of the Dungeon Gate). */
+export const TOWN_DUNGEON_ENTRY = { x: 32, y: 25 };
+
+/** Tile where the player lands when returning from the dungeon. */
+export const TOWN_DUNGEON_RETURN = { x: 32, y: 26 };
+
 /** Convert a tile coord to a world-space pixel coord (tile center). */
 export function tileToWorld(tx: number, ty: number): ex.Vector {
   return ex.vec(tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + TILE_SIZE / 2);
@@ -98,6 +104,9 @@ export function buildTownGrid(): TileType[] {
       }
     }
   }
+
+  // Dungeon entry tile — walkable trigger square
+  set(TOWN_DUNGEON_ENTRY.x, TOWN_DUNGEON_ENTRY.y, TileType.DungeonEntry);
 
   return grid;
 }

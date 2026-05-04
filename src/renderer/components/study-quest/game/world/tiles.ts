@@ -15,6 +15,7 @@ export enum TileType {
   LibraryWall = 4,
   ShopWall = 5,
   DungeonGate = 6,
+  DungeonEntry = 7,
 }
 
 interface TileSpec {
@@ -30,6 +31,7 @@ export const TILE_SPECS: Record<TileType, TileSpec> = {
   [TileType.LibraryWall]: { color: ex.Color.fromHex('#7a5aa8'), solid: true },
   [TileType.ShopWall]: { color: ex.Color.fromHex('#c9b04e'), solid: true },
   [TileType.DungeonGate]: { color: ex.Color.fromHex('#7a2828'), solid: true },
+  [TileType.DungeonEntry]: { color: ex.Color.fromHex('#88739e'), solid: false },
 };
 
 export function tileGraphic(type: TileType): ex.Rectangle {
