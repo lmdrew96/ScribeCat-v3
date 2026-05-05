@@ -25,7 +25,15 @@ export const getInventory = query({
       .query('gameInventory')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-    return row?.items ?? [];
+    const raw = row?.items ?? [];
+    // Enrich with catalog details so the UI doesn't need to ship the catalog.
+    // Drop entries whose itemId no longer exists in the catalog (item removed
+    // in a code change) — they'd render as broken otherwise.
+    return raw.flatMap((entry) => {
+      const item = getItem(entry.itemId);
+      if (!item) return [];
+      return [{ itemId: entry.itemId, quantity: entry.quantity, item }];
+    });
   },
 });
 
@@ -38,15 +46,17 @@ export const getEquipment = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
 
-    const weapon = row?.weapon ?? null;
-    const armor = row?.armor ?? null;
-    const accessory = row?.accessory ?? null;
+    const weaponId = row?.weapon ?? null;
+    const armorId = row?.armor ?? null;
+    const accessoryId = row?.accessory ?? null;
+
+    const weapon = weaponId ? getItem(weaponId) : null;
+    const armor = armorId ? getItem(armorId) : null;
+    const accessory = accessoryId ? getItem(accessoryId) : null;
 
     let attackBonus = 0;
     let defenseBonus = 0;
-    for (const id of [weapon, armor, accessory]) {
-      if (!id) continue;
-      const item = getItem(id);
+    for (const item of [weapon, armor, accessory]) {
       if (!item) continue;
       attackBonus += item.attackBonus ?? 0;
       defenseBonus += item.defenseBonus ?? 0;
