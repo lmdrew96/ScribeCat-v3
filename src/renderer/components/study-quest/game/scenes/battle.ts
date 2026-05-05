@@ -16,7 +16,7 @@
 import * as ex from 'excalibur';
 import { type CatVariant, SPRITE_CONFIG } from '../../cat-sprites';
 import { gameBridge, PLAYER_MAX_HP } from '../bridge';
-import { applyDamage, isDead } from '../combat/hp';
+import { applyDamage, applyHeal, isDead } from '../combat/hp';
 import { type EnemyTemplate, getEnemyTemplate } from '../combat/enemies';
 import { pickQuestion } from '../combat/questions';
 import { getCatResources } from '../resources';
@@ -77,6 +77,7 @@ export class BattleScene extends ex.Scene {
 
   private offActionResolved?: () => void;
   private offQuestionResolved?: () => void;
+  private offItemUsed?: () => void;
 
   constructor(options: BattleSceneOptions) {
     super();
@@ -105,6 +106,9 @@ export class BattleScene extends ex.Scene {
     });
     this.offQuestionResolved = gameBridge.on('battle-question-resolved', (event) => {
       this.handleAnswered(event.correct);
+    });
+    this.offItemUsed = gameBridge.on('battle-item-used', (event) => {
+      this.handleItemUsed(event.itemName, event.healAmount);
     });
   }
 
@@ -193,6 +197,7 @@ export class BattleScene extends ex.Scene {
   dispose(): void {
     this.offActionResolved?.();
     this.offQuestionResolved?.();
+    this.offItemUsed?.();
   }
 
   // ─── Phase transitions ─────────────────────────────────────
@@ -228,7 +233,28 @@ export class BattleScene extends ex.Scene {
         this.banner?.set('You brace for the next hit.');
         this.beginExecution('player');
         return;
+      case 'item':
+        // Item is resolved out-of-band by the React overlay (it calls the
+        // useItem mutation directly and then emits 'battle-item-used').
+        // Reaching here would mean the overlay sent the wrong event —
+        // ignore so we don't double-spend a turn.
+        return;
     }
+  }
+
+  private handleItemUsed(itemName: string, healAmount: number): void {
+    if (this.phase !== 'player-turn') return;
+    const before = gameBridge.state.playerHp;
+    const after = applyHeal(before, gameBridge.state.playerMaxHp, healAmount);
+    const restored = after - before;
+    gameBridge.setState({ playerHp: after });
+    this.playerHpBar?.set(after, gameBridge.state.playerMaxHp);
+    this.banner?.set(
+      restored > 0
+        ? `You drink ${itemName}. +${restored} HP.`
+        : `You drink ${itemName}. Already at full HP.`,
+    );
+    this.beginExecution('player');
   }
 
   private handleAnswered(correct: boolean): void {

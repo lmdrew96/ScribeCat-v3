@@ -106,7 +106,7 @@ export class HpBar extends ex.ScreenElement {
 
 // ─── BattleAction shared types ──────────────────────────────────────
 
-export type BattleAction = 'study-strike' | 'quick-attack' | 'defend';
+export type BattleAction = 'study-strike' | 'quick-attack' | 'defend' | 'item';
 
 interface ActionEntry {
   action: BattleAction;
@@ -122,6 +122,7 @@ export const BATTLE_ACTIONS: readonly ActionEntry[] = [
   },
   { action: 'quick-attack', label: 'Quick Attack', hint: 'Reliable, light damage. No question.' },
   { action: 'defend', label: 'Defend', hint: 'Halve the enemy’s next attack.' },
+  { action: 'item', label: 'Item', hint: 'Use a healing potion from your bag.' },
 ] as const;
 
 // ─── MessageBanner ──────────────────────────────────────────────────

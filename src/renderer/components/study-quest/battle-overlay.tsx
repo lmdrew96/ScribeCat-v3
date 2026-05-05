@@ -9,14 +9,23 @@
  * Communication happens via gameBridge:
  *   game → React: 'battle-action-prompt', 'battle-question-prompt',
  *                 'battle-overlay-clear'
- *   React → game: 'battle-action-resolved', 'battle-question-resolved'
+ *   React → game: 'battle-action-resolved' (study-strike/quick-attack/defend),
+ *                 'battle-question-resolved', 'battle-item-used'
  *
- * Keyboard shortcuts (1/2/3 for actions, 1-4 for answers) are handled
+ * The Item action is special: instead of routing through
+ * 'battle-action-resolved', the overlay calls the useItem mutation
+ * directly and then emits 'battle-item-used' with the heal amount.
+ * This keeps async DB writes out of the scene's state machine.
+ *
+ * Keyboard shortcuts (1/2/3/4 for actions, 1-4 for answers) are handled
  * here too — they listen on window so they fire even when the canvas
  * has focus.
  */
 
+import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { api } from '../../../../convex/_generated/api';
 import { gameBridge } from './game/bridge';
 import type { Question } from './game/combat/questions';
 import { BATTLE_ACTIONS } from './game/systems/battle-hud';
@@ -24,6 +33,16 @@ import { BATTLE_ACTIONS } from './game/systems/battle-hud';
 export function BattleOverlay() {
   const [actionPrompt, setActionPrompt] = useState(false);
   const [question, setQuestion] = useState<Question | null>(null);
+  const [usingItem, setUsingItem] = useState(false);
+
+  const inventory = useQuery(api.inventory.getInventory);
+  const useItem = useMutation(api.inventory.useItem);
+
+  // First healing potion in the bag, if any.
+  const firstConsumable = inventory?.find(
+    (entry) => entry.item.slot === 'consumable' && (entry.item.healAmount ?? 0) > 0,
+  );
+  const itemAvailable = !!firstConsumable && !usingItem;
 
   useEffect(() => {
     const offAction = gameBridge.on('battle-action-prompt', () => {
@@ -45,12 +64,55 @@ export function BattleOverlay() {
     };
   }, []);
 
+  const pickAction = (idx: number) => {
+    const entry = BATTLE_ACTIONS[idx];
+    if (!entry) return;
+    if (entry.action === 'item') {
+      void handleUseItem();
+      return;
+    }
+    setActionPrompt(false);
+    gameBridge.emit({ type: 'battle-action-resolved', action: entry.action });
+  };
+
+  const handleUseItem = async () => {
+    if (usingItem) return;
+    if (!firstConsumable) {
+      toast.error('No usable items in your bag.');
+      return;
+    }
+    setUsingItem(true);
+    try {
+      const result = await useItem({ itemId: firstConsumable.itemId });
+      setActionPrompt(false);
+      gameBridge.emit({
+        type: 'battle-item-used',
+        healAmount: result.healAmount,
+        itemName: result.itemName,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not use item');
+    } finally {
+      setUsingItem(false);
+    }
+  };
+
+  const pickAnswer = (idx: number) => {
+    if (!question) return;
+    const correct = idx === question.answerIndex;
+    setQuestion(null);
+    gameBridge.emit({ type: 'battle-question-resolved', correct });
+  };
+
   useEffect(() => {
     if (!actionPrompt && !question) return;
     const onKey = (event: KeyboardEvent) => {
       if (actionPrompt) {
         const idx = parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < BATTLE_ACTIONS.length) {
+          // Skip Item via keyboard if we don't have any consumables —
+          // matches the disabled-button state visually.
+          if (BATTLE_ACTIONS[idx].action === 'item' && !itemAvailable) return;
           event.preventDefault();
           pickAction(idx);
         }
@@ -64,21 +126,10 @@ export function BattleOverlay() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [actionPrompt, question]);
-
-  const pickAction = (idx: number) => {
-    const entry = BATTLE_ACTIONS[idx];
-    if (!entry) return;
-    setActionPrompt(false);
-    gameBridge.emit({ type: 'battle-action-resolved', action: entry.action });
-  };
-
-  const pickAnswer = (idx: number) => {
-    if (!question) return;
-    const correct = idx === question.answerIndex;
-    setQuestion(null);
-    gameBridge.emit({ type: 'battle-question-resolved', correct });
-  };
+    // pickAction/pickAnswer are stable enough — they read latest state via
+    // refs (none here, but dep on itemAvailable handles the gate).
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  }, [actionPrompt, question, itemAvailable]);
 
   if (!actionPrompt && !question) return null;
 
@@ -90,22 +141,33 @@ export function BattleOverlay() {
             Choose an action
           </div>
           <div className="grid grid-cols-1 gap-1">
-            {BATTLE_ACTIONS.map((entry, i) => (
-              <button
-                type="button"
-                key={entry.action}
-                onClick={() => pickAction(i)}
-                className="flex items-center justify-between rounded border border-transparent px-2 py-1.5 text-left text-sm transition hover:border-[#dfa649] hover:bg-[#dfa64922] focus:outline-none focus:ring-1 focus:ring-[#dfa649]"
-              >
-                <span>
-                  <span className="mr-2 inline-block w-5 text-center font-mono text-[#dfa649]">
-                    {i + 1}
+            {BATTLE_ACTIONS.map((entry, i) => {
+              const disabled = entry.action === 'item' && !itemAvailable;
+              const itemCount =
+                entry.action === 'item' && firstConsumable ? firstConsumable.quantity : null;
+              return (
+                <button
+                  type="button"
+                  key={entry.action}
+                  onClick={() => pickAction(i)}
+                  disabled={disabled}
+                  className="flex items-center justify-between rounded border border-transparent px-2 py-1.5 text-left text-sm transition hover:border-[#dfa649] hover:bg-[#dfa64922] focus:outline-none focus:ring-1 focus:ring-[#dfa649] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-transparent disabled:hover:bg-transparent"
+                >
+                  <span>
+                    <span className="mr-2 inline-block w-5 text-center font-mono text-[#dfa649]">
+                      {i + 1}
+                    </span>
+                    {entry.label}
+                    {itemCount !== null && (
+                      <span className="ml-1.5 text-xs text-[#dbd5e2]/70">×{itemCount}</span>
+                    )}
                   </span>
-                  {entry.label}
-                </span>
-                <span className="ml-3 text-xs text-[#dbd5e2]/70">{entry.hint}</span>
-              </button>
-            ))}
+                  <span className="ml-3 text-xs text-[#dbd5e2]/70">
+                    {disabled ? 'No items in bag.' : entry.hint}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

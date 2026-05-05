@@ -29,6 +29,7 @@ export type GameEvent =
   | { type: 'battle-action-resolved'; action: BattleAction }
   | { type: 'battle-question-prompt'; question: Question }
   | { type: 'battle-question-resolved'; correct: boolean }
+  | { type: 'battle-item-used'; healAmount: number; itemName: string }
   | { type: 'battle-overlay-clear' };
 
 export type GameEventType = GameEvent['type'];
