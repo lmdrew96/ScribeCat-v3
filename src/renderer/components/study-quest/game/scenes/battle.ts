@@ -216,11 +216,13 @@ export class BattleScene extends ex.Scene {
         gameBridge.emit({ type: 'battle-question-prompt', question });
         return;
       }
-      case 'quick-attack':
-        this.banner?.set(`You jab for ${QUICK_ATTACK_DAMAGE} damage.`);
-        this.dealEnemyDamage(QUICK_ATTACK_DAMAGE);
+      case 'quick-attack': {
+        const damage = QUICK_ATTACK_DAMAGE + gameBridge.state.playerAttackBonus;
+        this.banner?.set(`You jab for ${damage} damage.`);
+        this.dealEnemyDamage(damage);
         this.beginExecution('player');
         return;
+      }
       case 'defend':
         this.defendingNextHit = true;
         this.banner?.set('You brace for the next hit.');
@@ -233,8 +235,9 @@ export class BattleScene extends ex.Scene {
     if (this.phase !== 'awaiting-answer') return;
     gameBridge.emit({ type: 'battle-overlay-clear' });
     if (correct) {
-      this.banner?.set(`Correct! You strike for ${STUDY_STRIKE_DAMAGE} damage.`);
-      this.dealEnemyDamage(STUDY_STRIKE_DAMAGE);
+      const damage = STUDY_STRIKE_DAMAGE + gameBridge.state.playerAttackBonus;
+      this.banner?.set(`Correct! You strike for ${damage} damage.`);
+      this.dealEnemyDamage(damage);
     } else {
       // Pure miss per spec — no self-damage, just lose the turn.
       this.banner?.set('Wrong — your strike misses.');
@@ -319,9 +322,12 @@ export class BattleScene extends ex.Scene {
   }
 
   private dealPlayerDamage(amount: number, ignoreDefend = false): void {
-    const reduced =
+    const afterDefend =
       !ignoreDefend && this.defendingNextHit ? Math.round(amount * DEFEND_REDUCTION) : amount;
-    const next = applyDamage(gameBridge.state.playerHp, gameBridge.state.playerMaxHp, reduced);
+    // Equipment defense subtracts flat — armor matters more on small hits
+    // than on big ones, but never let an attack drop below 1 damage.
+    const afterArmor = Math.max(1, afterDefend - gameBridge.state.playerDefenseBonus);
+    const next = applyDamage(gameBridge.state.playerHp, gameBridge.state.playerMaxHp, afterArmor);
     gameBridge.setState({ playerHp: next });
     this.playerHpBar?.set(next, gameBridge.state.playerMaxHp);
   }

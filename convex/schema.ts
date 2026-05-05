@@ -412,6 +412,32 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_room_user', ['examRoomId', 'userId']),
 
+  // ─── StudyQuest game state (Phase 4) ─────────────────────────
+
+  // Per-user inventory of game items (weapons, armor, consumables).
+  // Items live in `convex/items.ts` as a static catalog — this table
+  // just tracks what each user owns and how many.
+  gameInventory: defineTable({
+    userId: v.string(),
+    items: v.array(
+      v.object({
+        itemId: v.string(),
+        quantity: v.number(),
+      }),
+    ),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
+  // Per-user equipped gear. Each slot is either an item id or null.
+  // Validation that the item exists / is equippable lives in mutations.
+  gameEquipment: defineTable({
+    userId: v.string(),
+    weapon: v.union(v.string(), v.null()),
+    armor: v.union(v.string(), v.null()),
+    accessory: v.union(v.string(), v.null()),
+    updatedAt: v.number(),
+  }).index('by_user', ['userId']),
+
   // Weak spots (per-user topic performance tracking in exam rooms)
   weakSpots: defineTable({
     examRoomId: v.id('examRooms'),

@@ -5,7 +5,7 @@
  * survives React 19 strict-mode double-effects without leaking engines.
  */
 
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../../../convex/_generated/api';
 import { BattleOverlay } from './battle-overlay';
@@ -67,6 +67,26 @@ export function StudyQuestGame({ variant, mood, width = 640, height = 480 }: Stu
     });
     return off;
   }, [awardGameXp]);
+
+  // Grant the starter loadout (sword + vest + potions) on first visit;
+  // idempotent so it's safe to call on every mount.
+  const ensureStarterLoadout = useMutation(api.inventory.ensureStarterLoadout);
+  useEffect(() => {
+    ensureStarterLoadout().catch((err) => {
+      console.error('Failed to ensure starter loadout:', err);
+    });
+  }, [ensureStarterLoadout]);
+
+  // Sync equipped gear bonuses into the bridge so battle.ts reads them
+  // synchronously without touching Convex.
+  const equipment = useQuery(api.inventory.getEquipment);
+  useEffect(() => {
+    if (!equipment) return;
+    gameBridge.setState({
+      playerAttackBonus: equipment.attackBonus,
+      playerDefenseBonus: equipment.defenseBonus,
+    });
+  }, [equipment]);
 
   return (
     <div className="relative inline-block">

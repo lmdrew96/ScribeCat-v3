@@ -41,6 +41,9 @@ export interface GameState {
   /** Player HP — survives across battles, resets on dungeon entry. */
   playerHp: number;
   playerMaxHp: number;
+  /** Equipment-derived combat bonuses, synced from Convex by React. */
+  playerAttackBonus: number;
+  playerDefenseBonus: number;
 }
 
 export const PLAYER_MAX_HP = 100;
@@ -51,6 +54,8 @@ class GameBridge {
     mood: 'idle',
     playerHp: PLAYER_MAX_HP,
     playerMaxHp: PLAYER_MAX_HP,
+    playerAttackBonus: 0,
+    playerDefenseBonus: 0,
   };
 
   on<T extends GameEventType>(type: T, listener: Listener<T>): () => void {

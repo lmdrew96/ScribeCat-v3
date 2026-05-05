@@ -25,6 +25,8 @@ import type * as examToolPrompts from "../examToolPrompts.js";
 import type * as examTools from "../examTools.js";
 import type * as friends from "../friends.js";
 import type * as http from "../http.js";
+import type * as inventory from "../inventory.js";
+import type * as items from "../items.js";
 import type * as lectureContext from "../lectureContext.js";
 import type * as messaging from "../messaging.js";
 import type * as messagingHelpers from "../messagingHelpers.js";
@@ -74,6 +76,8 @@ declare const fullApi: ApiFromModules<{
   examTools: typeof examTools;
   friends: typeof friends;
   http: typeof http;
+  inventory: typeof inventory;
+  items: typeof items;
   lectureContext: typeof lectureContext;
   messaging: typeof messaging;
   messagingHelpers: typeof messagingHelpers;
