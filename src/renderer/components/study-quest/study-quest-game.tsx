@@ -8,6 +8,7 @@
 import { useMutation } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../../../convex/_generated/api';
+import { BattleOverlay } from './battle-overlay';
 import type { CatMood, CatVariant } from './cat-sprites';
 import { gameBridge } from './game/bridge';
 import { createGameEngine, type GameHandle } from './game/engine';
@@ -76,6 +77,7 @@ export function StudyQuestGame({ variant, mood, width = 640, height = 480 }: Stu
         className="rounded-lg border border-[var(--glass-border)] bg-[#1e1830]"
         style={{ imageRendering: 'pixelated' }}
       />
+      <BattleOverlay />
       {error && (
         <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/70 p-4 text-center text-sm text-destructive">
           {error}

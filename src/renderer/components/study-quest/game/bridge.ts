@@ -10,6 +10,8 @@
  */
 
 import type { CatMood } from '../cat-sprites';
+import type { BattleAction } from './systems/battle-hud';
+import type { Question } from './combat/questions';
 
 export type GameEvent =
   | { type: 'xp-gained'; amount: number; source: string }
@@ -17,7 +19,17 @@ export type GameEvent =
   | { type: 'battle-lost'; enemyId: string }
   | { type: 'mood-change'; mood: CatMood }
   | { type: 'item-found'; itemId: string }
-  | { type: 'quest-complete'; questId: string };
+  | { type: 'quest-complete'; questId: string }
+  // Battle UI is rendered as React overlay over the canvas (Excalibur's
+  // ScreenElement rendering wedged in our setup; HTML is more accessible
+  // and easier to style anyway). The scene emits the *prompt* events when
+  // it needs the player to pick something; the React overlay emits the
+  // *resolved* events when the player has chosen.
+  | { type: 'battle-action-prompt' }
+  | { type: 'battle-action-resolved'; action: BattleAction }
+  | { type: 'battle-question-prompt'; question: Question }
+  | { type: 'battle-question-resolved'; correct: boolean }
+  | { type: 'battle-overlay-clear' };
 
 export type GameEventType = GameEvent['type'];
 

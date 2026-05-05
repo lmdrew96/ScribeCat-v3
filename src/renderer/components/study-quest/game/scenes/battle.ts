@@ -20,13 +20,7 @@ import { applyDamage, isDead } from '../combat/hp';
 import { type EnemyTemplate, getEnemyTemplate } from '../combat/enemies';
 import { pickQuestion } from '../combat/questions';
 import { getCatResources } from '../resources';
-import {
-  ActionMenu,
-  type BattleAction,
-  HpBar,
-  MessageBanner,
-  QuestionModal,
-} from '../systems/battle-hud';
+import { type BattleAction, HpBar, MessageBanner } from '../systems/battle-hud';
 
 export interface BattleSceneActivationData {
   enemyId: string;
@@ -61,8 +55,6 @@ const ENEMY_POS = ex.vec(480, 240);
 const PLAYER_HP_POS = { x: 16, y: 12 };
 const ENEMY_HP_POS = { x: 640 - 220 - 16, y: 12 };
 const BANNER_POS = { x: 90, y: 60 };
-const MENU_POS = { x: 16, y: 360 };
-const QUESTION_POS = { x: 90, y: 140 };
 
 export class BattleScene extends ex.Scene {
   private variant: CatVariant;
@@ -82,8 +74,9 @@ export class BattleScene extends ex.Scene {
   private playerHpBar?: HpBar;
   private enemyHpBar?: HpBar;
   private banner?: MessageBanner;
-  private actionMenu?: ActionMenu;
-  private questionModal?: QuestionModal;
+
+  private offActionResolved?: () => void;
+  private offQuestionResolved?: () => void;
 
   constructor(options: BattleSceneOptions) {
     super();
@@ -99,17 +92,20 @@ export class BattleScene extends ex.Scene {
     this.playerHpBar = new HpBar('You', PLAYER_HP_POS.x, PLAYER_HP_POS.y);
     this.enemyHpBar = new HpBar('Enemy', ENEMY_HP_POS.x, ENEMY_HP_POS.y);
     this.banner = new MessageBanner(BANNER_POS.x, BANNER_POS.y);
-    this.actionMenu = new ActionMenu(MENU_POS.x, MENU_POS.y);
-    this.questionModal = new QuestionModal(QUESTION_POS.x, QUESTION_POS.y);
 
     this.add(this.playerHpBar);
     this.add(this.enemyHpBar);
     this.add(this.banner);
-    this.add(this.actionMenu);
-    this.add(this.questionModal);
 
-    this.actionMenu.onSelect = (action) => this.handleActionSelected(action);
-    this.questionModal.onAnswer = (correct) => this.handleAnswered(correct);
+    // Action menu + question modal are rendered as a React overlay
+    // (BattleOverlay) positioned over the canvas. We listen for resolved
+    // events here; the overlay listens for prompt events.
+    this.offActionResolved = gameBridge.on('battle-action-resolved', (event) => {
+      this.handleActionSelected(event.action);
+    });
+    this.offQuestionResolved = gameBridge.on('battle-question-resolved', (event) => {
+      this.handleAnswered(event.correct);
+    });
   }
 
   override onActivate(ctx: ex.SceneActivationContext<BattleSceneActivationData>): void {
@@ -134,8 +130,7 @@ export class BattleScene extends ex.Scene {
     this.playerHpBar?.set(gameBridge.state.playerHp, gameBridge.state.playerMaxHp);
     this.enemyHpBar?.set(this.enemyHp, this.enemyMaxHp);
     this.banner?.set(`A ${this.template.displayName} blocks your path!`);
-    this.actionMenu?.setActive(false);
-    this.questionModal?.hide();
+    gameBridge.emit({ type: 'battle-overlay-clear' });
   }
 
   override onDeactivate(): void {
@@ -147,6 +142,7 @@ export class BattleScene extends ex.Scene {
       this.enemyActor.kill();
       this.enemyActor = undefined;
     }
+    gameBridge.emit({ type: 'battle-overlay-clear' });
   }
 
   override onPostUpdate(engine: ex.Engine): void {
@@ -161,7 +157,7 @@ export class BattleScene extends ex.Scene {
 
       case 'player-turn':
       case 'awaiting-answer':
-        // Sub-elements (ActionMenu / QuestionModal) consume input.
+        // Input handled by React overlay; nothing to tick here.
         return;
 
       case 'executing-player':
@@ -193,17 +189,23 @@ export class BattleScene extends ex.Scene {
     }
   }
 
+  /** Defensive: scenes outlive the engine in some edge cases. */
+  dispose(): void {
+    this.offActionResolved?.();
+    this.offQuestionResolved?.();
+  }
+
   // ─── Phase transitions ─────────────────────────────────────
 
   private beginPlayerTurn(): void {
     this.phase = 'player-turn';
     this.banner?.set('Your turn — pick an action.');
-    this.actionMenu?.setActive(true);
+    gameBridge.emit({ type: 'battle-action-prompt' });
   }
 
   private handleActionSelected(action: BattleAction): void {
     if (this.phase !== 'player-turn') return;
-    this.actionMenu?.setActive(false);
+    gameBridge.emit({ type: 'battle-overlay-clear' });
 
     switch (action) {
       case 'study-strike': {
@@ -211,7 +213,7 @@ export class BattleScene extends ex.Scene {
         const question = pickQuestion(tier);
         this.phase = 'awaiting-answer';
         this.banner?.set('Study Strike — answer correctly to land it.');
-        this.questionModal?.show(question);
+        gameBridge.emit({ type: 'battle-question-prompt', question });
         return;
       }
       case 'quick-attack':
@@ -229,6 +231,7 @@ export class BattleScene extends ex.Scene {
 
   private handleAnswered(correct: boolean): void {
     if (this.phase !== 'awaiting-answer') return;
+    gameBridge.emit({ type: 'battle-overlay-clear' });
     if (correct) {
       this.banner?.set(`Correct! You strike for ${STUDY_STRIKE_DAMAGE} damage.`);
       this.dealEnemyDamage(STUDY_STRIKE_DAMAGE);
