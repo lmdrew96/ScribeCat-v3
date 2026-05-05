@@ -16,6 +16,7 @@ import type * as blocks from "../blocks.js";
 import type * as citations from "../citations.js";
 import type * as config from "../config.js";
 import type * as crons from "../crons.js";
+import type * as dropTables from "../dropTables.js";
 import type * as examBrain from "../examBrain.js";
 import type * as examChat from "../examChat.js";
 import type * as examGames from "../examGames.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   citations: typeof citations;
   config: typeof config;
   crons: typeof crons;
+  dropTables: typeof dropTables;
   examBrain: typeof examBrain;
   examChat: typeof examChat;
   examGames: typeof examGames;

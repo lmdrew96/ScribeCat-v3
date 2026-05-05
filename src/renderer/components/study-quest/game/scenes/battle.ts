@@ -319,7 +319,7 @@ export class BattleScene extends ex.Scene {
     this.phase = 'victory';
     this.waitFrames = VICTORY_DELAY_FRAMES;
     this.banner?.set(`Victory! +${this.template.xpReward} XP`);
-    gameBridge.emit({ type: 'battle-won', enemyId: this.enemyId });
+    gameBridge.emit({ type: 'battle-won', enemyId: this.enemyId, tier: this.template.tier });
     gameBridge.emit({
       type: 'xp-gained',
       amount: this.template.xpReward,

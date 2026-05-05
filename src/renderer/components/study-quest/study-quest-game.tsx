@@ -7,6 +7,7 @@
 
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../../../convex/_generated/api';
 import { BattleOverlay } from './battle-overlay';
 import type { CatMood, CatVariant } from './cat-sprites';
@@ -87,6 +88,24 @@ export function StudyQuestGame({ variant, mood, width = 640, height = 480 }: Stu
       playerDefenseBonus: equipment.defenseBonus,
     });
   }, [equipment]);
+
+  // Roll a drop on every battle victory. Server picks the item using the
+  // tier the scene emits; we just toast whatever comes back.
+  const rollBattleDrop = useMutation(api.inventory.rollBattleDrop);
+  useEffect(() => {
+    const off = gameBridge.on('battle-won', (event) => {
+      rollBattleDrop({ tier: event.tier })
+        .then((drop) => {
+          if (!drop) return;
+          const qty = drop.quantity > 1 ? ` ×${drop.quantity}` : '';
+          toast.success(`You found ${drop.itemName}${qty}!`);
+        })
+        .catch((err) => {
+          console.error('Failed to roll battle drop:', err);
+        });
+    });
+    return off;
+  }, [rollBattleDrop]);
 
   return (
     <div className="relative inline-block">

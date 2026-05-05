@@ -7,8 +7,9 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type MutationCtx } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import { isTier, rollDrop } from './dropTables';
 import {
   EQUIPPABLE_SLOTS,
   STARTER_EQUIPMENT,
@@ -139,6 +140,58 @@ export const equipItem = mutation({
       await ctx.db.patch(eq._id, { [item.slot]: args.itemId, updatedAt: now });
     }
     return null;
+  },
+});
+
+/**
+ * Adds `quantity` of `itemId` to the user's inventory, merging with any
+ * existing entry. Used by drops, gifts, future shop purchases.
+ */
+async function grantItem(
+  ctx: MutationCtx,
+  userId: string,
+  itemId: string,
+  quantity: number,
+): Promise<void> {
+  const now = Date.now();
+  const inv = await ctx.db
+    .query('gameInventory')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  if (!inv) {
+    await ctx.db.insert('gameInventory', {
+      userId,
+      items: [{ itemId, quantity }],
+      updatedAt: now,
+    });
+    return;
+  }
+  const existingIdx = inv.items.findIndex((i) => i.itemId === itemId);
+  const newItems =
+    existingIdx >= 0
+      ? inv.items.map((entry, i) =>
+          i === existingIdx ? { ...entry, quantity: entry.quantity + quantity } : entry,
+        )
+      : [...inv.items, { itemId, quantity }];
+  await ctx.db.patch(inv._id, { items: newItems, updatedAt: now });
+}
+
+/**
+ * Rolls the drop table for the given enemy tier and grants the result
+ * (if any) to the player. Returns the drop info for client-side toast,
+ * or null if nothing dropped.
+ */
+export const rollBattleDrop = mutation({
+  args: { tier: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    if (!isTier(args.tier)) throw new ConvexError(`Invalid tier: ${args.tier}`);
+    const drop = rollDrop(args.tier);
+    if (!drop) return null;
+    const item = getItem(drop.itemId);
+    if (!item) return null;
+    await grantItem(ctx, userId, drop.itemId, drop.quantity);
+    return { itemId: drop.itemId, quantity: drop.quantity, itemName: item.name };
   },
 });
 

@@ -11,11 +11,12 @@
 
 import type { CatMood } from '../cat-sprites';
 import type { BattleAction } from './systems/battle-hud';
+import type { EnemyTier } from './combat/enemies';
 import type { Question } from './combat/questions';
 
 export type GameEvent =
   | { type: 'xp-gained'; amount: number; source: string }
-  | { type: 'battle-won'; enemyId: string }
+  | { type: 'battle-won'; enemyId: string; tier: EnemyTier }
   | { type: 'battle-lost'; enemyId: string }
   | { type: 'mood-change'; mood: CatMood }
   | { type: 'item-found'; itemId: string }
