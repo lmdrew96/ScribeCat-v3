@@ -150,8 +150,8 @@ export function StudyQuestWidget() {
         title={`${name} — Lv.${level}`}
       >
         <div className="relative rounded-2xl glass-heavy glass-hover p-1.5 transition-all duration-200">
-          <CatDisplay mood={mood} variant={variant} size="small" />
-          <span className="absolute -top-1.5 -right-1.5 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+          <CatDisplay mood={mood} variant={variant} size="small" level={level} />
+          <span className="absolute -bottom-1.5 -right-1.5 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
             {level}
           </span>
         </div>
@@ -225,7 +225,7 @@ export function StudyQuestWidget() {
 
       {/* Cat display */}
       <div className="flex flex-col items-center py-3">
-        <CatDisplay mood={mood} variant={variant} size="large" />
+        <CatDisplay mood={mood} variant={variant} size="large" level={level} />
         <span className="text-[11px] text-muted-foreground mt-1.5 capitalize">
           {MOOD_LABELS[mood] ?? mood}
         </span>
