@@ -97,8 +97,12 @@ export function StudyQuestGame({ variant, mood, width = 640, height = 480 }: Stu
       rollBattleDrop({ tier: event.tier })
         .then((drop) => {
           if (!drop) return;
-          const qty = drop.quantity > 1 ? ` ×${drop.quantity}` : '';
-          toast.success(`You found ${drop.itemName}${qty}!`);
+          if (drop.itemName) {
+            const qty = drop.quantity > 1 ? ` ×${drop.quantity}` : '';
+            toast.success(`You found ${drop.itemName}${qty}! +${drop.coins} coins`);
+          } else if (drop.coins > 0) {
+            toast.success(`+${drop.coins} coins`);
+          }
         })
         .catch((err) => {
           console.error('Failed to roll battle drop:', err);

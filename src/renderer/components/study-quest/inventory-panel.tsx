@@ -10,7 +10,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useMutation, useQuery } from 'convex/react';
-import { Backpack, Shield, Sparkles, Sword } from 'lucide-react';
+import { Backpack, Coins, Shield, Sparkles, Sword } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../convex/_generated/api';
@@ -36,6 +36,7 @@ const SLOT_LABEL: Record<string, string> = {
 export function InventoryPanel({ open, onClose }: InventoryPanelProps) {
   const inventory = useQuery(api.inventory.getInventory);
   const equipment = useQuery(api.inventory.getEquipment);
+  const cat = useQuery(api.studyQuest.getCatState);
   const equip = useMutation(api.inventory.equipItem);
   const unequip = useMutation(api.inventory.unequipSlot);
 
@@ -61,9 +62,15 @@ export function InventoryPanel({ open, onClose }: InventoryPanelProps) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Backpack className="h-5 w-5" />
-            Inventory
+          <DialogTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Backpack className="h-5 w-5" />
+              Inventory
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full bg-[var(--glass-bg-light)] px-3 py-1 text-sm font-medium">
+              <Coins className="h-4 w-4 text-amber-500" />
+              {cat?.coins ?? 0}
+            </span>
           </DialogTitle>
         </DialogHeader>
 

@@ -119,6 +119,7 @@ export default defineSchema({
         timestamp: v.number(),
       }),
     ),
+    coins: v.optional(v.number()),
     createdAt: v.number(),
   }).index('by_user', ['userId']),
 

@@ -116,6 +116,27 @@ export async function awardXpHelper(
   return { leveledUp, newLevel };
 }
 
+/**
+ * Add (or subtract) coins from the user's cat. Returns the new balance, or
+ * null if the user hasn't adopted yet. Throws if the result would go negative.
+ */
+export async function adjustCoinsHelper(
+  ctx: MutationCtx,
+  userId: string,
+  delta: number,
+): Promise<number | null> {
+  const cat = await ctx.db
+    .query('catCompanion')
+    .withIndex('by_user', (q) => q.eq('userId', userId))
+    .unique();
+  if (!cat) return null;
+  const current = cat.coins ?? 0;
+  const next = current + delta;
+  if (next < 0) throw new ConvexError('Not enough coins');
+  await ctx.db.patch(cat._id, { coins: next });
+  return next;
+}
+
 /** Internal mutation wrapper for calling from actions via ctx.runMutation */
 export const awardXp = internalMutation({
   args: {

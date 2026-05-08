@@ -22,6 +22,8 @@ export interface ItemDef {
   defenseBonus?: number;
   /** HP restored when this consumable is used. */
   healAmount?: number;
+  /** If set, item appears in the shop at this coin price. */
+  price?: number;
 }
 
 export const ITEMS: Record<string, ItemDef> = {
@@ -67,6 +69,49 @@ export const ITEMS: Record<string, ItemDef> = {
     slot: 'consumable',
     description: 'Restores 30 HP when used.',
     healAmount: 30,
+    price: 15,
+  },
+  'greater-potion': {
+    id: 'greater-potion',
+    name: 'Greater Potion',
+    slot: 'consumable',
+    description: 'Restores 70 HP when used.',
+    healAmount: 70,
+    price: 40,
+  },
+  'steel-sword': {
+    id: 'steel-sword',
+    name: 'Steel Sword',
+    slot: 'weapon',
+    description: 'Forged blade — sharp and dependable.',
+    attackBonus: 9,
+    price: 120,
+  },
+  'plate-vest': {
+    id: 'plate-vest',
+    name: 'Plate Vest',
+    slot: 'armor',
+    description: 'Banded plates. Heavy but solid.',
+    defenseBonus: 8,
+    price: 120,
+  },
+  'focus-ring': {
+    id: 'focus-ring',
+    name: 'Focus Ring',
+    slot: 'accessory',
+    description: 'Quiets the mind. Sharper strikes.',
+    attackBonus: 3,
+    defenseBonus: 1,
+    price: 90,
+  },
+  'guardian-charm': {
+    id: 'guardian-charm',
+    name: 'Guardian Charm',
+    slot: 'accessory',
+    description: 'A warm hum. Softens every blow.',
+    attackBonus: 1,
+    defenseBonus: 3,
+    price: 90,
   },
 };
 

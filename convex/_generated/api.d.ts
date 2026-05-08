@@ -41,6 +41,7 @@ import type * as roomNotes from "../roomNotes.js";
 import type * as scrubTranscript from "../scrubTranscript.js";
 import type * as sessionSharing from "../sessionSharing.js";
 import type * as sessions from "../sessions.js";
+import type * as shop from "../shop.js";
 import type * as speakerDetection from "../speakerDetection.js";
 import type * as studyGames from "../studyGames.js";
 import type * as studyQuest from "../studyQuest.js";
@@ -93,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   scrubTranscript: typeof scrubTranscript;
   sessionSharing: typeof sessionSharing;
   sessions: typeof sessions;
+  shop: typeof shop;
   speakerDetection: typeof speakerDetection;
   studyGames: typeof studyGames;
   studyQuest: typeof studyQuest;

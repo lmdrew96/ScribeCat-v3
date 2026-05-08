@@ -8,15 +8,17 @@
 import { Button } from '@/components/ui/button';
 import { useStudyQuest } from '@/hooks/use-study-quest';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Backpack } from 'lucide-react';
+import { ArrowLeft, Backpack, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { InventoryPanel } from './inventory-panel';
+import { ShopPanel } from './shop-panel';
 import { StudyQuestGame } from './study-quest-game';
 
 export function StudyQuestPage() {
   const navigate = useNavigate();
   const { isLoading, isAdopted, variant, mood, name } = useStudyQuest();
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
 
   return (
     <div className="flex h-full flex-col p-3">
@@ -27,18 +29,20 @@ export function StudyQuestPage() {
         </Button>
         <h1 className="text-lg font-semibold">StudyQuest</h1>
         {isAdopted && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto"
-            onClick={() => setInventoryOpen(true)}
-          >
-            <Backpack className="mr-1 h-4 w-4" />
-            Inventory
-          </Button>
+          <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setShopOpen(true)}>
+              <ShoppingBag className="mr-1 h-4 w-4" />
+              Shop
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setInventoryOpen(true)}>
+              <Backpack className="mr-1 h-4 w-4" />
+              Inventory
+            </Button>
+          </div>
         )}
       </div>
       <InventoryPanel open={inventoryOpen} onClose={() => setInventoryOpen(false)} />
+      <ShopPanel open={shopOpen} onClose={() => setShopOpen(false)} />
 
       <div className="flex flex-1 items-center justify-center overflow-hidden rounded-xl glass p-6">
         {isLoading ? (

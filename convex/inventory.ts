@@ -9,7 +9,7 @@
 import { ConvexError, v } from 'convex/values';
 import { mutation, query, type MutationCtx } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import { isTier, rollDrop } from './dropTables';
+import { isTier, rollDrop, type Tier } from './dropTables';
 import {
   EQUIPPABLE_SLOTS,
   STARTER_EQUIPMENT,
@@ -17,6 +17,15 @@ import {
   getItem,
   type ItemSlot,
 } from './items';
+import { adjustCoinsHelper } from './studyQuest';
+
+/** Coins awarded on battle victory, by enemy tier. */
+const COIN_REWARDS: Record<Tier, number> = {
+  easy: 5,
+  medium: 12,
+  hard: 25,
+  boss: 60,
+};
 
 export const getInventory = query({
   args: {},
@@ -186,12 +195,14 @@ export const rollBattleDrop = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     if (!isTier(args.tier)) throw new ConvexError(`Invalid tier: ${args.tier}`);
+    const coins = COIN_REWARDS[args.tier];
+    await adjustCoinsHelper(ctx, userId, coins);
     const drop = rollDrop(args.tier);
-    if (!drop) return null;
+    if (!drop) return { itemId: null, quantity: 0, itemName: null, coins };
     const item = getItem(drop.itemId);
-    if (!item) return null;
+    if (!item) return { itemId: null, quantity: 0, itemName: null, coins };
     await grantItem(ctx, userId, drop.itemId, drop.quantity);
-    return { itemId: drop.itemId, quantity: drop.quantity, itemName: item.name };
+    return { itemId: drop.itemId, quantity: drop.quantity, itemName: item.name, coins };
   },
 });
 
