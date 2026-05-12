@@ -97,6 +97,74 @@
   --font-color-8: #e0d080;
 }
 
+/* ADHDesigns brand-aligned Nugget theme (refreshed) */
+[data-theme="nugget-brand"] {
+  /* Brand tokens (from @adhdesigns/ui themes/brand.css) */
+  --olive: #849440;
+  --deep-teal: #244952;
+  --amber: #DFA649;
+  --mauve-purple: #88739E;
+  --sage-teal: #8CBDB9;
+  --soft-green: #97D181;
+  --lavender-mist: #DBD5E2;
+  --off-white: #F7F5FA;
+  --deep-dark: #1E1830;
+
+  --background: var(--off-white);
+  --foreground: var(--deep-dark);
+  --card: #ffffff;
+  --card-foreground: var(--deep-dark);
+  --popover: #ffffff;
+  --popover-foreground: var(--deep-dark);
+
+  --primary: var(--amber);
+  --primary-foreground: var(--deep-dark);
+
+  --secondary: var(--mauve-purple);
+  --secondary-foreground: var(--lavender-mist);
+
+  --muted: #f0efe9;
+  --muted-foreground: #6b6b6b;
+
+  --accent: var(--deep-teal);
+  --accent-foreground: var(--lavender-mist);
+
+  --destructive: #c45c5c;
+  --destructive-foreground: #ffffff;
+
+  --success: var(--soft-green);
+  --success-foreground: var(--deep-dark);
+
+  --border: #e6e6e6;
+  --input: #f6f6f6;
+  --ring: var(--deep-teal);
+
+  /* Custom ScribeCat tokens tuned to brand */
+  --record: var(--amber);
+  --record-glow: rgba(223, 166, 73, 0.35);
+  --waveform: var(--sage-teal);
+  --transcript-bg: #f7f7f8;
+
+  --glass-bg: rgba(247, 245, 250, 0.7);
+  --glass-bg-heavy: rgba(231, 227, 235, 0.92);
+  --glass-bg-light: rgba(247, 245, 250, 0.45);
+  --glass-border: rgba(30, 24, 48, 0.06);
+
+  --app-bg-from: #f7f5fa;
+  --app-bg-via: #f0eef6;
+  --app-bg-to: #e9eef0;
+  --orb-opacity: 0.25;
+
+  --font-color-1: var(--deep-dark);
+  --font-color-2: var(--amber);
+  --font-color-3: var(--soft-green);
+  --font-color-4: #e06060;
+  --font-color-5: var(--sage-teal);
+  --font-color-6: #c49bff;
+  --font-color-7: #f0a0c0;
+  --font-color-8: #e0d080;
+}
+
 @theme inline {
   --font-sans: "Instrument Sans", "Geist", "Geist Fallback", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;

@@ -1,5 +1,6 @@
 import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
 import { Button } from '@/components/ui/button';
+import { HandwritingCanvas } from '@/components/handwriting-canvas';
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ export function DocumentUpload({
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [lectureType, setLectureType] = useState<LectureType>('general');
   const [targetSession, setTargetSession] = useState<string>('new');
+  const [showHandwritingModal, setShowHandwritingModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFilesSelected = useCallback(
@@ -166,6 +168,14 @@ export function DocumentUpload({
             disabled={isProcessing}
           />
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowHandwritingModal(true)}
+          disabled={isProcessing}
+        >
+          Draw handwriting
+        </Button>
         <p className="text-[10px] text-muted-foreground">Max {MAX_FILES} files, 20MB each</p>
       </div>
 
@@ -229,6 +239,15 @@ export function DocumentUpload({
           )}
         </Button>
       )}
+      <HandwritingCanvas
+        open={showHandwritingModal}
+        onClose={() => setShowHandwritingModal(false)}
+        onSave={async (file) => {
+          // Wrap as UploadedFile and reuse existing upload logic
+          const uploaded: UploadedFile = { file, preview: URL.createObjectURL(file) };
+          await upload([uploaded], { targetSessionId: null, lectureType });
+        }}
+      />
     </div>
   );
 }

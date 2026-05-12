@@ -3,6 +3,12 @@ import { LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 import { RecordingConsentModal } from '@/components/recording-consent-modal';
+import { RecordingContinueModal } from '@/components/recording-continue-modal';
+import { HandwritingCanvas } from '@/components/handwriting-canvas';
+import { useState } from 'react';
+import { useMutation, useAction } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRecordingContext } from '@/contexts/recording-context';
-import { Mic, Pause, Play, Square } from 'lucide-react';
+import { Mic, Pause, Play, Square, Loader2 } from 'lucide-react';
 
 interface RecordingPanelProps {
   onInsertNote?: (noteText: string) => void;
@@ -45,7 +51,62 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
     showConsentModal,
     setShowConsentModal,
     requestRecord,
+    currentSessionId,
+    showContinuePrompt,
+    continuePromptRemaining,
+    confirmContinuePrompt,
+    cancelContinuePrompt,
   } = useRecordingContext();
+
+  const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
+  const [isProcessingDrawing, setIsProcessingDrawing] = useState(false);
+  const generateUploadUrl = useMutation(api.uploadImage.generateUploadUrl);
+  const parseDocument = useAction(api.parseDocument.parseDocumentImages);
+  const updateSessionMutation = useMutation(api.sessions.update);
+
+  const handleDrawingSave = async (file: File) => {
+    if (!currentSessionId) {
+      toast.error('No active session');
+      return;
+    }
+    setIsProcessingDrawing(true);
+    try {
+      // Generate upload URL and upload the drawn image
+      const uploadUrl = await generateUploadUrl();
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      const { storageId } = await uploadRes.json();
+
+      // Parse the image with Claude Vision
+      const parseResult = await parseDocument({
+        storageIds: [storageId],
+        mimeTypes: [file.type],
+      });
+
+      if (!parseResult.success || !parseResult.text) {
+        toast.error('Failed to extract text from handwriting');
+        return;
+      }
+
+      // Append the extracted text to the session notes
+      await updateSessionMutation({
+        id: currentSessionId,
+        notesPlainText: parseResult.text,
+      });
+
+      toast.success('Handwritten notes added');
+      setShowDrawingCanvas(false);
+    } catch (err) {
+      console.error('Error processing handwritten notes:', err);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to process handwriting: ${message}`);
+    } finally {
+      setIsProcessingDrawing(false);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -158,27 +219,49 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           )}
         </button>
 
-        {/* Pause/Resume button */}
-        {isRecording && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handlePauseResume}
-            className="gap-1.5 h-8 px-2 text-xs"
-          >
-            {isPaused ? (
-              <>
-                <Play className="h-3 w-3" />
-                Resume
-              </>
-            ) : (
-              <>
-                <Pause className="h-3 w-3" />
-                Pause
-              </>
-            )}
-          </Button>
-        )}
+         {/* Pause/Resume button */}
+         {isRecording && (
+           <Button
+             variant="secondary"
+             size="sm"
+             onClick={handlePauseResume}
+             className="gap-1.5 h-8 px-2 text-xs"
+           >
+             {isPaused ? (
+               <>
+                 <Play className="h-3 w-3" />
+                 Resume
+               </>
+             ) : (
+               <>
+                 <Pause className="h-3 w-3" />
+                 Pause
+               </>
+             )}
+           </Button>
+         )}
+
+         {/* Draw note button (iPad pencil support) */}
+         {isRecording && (
+           <Button
+             variant="secondary"
+             size="sm"
+             onClick={() => setShowDrawingCanvas(true)}
+             disabled={isProcessingDrawing}
+             className="gap-1.5 h-8 px-2 text-xs"
+           >
+             {isProcessingDrawing ? (
+               <>
+                 <Loader2 className="h-3 w-3 animate-spin" />
+                 Processing...
+               </>
+             ) : (
+               <>
+                 ✏️ Draw Note
+               </>
+             )}
+           </Button>
+         )}
       </div>
 
       {/* Error display */}
@@ -195,6 +278,18 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           handleRecord();
         }}
         onCancel={() => setShowConsentModal(false)}
+      />
+      <RecordingContinueModal
+        open={Boolean(showContinuePrompt)}
+        remainingSeconds={continuePromptRemaining}
+        onContinue={confirmContinuePrompt}
+        onStop={cancelContinuePrompt}
+      />
+
+      <HandwritingCanvas
+        open={showDrawingCanvas}
+        onClose={() => setShowDrawingCanvas(false)}
+        onSave={handleDrawingSave}
       />
     </div>
   );

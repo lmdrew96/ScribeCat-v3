@@ -76,6 +76,11 @@ interface RecordingContextValue {
   showConsentModal: boolean;
   setShowConsentModal: (show: boolean) => void;
   requestRecord: () => void;
+  // Failsafe prompt when recording exceeds a long duration
+  showContinuePrompt: boolean;
+  continuePromptRemaining: number; // seconds remaining before auto-stop
+  confirmContinuePrompt: () => void;
+  cancelContinuePrompt: () => void;
 }
 
 const RecordingContext = createContext<RecordingContextValue | null>(null);
@@ -674,6 +679,103 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     togglePause();
   }, [togglePause]);
 
+  // ─── Long-recording failsafe prompt (patch: max 3 hours then prompt) ─────
+  const FAILSAFE_INTERVAL_MS = 3 * 60 * 60 * 1000; // 3 hours
+  const PROMPT_TIMEOUT_MS = 60_000; // 60 seconds to respond
+
+  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
+  const [continuePromptRemaining, setContinuePromptRemaining] = useState(0);
+  const failsafeTimerRef = useRef<number | null>(null);
+  const autoStopTimerRef = useRef<number | null>(null);
+  const countdownIntervalRef = useRef<number | null>(null);
+
+  const clearFailsafeTimers = useCallback(() => {
+    if (failsafeTimerRef.current) {
+      clearTimeout(failsafeTimerRef.current);
+      failsafeTimerRef.current = null;
+    }
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setShowContinuePrompt(false);
+    setContinuePromptRemaining(0);
+  }, []);
+
+  const scheduleFailsafe = useCallback(() => {
+    // Clear any existing
+    if (failsafeTimerRef.current) {
+      clearTimeout(failsafeTimerRef.current);
+      failsafeTimerRef.current = null;
+    }
+    // Schedule the prompt after the configured interval
+    failsafeTimerRef.current = window.setTimeout(() => {
+      setShowContinuePrompt(true);
+      setContinuePromptRemaining(Math.floor(PROMPT_TIMEOUT_MS / 1000));
+
+      // Start countdown interval
+      countdownIntervalRef.current = window.setInterval(() => {
+        setContinuePromptRemaining((r) => {
+          if (r <= 1) return 0;
+          return r - 1;
+        });
+      }, 1000) as unknown as number;
+
+      // Auto-stop if user does not respond in time
+      autoStopTimerRef.current = window.setTimeout(() => {
+        setShowContinuePrompt(false);
+        setContinuePromptRemaining(0);
+        // call handleStop to end recording
+        handleStop().catch(() => {});
+      }, PROMPT_TIMEOUT_MS);
+    }, FAILSAFE_INTERVAL_MS);
+  }, [handleStop]);
+
+  // When recording starts, schedule the failsafe. Clear on stop.
+  useEffect(() => {
+    if (isRecording) {
+      scheduleFailsafe();
+    } else {
+      clearFailsafeTimers();
+    }
+    return () => clearFailsafeTimers();
+  }, [isRecording, scheduleFailsafe, clearFailsafeTimers]);
+
+  const confirmContinuePrompt = useCallback(() => {
+    // User chose to continue recording: clear prompt and reschedule next failsafe
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setShowContinuePrompt(false);
+    setContinuePromptRemaining(0);
+    // schedule next failsafe window
+    scheduleFailsafe();
+  }, [scheduleFailsafe]);
+
+  const cancelContinuePrompt = useCallback(() => {
+    // User chose to stop now
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setShowContinuePrompt(false);
+    setContinuePromptRemaining(0);
+    handleStop().catch(() => {});
+  }, [handleStop]);
+
   // ─── Context Value ──────────────────────────────────────────────────────
 
   const value: RecordingContextValue = {
@@ -702,6 +804,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     showConsentModal,
     setShowConsentModal,
     requestRecord,
+    showContinuePrompt,
+    continuePromptRemaining,
+    confirmContinuePrompt,
+    cancelContinuePrompt,
   };
 
   return <RecordingContext.Provider value={value}>{children}</RecordingContext.Provider>;

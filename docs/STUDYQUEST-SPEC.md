@@ -6,6 +6,29 @@
 
 ---
 
+## Status (as of v5.15.0)
+
+| Phase | Status |
+|-------|--------|
+| 0 — Engine Foundation | ✅ Shipped |
+| 1 — Town | ✅ Shipped |
+| 2 — Dungeon | ✅ Shipped |
+| 3 — Combat | ✅ Shipped (battle drops in v5.14.0) |
+| 4 — Polish & Progression | 🚧 In progress |
+
+**Phase 4 progress:**
+- ✅ Cat evolution tiers at L5/L10/L20 (v5.10.0)
+- ✅ Inventory + equipment system (v5.11.0–v5.12.0)
+- ✅ Healing potions wired to battle Item action (v5.13.0)
+- ✅ Battle drops grant items into the bag (v5.14.0)
+- ✅ **Coin economy + Shop** (v5.15.0) — battle victories award coins by tier (5/12/25/60); Shop panel on `/study-quest` sells gear and consumables
+- ⬜ Study → game hooks (sessions, tools, streaks → in-game rewards)
+- ⬜ Sound design pass
+- ⬜ NPC quests
+- ⬜ Boss variety per floor
+
+---
+
 ## Architecture Overview
 
 ### How Excalibur lives in React
@@ -193,14 +216,29 @@ The widget stays as-is (Tamagotchi quick-view). Clicking "Play" in the widget na
 
 ## Convex Schema Additions
 
-The existing `catCompanion` table handles name/variant/xp/level/mood. New tables needed:
+The existing `catCompanion` table handles name/variant/xp/level/mood, plus a `coins` field added in v5.15.0 for the shop economy.
 
+**Shipped:**
 ```
-gameInventory        — userId, items (array of {itemId, quantity})
-gameEquipment        — userId, weapon, armor, accessory
+catCompanion.coins    — optional number, defaults to 0; spendable in the shop
+gameInventory         — userId, items (array of {itemId, quantity})
+gameEquipment         — userId, weapon, armor, accessory
+```
+
+**Not yet built:**
+```
 gameDungeonProgress  — userId, highestFloor, currentFloor, currentRoom (nullable, session-only)
 gameQuests           — userId, questId, status, progress
 ```
+
+### Item catalog & shop
+
+Items are static — defined in `convex/items.ts`, not in the database. Each `ItemDef` has:
+- `slot`: weapon | armor | accessory | consumable
+- `attackBonus` / `defenseBonus` / `healAmount` (as appropriate)
+- `price` (optional) — if set, the item appears in the shop at that coin price
+
+Shop backend lives in `convex/shop.ts` (`getShopItems`, `purchaseItem`). Coins are awarded inside `inventory.rollBattleDrop` alongside the item drop, using a per-tier table (5/12/25/60). Reusing the existing `adjustCoinsHelper` in `studyQuest.ts` keeps the math in one place.
 
 Keep it minimal. Don't over-schema before gameplay is proven.
 

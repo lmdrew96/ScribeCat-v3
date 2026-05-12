@@ -193,6 +193,35 @@ export const appendAudioChunk = mutation({
   },
 });
 
+// Append a flagged word to the session's flaggedWords array.
+export const appendFlaggedWord = mutation({
+  args: {
+    id: v.id('sessions'),
+    text: v.string(),
+    timestamp: v.number(),
+    segmentIndex: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const session = await ctx.db.get(args.id);
+    if (!session || session.userId !== userId) {
+      throw new Error('Session not found or unauthorized');
+    }
+    const existing = session.flaggedWords ?? [];
+    await ctx.db.patch(args.id, {
+      flaggedWords: [
+        ...existing,
+        {
+          text: args.text,
+          timestamp: args.timestamp,
+          segmentIndex: args.segmentIndex,
+        },
+      ],
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // Soft delete a session (move to trash)
 export const softDelete = mutation({
   args: { id: v.id('sessions') },
