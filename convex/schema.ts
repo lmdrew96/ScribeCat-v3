@@ -20,6 +20,16 @@ export default defineSchema({
         }),
       ),
     ),
+    // User-flagged transcript words (for manual post-recording edit)
+    flaggedWords: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          timestamp: v.number(),
+          segmentIndex: v.optional(v.number()),
+        }),
+      ),
+    ),
     notes: v.optional(v.string()),
     notesPlainText: v.optional(v.string()),
     nuggetNotes: v.optional(

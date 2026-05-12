@@ -1,5 +1,8 @@
 import type { TranscriptSegment } from '@/hooks/use-transcription';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { useRecordingContext } from '@/contexts/recording-context';
 
 interface LiveTranscriptProps {
   isRecording: boolean;
@@ -49,6 +52,31 @@ export function LiveTranscript({
     if (!scrubbedText || !scrubBoundaryAt) return segments;
     return segments.filter((s) => s.timestamp > scrubBoundaryAt);
   }, [segments, scrubbedText, scrubBoundaryAt]);
+
+  // Flagged words local optimistic set to show immediate feedback
+  const [flaggedKeys] = useState(() => new Set<string>());
+  const { currentSessionId } = useRecordingContext();
+  const appendFlaggedWord = useMutation(api.sessions.appendFlaggedWord);
+
+  const handleFlagWord = useCallback(
+    async (segment: TranscriptSegment, word: string, wordIndex: number) => {
+      const key = `${segment.timestamp}-${wordIndex}-${word}`;
+      if (flaggedKeys.has(key)) return;
+      flaggedKeys.add(key);
+      if (!currentSessionId) return;
+      try {
+        await appendFlaggedWord({
+          id: currentSessionId,
+          text: word,
+          timestamp: segment.timestamp,
+          segmentIndex: wordIndex,
+        });
+      } catch (err) {
+        console.warn('Failed to flag word:', err);
+      }
+    },
+    [appendFlaggedWord, currentSessionId, flaggedKeys],
+  );
 
   if (!isRecording && segments.length === 0) {
     return (
@@ -102,7 +130,27 @@ export function LiveTranscript({
                 segment.isFinal ? 'text-foreground' : 'text-muted-foreground italic'
               }`}
             >
-              {segment.text}
+              {/* Render words as clickable spans during recording so users can flag misheard words */}
+              <span className="break-words">
+                {segment.text.split(/(\s+)/).map((token, wi) => {
+                  // Preserve whitespace tokens
+                  if (/^\s+$/.test(token)) return token;
+                  const key = `${segment.timestamp}-${wi}-${token}`;
+                  const isFlagged = flaggedKeys.has(key);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => isRecording && handleFlagWord(segment, token, wi)}
+                      className={`inline-block text-left mr-1 mb-0.5 rounded px-0.5 ${
+                        isFlagged ? 'bg-amber-100 text-amber-800' : 'hover:bg-amber-50'
+                      }`}
+                    >
+                      {token}
+                    </button>
+                  );
+                })}
+              </span>
               {!segment.isFinal && index === tailSegments.length - 1 && (
                 <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-primary" />
               )}
