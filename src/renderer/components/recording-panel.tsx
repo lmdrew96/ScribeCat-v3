@@ -3,6 +3,7 @@ import { LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 import { RecordingConsentModal } from '@/components/recording-consent-modal';
+import { RecordingContinueModal } from '@/components/recording-continue-modal';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,10 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
     showConsentModal,
     setShowConsentModal,
     requestRecord,
+    showContinuePrompt,
+    continuePromptRemaining,
+    confirmContinuePrompt,
+    cancelContinuePrompt,
   } = useRecordingContext();
 
   const formatTime = (seconds: number) => {
@@ -195,6 +200,12 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           handleRecord();
         }}
         onCancel={() => setShowConsentModal(false)}
+      />
+      <RecordingContinueModal
+        open={Boolean(showContinuePrompt)}
+        remainingSeconds={continuePromptRemaining}
+        onContinue={confirmContinuePrompt}
+        onStop={cancelContinuePrompt}
       />
     </div>
   );
