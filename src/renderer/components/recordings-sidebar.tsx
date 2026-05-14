@@ -31,6 +31,7 @@ import {
   Clock,
   FileAudio,
   Filter,
+  Merge,
   MoreHorizontal,
   PanelLeftClose,
   RotateCcw,
@@ -48,6 +49,7 @@ interface RecordingsSidebarProps {
   onRestore: (recordingId: string) => void;
   onPermanentDelete: (recordingId: string) => void;
   onShare?: (recordingId: string) => void;
+  onMerge?: (recordingId: string) => void;
   onCollapse?: () => void;
 }
 
@@ -64,6 +66,7 @@ export function RecordingsSidebar({
   onDelete,
   onRestore,
   onShare,
+  onMerge,
   onPermanentDelete,
   onCollapse,
 }: RecordingsSidebarProps) {
@@ -218,6 +221,17 @@ export function RecordingsSidebar({
                             >
                               <Share2 className="h-3.5 w-3.5" />
                               Share
+                            </DropdownMenuItem>
+                          )}
+                          {onMerge && recordings.length > 1 && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMerge(recording.id);
+                              }}
+                            >
+                              <Merge className="h-3.5 w-3.5" />
+                              Merge sessions…
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

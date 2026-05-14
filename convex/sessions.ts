@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import type { Doc } from './_generated/dataModel';
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({
@@ -401,6 +402,163 @@ export const migrateNotesToSeparateTable = internalMutation({
 
     console.log(`Migrated ${migratedCount} sessions (batch limit: ${limit})`);
     return { migratedCount, done: migratedCount < limit };
+  },
+});
+
+// Merge multiple session fragments into one.
+// primaryId is the session whose _id is kept; secondaryIds are soft-deleted after merge.
+// All sessions are sorted chronologically before merging, so transcripts read in order
+// regardless of which fragment the user selected as "primary."
+// Timestamps in transcriptSegments, nuggetNotes, and flaggedWords are offset by the
+// cumulative duration of all prior fragments so the timeline stays coherent.
+export const mergeSessions = mutation({
+  args: {
+    primaryId: v.id('sessions'),
+    secondaryIds: v.array(v.id('sessions')),
+    newTitle: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    if (args.secondaryIds.length === 0) throw new Error('No secondary sessions specified');
+
+    const primary = await ctx.db.get(args.primaryId);
+    if (!primary || primary.userId !== userId || primary.isDeleted) {
+      throw new Error('Primary session not found');
+    }
+
+    const secondaries: Doc<'sessions'>[] = [];
+    for (const id of args.secondaryIds) {
+      const s = await ctx.db.get(id);
+      if (!s || s.userId !== userId || s.isDeleted) {
+        throw new Error(`Session not found: ${id}`);
+      }
+      secondaries.push(s);
+    }
+
+    // Sort all fragments chronologically so content reads in order
+    const allSessions = [primary, ...secondaries].sort((a, b) => a.createdAt - b.createdAt);
+
+    // Combine fields with cumulative time offsets for timestamps
+    let cumulativeDuration = 0;
+    const allTranscripts: string[] = [];
+    const allSegments: { text: string; timestamp: number; isFinal: boolean }[] = [];
+    const allNuggetNotes: { text: string; recordingTime: number }[] = [];
+    const allAudioIds: string[] = [];
+    const allDocumentTexts: string[] = [];
+    const allFlaggedWords: { text: string; timestamp: number; segmentIndex?: number }[] = [];
+
+    for (const session of allSessions) {
+      const offset = cumulativeDuration;
+
+      if (session.transcript) allTranscripts.push(session.transcript);
+
+      for (const seg of session.transcriptSegments ?? []) {
+        allSegments.push({ ...seg, timestamp: seg.timestamp + offset });
+      }
+
+      for (const note of session.nuggetNotes ?? []) {
+        allNuggetNotes.push({ ...note, recordingTime: note.recordingTime + offset });
+      }
+
+      const audioIds =
+        session.audioStorageIds ?? (session.audioStorageId ? [session.audioStorageId] : []);
+      allAudioIds.push(...audioIds);
+
+      if (session.documentText) allDocumentTexts.push(session.documentText);
+
+      for (const fw of session.flaggedWords ?? []) {
+        allFlaggedWords.push({ ...fw, timestamp: fw.timestamp + offset });
+      }
+
+      cumulativeDuration += session.duration;
+    }
+
+    // Fetch sessionNotes in chronological order, then merge TipTap JSON content arrays
+    const notesDocs: (Doc<'sessionNotes'> | null)[] = [];
+    for (const session of allSessions) {
+      const notesDoc = await ctx.db
+        .query('sessionNotes')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .unique();
+      notesDocs.push(notesDoc);
+    }
+
+    const hasAnyNotes = notesDocs.some((d) => d?.content || d?.plainText);
+    if (hasAnyNotes) {
+      const combinedContent: unknown[] = [];
+      let combinedPlainText = '';
+      let first = true;
+
+      for (const notesDoc of notesDocs) {
+        if (!notesDoc?.content && !notesDoc?.plainText) continue;
+
+        if (!first) {
+          combinedContent.push({ type: 'horizontalRule' });
+          combinedPlainText += '\n\n---\n\n';
+        }
+
+        if (notesDoc.content) {
+          try {
+            const parsed = JSON.parse(notesDoc.content) as { content?: unknown[] };
+            combinedContent.push(...(parsed.content ?? []));
+          } catch {
+            combinedContent.push({
+              type: 'paragraph',
+              content: [{ type: 'text', text: notesDoc.content }],
+            });
+          }
+        }
+
+        if (notesDoc.plainText) combinedPlainText += notesDoc.plainText;
+        first = false;
+      }
+
+      const mergedJson = JSON.stringify({ type: 'doc', content: combinedContent });
+      const primaryIdx = allSessions.findIndex((s) => s._id === args.primaryId);
+      const primaryNotesDoc = primaryIdx >= 0 ? notesDocs[primaryIdx] : null;
+
+      if (primaryNotesDoc) {
+        await ctx.db.patch(primaryNotesDoc._id, {
+          content: mergedJson,
+          plainText: combinedPlainText,
+          updatedAt: Date.now(),
+        });
+      } else {
+        await ctx.db.insert('sessionNotes', {
+          sessionId: args.primaryId,
+          userId,
+          content: mergedJson,
+          plainText: combinedPlainText,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    // Update the primary session with combined data
+    await ctx.db.patch(args.primaryId, {
+      title: args.newTitle ?? primary.title,
+      transcript: allTranscripts.length > 0 ? allTranscripts.join('\n\n---\n\n') : undefined,
+      transcriptSegments: allSegments.length > 0 ? allSegments : undefined,
+      nuggetNotes: allNuggetNotes.length > 0 ? allNuggetNotes : undefined,
+      audioStorageIds: allAudioIds.length > 0 ? allAudioIds : undefined,
+      duration: cumulativeDuration,
+      documentText: allDocumentTexts.length > 0 ? allDocumentTexts.join('\n\n---\n\n') : undefined,
+      flaggedWords: allFlaggedWords.length > 0 ? allFlaggedWords : undefined,
+      updatedAt: Date.now(),
+    });
+
+    // Soft-delete secondary sessions
+    const now = Date.now();
+    for (const secondary of secondaries) {
+      await ctx.db.patch(secondary._id, {
+        isDeleted: true,
+        deletedAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return args.primaryId;
   },
 });
 

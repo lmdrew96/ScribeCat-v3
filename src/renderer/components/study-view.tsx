@@ -1,5 +1,6 @@
 import { DocumentUpload } from '@/components/document-upload';
 import { FileUploadTranscribe } from '@/components/file-upload-transcribe';
+import { MergeSessionsModal } from '@/components/merge-sessions-modal';
 import { ShareSessionModal } from '@/components/messages/share-session-modal';
 import { RecordingsSidebar } from '@/components/recordings-sidebar';
 import { StudyContent } from '@/components/study-content';
@@ -62,10 +63,12 @@ export function StudyView() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { setActiveSessionId, setNuggetNotes } = useSessionContext();
-  const { sessions, deleteSession, restoreSession, permanentDeleteSession } = useSessions();
+  const { sessions, deleteSession, restoreSession, permanentDeleteSession, mergeSessions } =
+    useSessions();
   const trashedSessions = useTrash();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
+  const [mergeSessionId, setMergeSessionId] = useState<string | null>(null);
 
   // Read session ID from route params (undefined when on /study)
   const sessionMatch = useMatch({ from: '/study/$sessionId', shouldThrow: false });
@@ -114,6 +117,19 @@ export function StudyView() {
       permanentDeleteSession({ id: recordingId as SessionId });
     },
     [permanentDeleteSession],
+  );
+
+  const handleMerge = useCallback(
+    async (primaryId: string, secondaryIds: string[], newTitle: string) => {
+      await mergeSessions({
+        primaryId: primaryId as SessionId,
+        secondaryIds: secondaryIds as SessionId[],
+        newTitle,
+      });
+      // Navigate to the primary session (which now contains merged data)
+      navigate({ to: '/study/$sessionId', params: { sessionId: primaryId } });
+    },
+    [mergeSessions, navigate],
   );
 
   // Navigate to session route instead of local state
@@ -212,6 +228,7 @@ export function StudyView() {
             onRestore={handleRestore}
             onPermanentDelete={handlePermanentDelete}
             onShare={(id) => setShareSessionId(id)}
+            onMerge={(id) => setMergeSessionId(id)}
             onCollapse={() => setSidebarOpen(false)}
           />
         </div>
@@ -271,6 +288,18 @@ export function StudyView() {
         onOpenChange={(open) => !open && setShareSessionId(null)}
         sessionId={shareSessionId as Id<'sessions'> | null}
       />
+
+      {mergeSessionId && (
+        <MergeSessionsModal
+          open={!!mergeSessionId}
+          onOpenChange={(open) => !open && setMergeSessionId(null)}
+          primarySession={
+            sidebarRecordings.find((s) => s.id === mergeSessionId) ?? sidebarRecordings[0]
+          }
+          otherSessions={sidebarRecordings.filter((s) => s.id !== mergeSessionId)}
+          onMerge={handleMerge}
+        />
+      )}
     </div>
   );
 }

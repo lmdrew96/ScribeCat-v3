@@ -13,6 +13,7 @@ export function useSessions() {
   const deleteSession = useMutation(api.sessions.softDelete);
   const restoreSession = useMutation(api.sessions.restore);
   const permanentDeleteSession = useMutation(api.sessions.permanentDelete);
+  const mergeSessions = useMutation(api.sessions.mergeSessions);
 
   return {
     sessions: sessions || [],
@@ -21,6 +22,7 @@ export function useSessions() {
     deleteSession,
     restoreSession,
     permanentDeleteSession,
+    mergeSessions,
   };
 }
 
