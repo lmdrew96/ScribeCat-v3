@@ -1,11 +1,13 @@
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useStudySettings } from '@/hooks/use-productivity';
 import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
@@ -63,8 +65,12 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   const [titleDraft, setTitleDraft] = useState('');
   const [editingCourse, setEditingCourse] = useState(false);
   const [courseDraft, setCourseDraft] = useState('');
+  const [coursePopoverOpen, setCoursePopoverOpen] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const courseInputRef = useRef<HTMLInputElement>(null);
+
+  const { settings: studySettings, updateSettings } = useStudySettings();
+  const savedCourses: string[] = studySettings && '_id' in studySettings ? (studySettings.courses ?? []) : [];
 
   const updateSession = useMutation(api.sessions.update);
   const submitSpeakerDetection = useAction(api.speakerDetection.submit);
@@ -101,22 +107,34 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
     setTitleDraft('');
   };
 
-  const startEditCourse = () => {
-    setCourseDraft(recording.course ?? '');
-    setEditingCourse(true);
-  };
-
-  const saveCourse = async () => {
-    const trimmed = courseDraft.trim();
-    if (trimmed !== (recording.course ?? '')) {
-      await updateSession({ id: recording.id as Id<'sessions'>, course: trimmed || undefined });
-    }
-    setEditingCourse(false);
-  };
-
-  const cancelCourse = () => {
-    setEditingCourse(false);
+  const openCoursePopover = () => {
     setCourseDraft('');
+    setCoursePopoverOpen(true);
+  };
+
+  const closeCoursePopover = () => {
+    setCoursePopoverOpen(false);
+    setCourseDraft('');
+    setEditingCourse(false);
+  };
+
+  const selectCourse = async (course: string) => {
+    if (course !== (recording.course ?? '')) {
+      await updateSession({ id: recording.id as Id<'sessions'>, course: course || undefined });
+    }
+    closeCoursePopover();
+  };
+
+  const saveNewCourse = async () => {
+    const trimmed = courseDraft.trim();
+    if (!trimmed) return;
+    await updateSession({ id: recording.id as Id<'sessions'>, course: trimmed });
+    // Add to saved courses list if not already present (case-insensitive)
+    const alreadyExists = savedCourses.some((c) => c.toLowerCase() === trimmed.toLowerCase());
+    if (!alreadyExists) {
+      await updateSettings({ courses: [...savedCourses, trimmed] });
+    }
+    closeCoursePopover();
   };
 
   useEffect(() => {
@@ -124,8 +142,8 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   }, [editingTitle]);
 
   useEffect(() => {
-    if (editingCourse) courseInputRef.current?.focus();
-  }, [editingCourse]);
+    if (coursePopoverOpen && editingCourse) courseInputRef.current?.focus();
+  }, [coursePopoverOpen, editingCourse]);
 
   const hasDocumentText = !!recording.documentText;
   const hasTranscript =
@@ -307,75 +325,105 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
           )}
         </p>
 
-        {/* Editable course (desktop only) */}
+        {/* Editable course */}
         {isMobile ? (
           recording.course ? (
             <div className="flex items-center gap-1 mt-1">
               <BookOpen className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                {recording.course}
-              </span>
+              <span className="text-xs text-muted-foreground">{recording.course}</span>
             </div>
           ) : null
-        ) : editingCourse ? (
-          <div className="flex items-center gap-1 mt-1">
-            <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-            <Input
-              ref={courseInputRef}
-              value={courseDraft}
-              onChange={(e) => setCourseDraft(e.target.value)}
-              placeholder="Course name"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveCourse();
-                if (e.key === 'Escape') cancelCourse();
-              }}
-              onBlur={saveCourse}
-              className="h-6 text-xs px-2 py-0 w-44"
-            />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-5 w-5 shrink-0"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                saveCourse();
-              }}
-            >
-              <Check className="h-3 w-3 text-primary" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-5 w-5 shrink-0"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                cancelCourse();
-              }}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        ) : recording.course ? (
-          <button
-            type="button"
-            onClick={startEditCourse}
-            className="group flex items-center gap-1 mt-1"
-          >
-            <BookOpen className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-              {recording.course}
-            </span>
-            <Pencil className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-          </button>
         ) : (
-          <button
-            type="button"
-            onClick={startEditCourse}
-            className="mt-1 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-          >
-            <BookOpen className="h-3 w-3" />
-            <span>Add course</span>
-          </button>
+          <Popover open={coursePopoverOpen} onOpenChange={(open) => { if (!open) closeCoursePopover(); }}>
+            <PopoverTrigger asChild>
+              {recording.course ? (
+                <button
+                  type="button"
+                  onClick={openCoursePopover}
+                  className="group flex items-center gap-1 mt-1"
+                >
+                  <BookOpen className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    {recording.course}
+                  </span>
+                  <Pencil className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openCoursePopover}
+                  className="mt-1 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                >
+                  <BookOpen className="h-3 w-3" />
+                  <span>Add course</span>
+                </button>
+              )}
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              {savedCourses.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs text-muted-foreground px-1 mb-1">Your courses</p>
+                  <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto">
+                    {savedCourses.map((course) => (
+                      <button
+                        key={course}
+                        type="button"
+                        onClick={() => selectCourse(course)}
+                        className={`flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded hover:bg-secondary transition-colors w-full ${
+                          recording.course === course ? 'text-primary font-medium' : 'text-foreground'
+                        }`}
+                      >
+                        {recording.course === course && <Check className="h-3 w-3 shrink-0" />}
+                        <span className={recording.course === course ? '' : 'pl-5'}>{course}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-border my-2" />
+                </div>
+              )}
+              {editingCourse ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    ref={courseInputRef}
+                    value={courseDraft}
+                    onChange={(e) => setCourseDraft(e.target.value)}
+                    placeholder="Course name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveNewCourse();
+                      if (e.key === 'Escape') closeCoursePopover();
+                    }}
+                    className="h-7 text-xs px-2 py-0 flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onMouseDown={(e) => { e.preventDefault(); saveNewCourse(); }}
+                  >
+                    <Check className="h-3 w-3 text-primary" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onMouseDown={(e) => { e.preventDefault(); closeCoursePopover(); }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingCourse(true)}
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-secondary transition-colors w-full"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Type a new course name
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
