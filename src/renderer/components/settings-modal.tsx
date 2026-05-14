@@ -28,7 +28,6 @@ import {
   Check,
   CheckCircle2,
   Clock,
-  Download,
   ExternalLink,
   FileText,
   Github,
@@ -194,8 +193,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   // Save settings to Convex
   const [newCourse, setNewCourse] = useState('');
-  const [canvasImportOpen, setCanvasImportOpen] = useState(false);
-  const [canvasJson, setCanvasJson] = useState('');
 
   const saveSettings = useCallback(
     (updates: {
@@ -595,79 +592,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     >
                       Add
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCanvasImportOpen(!canvasImportOpen)}
-                      className="gap-1"
-                    >
-                      <Download className="h-3 w-3" />
-                      Canvas
-                    </Button>
                   </div>
-
-                  {/* Canvas Import Section */}
-                  {canvasImportOpen && (
-                    <div className="space-y-2 rounded-lg border border-[var(--glass-border)] glass-light p-3">
-                      <p className="text-xs text-muted-foreground">
-                        Install the ScribeCat browser extension, go to your Canvas dashboard, click
-                        the extension icon, then paste the copied JSON below.
-                      </p>
-                      <textarea
-                        value={canvasJson}
-                        onChange={(e) => setCanvasJson(e.target.value)}
-                        placeholder='["CISC 108", "MATH 241", ...]'
-                        className="w-full h-20 rounded-md bg-background border border-border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-accent"
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          if (!canvasJson.trim()) return;
-                          try {
-                            const parsed: unknown = JSON.parse(canvasJson.trim());
-                            if (
-                              !Array.isArray(parsed) ||
-                              !parsed.every((item) => typeof item === 'string')
-                            ) {
-                              toast.error(
-                                'Invalid format — expected a JSON array of course name strings',
-                              );
-                              return;
-                            }
-                            const courseNames = parsed as string[];
-                            if (courseNames.length === 0) {
-                              toast.error('No courses found in the JSON');
-                              return;
-                            }
-                            const current =
-                              settings && '_id' in settings ? (settings.courses ?? []) : [];
-                            const merged = [
-                              ...new Set([
-                                ...current,
-                                ...courseNames.map((c) => c.trim()).filter(Boolean),
-                              ]),
-                            ];
-                            const added = merged.length - current.length;
-                            saveSettings({ courses: merged });
-                            setCanvasJson('');
-                            setCanvasImportOpen(false);
-                            toast.success(
-                              added > 0
-                                ? `Imported ${added} new course${added > 1 ? 's' : ''}`
-                                : 'All courses already exist',
-                            );
-                          } catch {
-                            toast.error(
-                              'Invalid JSON — make sure you copied the full output from the extension',
-                            );
-                          }
-                        }}
-                      >
-                        Import Courses
-                      </Button>
-                    </div>
-                  )}
                   {((settings && '_id' in settings ? settings.courses : undefined) ?? []).length >
                     0 && (
                     <div className="flex flex-wrap gap-1.5">
