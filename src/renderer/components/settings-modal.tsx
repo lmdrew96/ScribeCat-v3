@@ -929,6 +929,45 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     </p>
                   </div>
 
+                  {/* Connect to Claude instructions */}
+                  <div className="rounded-lg border border-[var(--glass-border)] glass-light p-3 space-y-2.5">
+                    <p className="text-xs font-medium text-foreground">Connect to Claude or another AI assistant:</p>
+                    <ol className="space-y-2 text-xs text-muted-foreground list-none">
+                      <li className="flex gap-2">
+                        <span className="text-accent font-semibold shrink-0">1.</span>
+                        <span>
+                          Add this URL to your AI&apos;s{' '}
+                          <span className="text-foreground font-medium">custom connector</span> settings:
+                        </span>
+                      </li>
+                    </ol>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-[11px] text-foreground bg-background rounded px-2 py-1.5 truncate font-mono select-all">
+                        https://scribecat-mcp.lmdrew.workers.dev/mcp
+                      </code>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          void navigator.clipboard.writeText('https://scribecat-mcp.lmdrew.workers.dev/mcp');
+                          toast.success('Copied!');
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <ol className="space-y-2 text-xs text-muted-foreground list-none" start={2}>
+                      <li className="flex gap-2">
+                        <span className="text-accent font-semibold shrink-0">2.</span>
+                        <span>When prompted, generate an API key below and paste it into the field.</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-accent font-semibold shrink-0">3.</span>
+                        <span>That&apos;s it — your AI can now access your sessions.</span>
+                      </li>
+                    </ol>
+                  </div>
+
                   {!generatedKey && (
                     <div className="flex gap-2">
                       <Input
