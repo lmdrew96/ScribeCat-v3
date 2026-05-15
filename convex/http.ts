@@ -2,6 +2,7 @@ import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
 import { examNuggetChat } from './examChat';
 import { extractLectureContext } from './lectureContext';
+import { mcpGetCourses, mcpGetSession, mcpListSessions, mcpSearchSessions } from './mcpApi';
 import { nuggetChat } from './nuggetChat';
 import { generateNuggetNotes } from './nuggetNotes';
 import { reportBug } from './reportBug';
@@ -125,5 +126,11 @@ http.route({
   method: 'POST',
   handler: examNuggetChat,
 });
+
+// MCP API routes (API-key authenticated — no CORS needed, server-to-server)
+http.route({ path: '/mcp/sessions', method: 'GET', handler: mcpListSessions });
+http.route({ path: '/mcp/session', method: 'GET', handler: mcpGetSession });
+http.route({ path: '/mcp/sessions/search', method: 'GET', handler: mcpSearchSessions });
+http.route({ path: '/mcp/courses', method: 'GET', handler: mcpGetCourses });
 
 export default http;

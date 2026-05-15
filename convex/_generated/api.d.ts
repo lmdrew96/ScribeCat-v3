@@ -9,6 +9,7 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as audioCleanup from "../audioCleanup.js";
 import type * as audioStorage from "../audioStorage.js";
 import type * as authHelpers from "../authHelpers.js";
@@ -29,6 +30,7 @@ import type * as http from "../http.js";
 import type * as inventory from "../inventory.js";
 import type * as items from "../items.js";
 import type * as lectureContext from "../lectureContext.js";
+import type * as mcpApi from "../mcpApi.js";
 import type * as messaging from "../messaging.js";
 import type * as messagingHelpers from "../messagingHelpers.js";
 import type * as nuggetChat from "../nuggetChat.js";
@@ -62,6 +64,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  apiKeys: typeof apiKeys;
   audioCleanup: typeof audioCleanup;
   audioStorage: typeof audioStorage;
   authHelpers: typeof authHelpers;
@@ -82,6 +85,7 @@ declare const fullApi: ApiFromModules<{
   inventory: typeof inventory;
   items: typeof items;
   lectureContext: typeof lectureContext;
+  mcpApi: typeof mcpApi;
   messaging: typeof messaging;
   messagingHelpers: typeof messagingHelpers;
   nuggetChat: typeof nuggetChat;

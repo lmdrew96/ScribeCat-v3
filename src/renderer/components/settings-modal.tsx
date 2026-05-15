@@ -1,4 +1,5 @@
 import { useNyanUnlocked } from '@/components/easter-eggs/use-nyan-unlock';
+import { useApiKeys } from '@/hooks/use-api-keys';
 import { LegalDocModal } from '@/components/legal-doc-modal';
 import { type Theme, useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -28,10 +29,12 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   FileText,
   Github,
   Info,
+  Key,
   Lock,
   Mic,
   Palette,
@@ -163,6 +166,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   // Legal doc modals
   const [showTos, setShowTos] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+
+  // API keys
+  const { keys: apiKeys, generateKey, revokeKey } = useApiKeys();
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [isGeneratingKey, setIsGeneratingKey] = useState(false);
+
+  const handleGenerateKey = async () => {
+    setIsGeneratingKey(true);
+    try {
+      const { apiKey } = await generateKey({ label: newKeyLabel.trim() || undefined });
+      setGeneratedKey(apiKey);
+      setNewKeyLabel('');
+      toast.success('API key generated');
+    } catch {
+      toast.error('Failed to generate key');
+    } finally {
+      setIsGeneratingKey(false);
+    }
+  };
 
   // Audio settings (local only)
   const [showWaveform, setShowWaveform] = useState(true);
@@ -892,6 +915,104 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   <p className="text-sm text-muted-foreground">
                     {user?.primaryEmailAddress?.emailAddress ?? 'No email'}
                   </p>
+                </div>
+
+                {/* API Keys */}
+                <div className="space-y-3 border-t border-[var(--glass-border)] pt-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Key className="h-4 w-4" />
+                      API Keys
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      For the ScribeCat MCP server and integrations
+                    </p>
+                  </div>
+
+                  {!generatedKey && (
+                    <div className="flex gap-2">
+                      <Input
+                        value={newKeyLabel}
+                        onChange={(e) => setNewKeyLabel(e.target.value)}
+                        placeholder="Label (e.g. Coru, Claude)"
+                        className="flex-1 bg-background border-border text-sm"
+                        maxLength={50}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleGenerateKey();
+                        }}
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => void handleGenerateKey()}
+                        disabled={isGeneratingKey}
+                      >
+                        {isGeneratingKey ? 'Generating...' : 'Generate'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {generatedKey && (
+                    <div className="rounded-lg border border-[var(--glass-border-strong)] glass-light p-3 space-y-2">
+                      <p className="text-xs font-medium text-accent">
+                        Copy this key now — it won&apos;t be shown again
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs text-foreground bg-background rounded px-2 py-1.5 truncate font-mono">
+                          {generatedKey}
+                        </code>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            void navigator.clipboard.writeText(generatedKey);
+                            toast.success('Copied!');
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground text-xs h-auto p-0"
+                        onClick={() => setGeneratedKey(null)}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  )}
+
+                  {apiKeys && apiKeys.length > 0 && (
+                    <div className="space-y-1.5">
+                      {apiKeys.map((key) => (
+                        <div
+                          key={key._id}
+                          className="flex items-center justify-between rounded-md glass-light border border-[var(--glass-border)] px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">
+                              {key.label ?? 'Unnamed key'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Created {new Date(key.createdAt).toLocaleDateString()}
+                              {key.lastUsedAt
+                                ? ` · Last used ${new Date(key.lastUsedAt).toLocaleDateString()}`
+                                : ''}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive text-xs shrink-0"
+                            onClick={() => void revokeKey({ id: key._id })}
+                          >
+                            Revoke
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-[var(--glass-border)]">

@@ -449,6 +449,17 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_user', ['userId']),
 
+  // API keys for MCP server and third-party integrations
+  apiKeys: defineTable({
+    userId: v.string(),
+    keyHash: v.string(), // SHA-256 of the plaintext key — never store plaintext
+    label: v.optional(v.string()),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index('by_user', ['userId'])
+    .index('by_hash', ['keyHash']),
+
   // Weak spots (per-user topic performance tracking in exam rooms)
   weakSpots: defineTable({
     examRoomId: v.id('examRooms'),
