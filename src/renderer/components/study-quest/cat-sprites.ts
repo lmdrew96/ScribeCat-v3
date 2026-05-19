@@ -4,7 +4,7 @@
  * All sprites are 32x32 pixel art frames in horizontal strip PNGs.
  * Stored in public/cats/{variant}/{animation}.png
  *
- * 11 cat variants, 8 animations each.
+ * 12 cat variants, 8 animations each.
  */
 
 export type CatMood = 'idle' | 'happy' | 'studying' | 'sleepy' | 'excited';
@@ -15,6 +15,7 @@ export type CatVariant =
   | 'demon'
   | 'egypt'
   | 'grey'
+  | 'orange'
   | 'siamese'
   | 'tricolor'
   | 'vampire'
@@ -24,6 +25,7 @@ export type CatVariant =
 
 export const CAT_VARIANTS: { id: CatVariant; label: string }[] = [
   { id: 'grey', label: 'Grey' },
+  { id: 'orange', label: 'Orange' },
   { id: 'bengal', label: 'Bengal' },
   { id: 'black', label: 'Black' },
   { id: 'siamese', label: 'Siamese' },
