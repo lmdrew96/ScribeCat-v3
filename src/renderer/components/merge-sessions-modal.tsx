@@ -81,7 +81,7 @@ export function MergeSessionsModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Merge className="h-4 w-4" />
@@ -93,7 +93,7 @@ export function MergeSessionsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Primary session (the one being kept) */}
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">Keeping this session</Label>
