@@ -29,6 +29,8 @@ export interface SessionSummary {
   title: string;
   date: string;
   duration: string;
+  createdAt: number;
+  durationMs: number;
   lectureType?: string;
   course?: string;
 }
@@ -156,6 +158,8 @@ export function StudyView() {
       year: 'numeric',
     }),
     duration: formatDuration(session.duration),
+    createdAt: session.createdAt,
+    durationMs: session.duration,
     lectureType: session.lectureType,
     course: session.course,
   }));
@@ -169,6 +173,8 @@ export function StudyView() {
       year: 'numeric',
     }),
     duration: formatDuration(session.duration),
+    createdAt: session.createdAt,
+    durationMs: session.duration,
     lectureType: session.lectureType,
     course: session.course,
   }));
