@@ -2,6 +2,7 @@ import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-s
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useSessions } from '@/hooks/use-sessions';
+import { useUploadFile } from '@convex-dev/r2/react';
 import { useMutation } from 'convex/react';
 import { FileAudio, Loader2, Upload, Users } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
@@ -22,7 +23,7 @@ interface TranscribeResult {
 
 export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeProps) {
   const { createSession, updateSession } = useSessions();
-  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
   const getAudioUrl = useMutation(api.audioStorage.getAudioUrlMutation);
 
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -42,14 +43,8 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
         setIsTranscribing(true);
         setProgress('Uploading audio file...');
 
-        // Step 1: Upload audio to Convex storage
-        const uploadUrl = await generateUploadUrl();
-        const uploadResult = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': file.type },
-          body: file,
-        });
-        const { storageId } = await uploadResult.json();
+        // Step 1: Upload audio to R2
+        const storageId = await uploadFile(file);
 
         // Step 2: Create session and save audio reference
         const sessionId = await createSession({
@@ -157,7 +152,7 @@ export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeP
     [
       createSession,
       updateSession,
-      generateUploadUrl,
+      uploadFile,
       getAudioUrl,
       lectureType,
       speakerLabels,

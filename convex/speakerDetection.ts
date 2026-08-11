@@ -11,6 +11,7 @@ import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { action, internalAction, internalMutation, internalQuery } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import { r2 } from './r2';
 
 const ASSEMBLYAI_BASE = 'https://api.assemblyai.com';
 const POLL_INTERVAL_MS = 30_000;
@@ -85,14 +86,14 @@ export const writeSpeakerResult = internalMutation({
 // ─── Helpers ────────────────────────────────────────────────
 
 async function buildAudioUrlForAssembly(
-  ctx: { storage: { getUrl: (id: string) => Promise<string | null> } },
   apiKey: string,
   audioStorageId: string | undefined,
   audioStorageIds: string[] | undefined,
 ): Promise<string> {
-  // Single-file path — Convex storage URL is publicly accessible.
+  // Single-file path — R2 signed URL is directly fetchable by AssemblyAI.
+  // Give it a generous expiry since AssemblyAI's fetch may be queued.
   if (audioStorageId && (!audioStorageIds || audioStorageIds.length === 0)) {
-    const url = await ctx.storage.getUrl(audioStorageId);
+    const url = await r2.getUrl(audioStorageId, { expiresIn: 3600 });
     if (!url) throw new Error('Audio file is unavailable');
     return url;
   }
@@ -103,7 +104,7 @@ async function buildAudioUrlForAssembly(
   const ids = audioStorageIds ?? [];
   if (ids.length === 0) throw new Error('Session has no audio');
 
-  const chunkUrls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
+  const chunkUrls = await Promise.all(ids.map((id) => r2.getUrl(id)));
   const buffers = await Promise.all(
     chunkUrls.map(async (url) => {
       if (!url) throw new Error('Audio chunk URL unavailable');
@@ -169,7 +170,6 @@ export const submit = action({
     let transcriptId: string;
     try {
       const audioUrl = await buildAudioUrlForAssembly(
-        ctx,
         apiKey,
         session.audioStorageId,
         session.audioStorageIds,

@@ -7,6 +7,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { ConvexError, v } from 'convex/values';
 import { action } from './_generated/server';
 import { callClaude } from './config';
+import { r2 } from './r2';
 
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
@@ -33,7 +34,7 @@ export const parseDocumentImages = action({
     storageIds: v.array(v.string()),
     mimeTypes: v.array(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     if (args.storageIds.length === 0) {
       throw new ConvexError('No files provided');
     }
@@ -49,7 +50,7 @@ export const parseDocumentImages = action({
       const storageId = args.storageIds[i];
       const mimeType = args.mimeTypes[i];
 
-      const url = await ctx.storage.getUrl(storageId);
+      const url = await r2.getUrl(storageId);
       if (!url) {
         throw new ConvexError(`Failed to get storage URL for file ${i + 1}`);
       }

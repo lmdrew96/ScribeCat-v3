@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useUploadFile } from '@convex-dev/r2/react';
 import type { Editor } from '@tiptap/react';
-import { useMutation } from 'convex/react';
 import {
   AlertCircle,
   AlignCenter,
@@ -73,8 +73,7 @@ export function EditorToolbar({
   const [linkUrl, setLinkUrl] = useState('');
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const generateUploadUrl = useMutation(api.uploadImage.generateUploadUrl);
-  const getImageUrl = useMutation(api.uploadImage.getImageUrl);
+  const uploadFile = useUploadFile(api.r2);
 
   if (!editor) {
     return null;
@@ -85,36 +84,24 @@ export function EditorToolbar({
     if (!file) return;
 
     try {
-      // Get upload URL from Convex
-      const uploadUrl = await generateUploadUrl();
+      const storageId = await uploadFile(file);
 
-      // Upload the file
-      const result = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-
-      const { storageId } = await result.json();
-
-      // Get the public URL
-      const imageUrl = await getImageUrl({ storageId });
+      // R2 bucket is public — the URL is permanent, no round trip needed.
+      const imageUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/${storageId}`;
 
       // Insert the draggable image into the editor
-      if (imageUrl) {
-        editor
-          .chain()
-          .focus()
-          .insertContent({
-            type: 'draggableImage',
-            attrs: {
-              src: imageUrl,
-              alt: file.name,
-              storageId,
-            },
-          })
-          .run();
-      }
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'draggableImage',
+          attrs: {
+            src: imageUrl,
+            alt: file.name,
+            storageId,
+          },
+        })
+        .run();
     } catch (error) {
       console.error('Error uploading image:', error);
     }

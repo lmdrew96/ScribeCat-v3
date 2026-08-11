@@ -4,6 +4,7 @@
  */
 
 import { clearRecoveryData, getRecoverySessionId, recoverAudio } from '@/lib/audio-recovery';
+import { useUploadFile } from '@convex-dev/r2/react';
 import { useMutation } from 'convex/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -24,7 +25,7 @@ export function useSessionRecovery(
   const [recoverySessionId, setRecoverySessionId] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
 
-  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
   const appendAudioChunk = useMutation(api.sessions.appendAudioChunk);
 
   // Check for orphaned recovery data on mount
@@ -55,25 +56,9 @@ export function useSessionRecovery(
         return;
       }
 
-      // Upload to Convex storage
-      const uploadUrl = await generateUploadUrl();
-      const uploadResult = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'audio/webm' },
-        body: audioBlob,
-      });
-      if (!uploadResult.ok) {
-        const body = await uploadResult.text().catch(() => '');
-        throw new Error(
-          `Upload failed (${uploadResult.status} ${uploadResult.statusText}): ${
-            body.slice(0, 200) || 'no response body'
-          }`,
-        );
-      }
-      const { storageId } = (await uploadResult.json()) as { storageId?: string };
-      if (!storageId) {
-        throw new Error('Upload response missing storageId');
-      }
+      // Upload to R2
+      const recoveredFile = new File([audioBlob], 'recovered.webm', { type: 'audio/webm' });
+      const storageId = await uploadFile(recoveredFile);
 
       // Append to the session's audioStorageIds array. This preserves any
       // chunks that were successfully uploaded by the progressive uploader
@@ -98,7 +83,7 @@ export function useSessionRecovery(
     } finally {
       setIsRecovering(false);
     }
-  }, [recoverySessionId, generateUploadUrl, appendAudioChunk]);
+  }, [recoverySessionId, uploadFile, appendAudioChunk]);
 
   const dismiss = useCallback(async () => {
     if (!recoverySessionId) return;

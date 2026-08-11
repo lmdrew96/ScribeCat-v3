@@ -1,5 +1,6 @@
 import { useSessions } from '@/hooks/use-sessions';
-import { useAction, useMutation } from 'convex/react';
+import { useUploadFile } from '@convex-dev/r2/react';
+import { useAction } from 'convex/react';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../convex/_generated/api';
@@ -41,7 +42,7 @@ async function normalizeImageFile(file: File): Promise<File> {
 
 export function useDocumentUpload(): DocumentUploadResult {
   const { createSession, updateSession } = useSessions();
-  const generateUploadUrl = useMutation(api.uploadImage.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
   const parseDocument = useAction(api.parseDocument.parseDocumentImages);
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -55,20 +56,14 @@ export function useDocumentUpload(): DocumentUploadResult {
         setIsProcessing(true);
         setProgress(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}...`);
 
-        // Upload all files to Convex storage
+        // Upload all files to R2
         const storageIds: string[] = [];
         const mimeTypes: string[] = [];
 
         for (const { file } of files) {
           // Convert images to JPEG so Claude can always parse them (handles HEIC, BMP, etc.)
           const normalized = await normalizeImageFile(file);
-          const uploadUrl = await generateUploadUrl();
-          const result = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': normalized.type },
-            body: normalized,
-          });
-          const { storageId } = await result.json();
+          const storageId = await uploadFile(normalized);
           storageIds.push(storageId);
           mimeTypes.push(normalized.type);
         }
@@ -130,7 +125,7 @@ export function useDocumentUpload(): DocumentUploadResult {
         }, 3000);
       }
     },
-    [createSession, updateSession, generateUploadUrl, parseDocument],
+    [createSession, updateSession, uploadFile, parseDocument],
   );
 
   return { upload, isProcessing, progress };

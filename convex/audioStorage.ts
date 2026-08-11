@@ -1,21 +1,18 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { r2 } from './r2';
 
 /**
  * Audio storage for web — replaces Electron local filesystem storage.
- * Uses Convex file storage for audio blobs (WebM recordings).
+ * Uses R2 for audio blobs (WebM recordings), keyed by the same string
+ * previously used as a Convex storage ID.
  */
-
-/** Generate an upload URL for audio files */
-export const generateUploadUrl = mutation(async (ctx) => {
-  return await ctx.storage.generateUploadUrl();
-});
 
 /** Get a playable URL for a stored audio file */
 export const getAudioUrl = query({
   args: { storageId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId);
+  handler: async (_ctx, args) => {
+    return await r2.getUrl(args.storageId);
   },
 });
 
@@ -26,16 +23,16 @@ export const getAudioUrl = query({
  */
 export const getAudioUrls = query({
   args: { storageIds: v.array(v.string()) },
-  handler: async (ctx, args) => {
-    return await Promise.all(args.storageIds.map((id) => ctx.storage.getUrl(id)));
+  handler: async (_ctx, args) => {
+    return await Promise.all(args.storageIds.map((id) => r2.getUrl(id)));
   },
 });
 
 /** Get audio URL imperatively (for use in callbacks) */
 export const getAudioUrlMutation = mutation({
   args: { storageId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId);
+  handler: async (_ctx, args) => {
+    return await r2.getUrl(args.storageId);
   },
 });
 
@@ -43,6 +40,6 @@ export const getAudioUrlMutation = mutation({
 export const deleteAudio = mutation({
   args: { storageId: v.string() },
   handler: async (ctx, args) => {
-    await ctx.storage.delete(args.storageId as never);
+    await r2.deleteObject(ctx, args.storageId);
   },
 });

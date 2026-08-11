@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import { r2 } from './r2';
 
 const DEFAULT_RETENTION_MONTHS = 6;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -53,11 +54,11 @@ export const cleanupExpiredAudio = internalMutation({
       if (now >= cutoff) {
         // Delete both legacy single-file and multi-part chunk storage
         if (session.audioStorageId) {
-          await ctx.storage.delete(session.audioStorageId as string);
+          await r2.deleteObject(ctx, session.audioStorageId);
         }
         if (session.audioStorageIds) {
           for (const id of session.audioStorageIds) {
-            await ctx.storage.delete(id as string);
+            await r2.deleteObject(ctx, id);
           }
         }
         await ctx.db.patch(session._id, {

@@ -38,6 +38,7 @@ import type * as nuggetNotes from "../nuggetNotes.js";
 import type * as parseDocument from "../parseDocument.js";
 import type * as productivity from "../productivity.js";
 import type * as prompts from "../prompts.js";
+import type * as r2 from "../r2.js";
 import type * as reportBug from "../reportBug.js";
 import type * as roomNotes from "../roomNotes.js";
 import type * as scrubTranscript from "../scrubTranscript.js";
@@ -51,7 +52,6 @@ import type * as studyRooms from "../studyRooms.js";
 import type * as studyToolPrompts from "../studyToolPrompts.js";
 import type * as studyTools from "../studyTools.js";
 import type * as transcription from "../transcription.js";
-import type * as uploadImage from "../uploadImage.js";
 import type * as userProfiles from "../userProfiles.js";
 import type * as weakSpots from "../weakSpots.js";
 import type * as xpUtils from "../xpUtils.js";
@@ -93,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   parseDocument: typeof parseDocument;
   productivity: typeof productivity;
   prompts: typeof prompts;
+  r2: typeof r2;
   reportBug: typeof reportBug;
   roomNotes: typeof roomNotes;
   scrubTranscript: typeof scrubTranscript;
@@ -106,7 +107,6 @@ declare const fullApi: ApiFromModules<{
   studyToolPrompts: typeof studyToolPrompts;
   studyTools: typeof studyTools;
   transcription: typeof transcription;
-  uploadImage: typeof uploadImage;
   userProfiles: typeof userProfiles;
   weakSpots: typeof weakSpots;
   xpUtils: typeof xpUtils;
@@ -138,4 +138,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  r2: import("@convex-dev/r2/_generated/component.js").ComponentApi<"r2">;
+};

@@ -19,6 +19,7 @@ import {
   saveAudioChunk,
   startRecoverySession,
 } from '@/lib/audio-recovery';
+import { useUploadFile } from '@convex-dev/r2/react';
 import { useMutation } from 'convex/react';
 import {
   type ReactNode,
@@ -96,7 +97,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   const { createSession, updateSession } = useSessions();
   const logStudyTime = useLogStudyTime();
-  const generateUploadUrl = useMutation(api.audioStorage.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
   const appendAudioChunk = useMutation(api.sessions.appendAudioChunk);
 
   // Session state
@@ -330,22 +331,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
       const uploadPromise = (async () => {
         try {
-          const uploadUrl = await generateUploadUrl();
-          const res = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': pending.blob.type || 'audio/webm' },
-            body: pending.blob,
+          const chunkFile = new File([pending.blob], 'chunk.webm', {
+            type: pending.blob.type || 'audio/webm',
           });
-          if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            throw new Error(
-              `Upload failed (${res.status} ${res.statusText}): ${
-                body.slice(0, 200) || 'no response body'
-              }`,
-            );
-          }
-          const { storageId } = (await res.json()) as { storageId?: string };
-          if (!storageId) throw new Error('Upload response missing storageId');
+          const storageId = await uploadFile(chunkFile);
 
           await appendAudioChunk({ id: sessionId, storageId });
           markChunksUploaded(pending.count);
@@ -369,7 +358,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     }, UPLOAD_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [isRecording, generateUploadUrl, appendAudioChunk, getUnuploadedChunks, markChunksUploaded]);
+  }, [isRecording, uploadFile, appendAudioChunk, getUnuploadedChunks, markChunksUploaded]);
 
   // ─── Nugget notes periodic save effect ──────────────────────────────────
 
@@ -539,22 +528,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       if (pending) {
         const newTotal = uploadedChunkCountRef.current + pending.count;
         try {
-          const uploadUrl = await generateUploadUrl();
-          const res = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': pending.blob.type || 'audio/webm' },
-            body: pending.blob,
+          const chunkFile = new File([pending.blob], 'chunk.webm', {
+            type: pending.blob.type || 'audio/webm',
           });
-          if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            throw new Error(
-              `Upload failed (${res.status} ${res.statusText}): ${
-                body.slice(0, 200) || 'no response body'
-              }`,
-            );
-          }
-          const { storageId } = (await res.json()) as { storageId?: string };
-          if (!storageId) throw new Error('Upload response missing storageId');
+          const storageId = await uploadFile(chunkFile);
 
           await appendAudioChunk({ id: capturedSessionId, storageId });
           markChunksUploaded(pending.count);
@@ -664,7 +641,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     getFullTranscript,
     getUnuploadedChunks,
     markChunksUploaded,
-    generateUploadUrl,
+    uploadFile,
     appendAudioChunk,
     nuggetNotes,
     updateSession,

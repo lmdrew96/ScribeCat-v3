@@ -35,7 +35,8 @@ ScribeCat uses the following third-party services that receive your data:
 | **AssemblyAI** | Audio data (streamed or uploaded) | Real-time and batch transcription |
 | **Anthropic (Claude AI)** | Transcription text, notes, chat messages (no audio) | AI note generation, study tools, chat |
 | **Clerk** | Email, authentication tokens | User authentication and session management |
-| **Convex** | All application data | Backend database, file storage, real-time sync |
+| **Convex** | All application data | Backend database, real-time sync |
+| **Cloudflare R2** | Audio recordings, uploaded documents/images | File storage |
 | **Vercel** | Web traffic | Application hosting and delivery |
 
 Audio data is sent to AssemblyAI's servers for transcription processing. Only the resulting text transcript is retained in ScribeCat — AssemblyAI does not store your audio after processing.
@@ -55,7 +56,7 @@ We use your data to:
 ## 5. Data Storage
 
 - **Application data** is stored in Convex's cloud infrastructure
-- **Audio files** are stored in Convex file storage as WebM blobs
+- **Audio files** are stored in Cloudflare R2 as WebM blobs
 - **Authentication data** is managed by Clerk's infrastructure
 - All data is associated with your authenticated account
 

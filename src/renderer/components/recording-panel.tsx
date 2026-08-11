@@ -1,14 +1,15 @@
 import { AudioWaveform } from '@/components/audio-waveform';
+import { HandwritingCanvas } from '@/components/handwriting-canvas';
 import { LectureTypeSelect } from '@/components/lecture-type-select';
 import { LiveTranscript } from '@/components/live-transcript';
 import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 import { RecordingConsentModal } from '@/components/recording-consent-modal';
 import { RecordingContinueModal } from '@/components/recording-continue-modal';
-import { HandwritingCanvas } from '@/components/handwriting-canvas';
+import { useUploadFile } from '@convex-dev/r2/react';
+import { useAction, useMutation } from 'convex/react';
 import { useState } from 'react';
-import { useMutation, useAction } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
 import { toast } from 'sonner';
+import { api } from '../../../convex/_generated/api';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useRecordingContext } from '@/contexts/recording-context';
-import { Mic, Pause, Play, Square, Loader2 } from 'lucide-react';
+import { Loader2, Mic, Pause, Play, Square } from 'lucide-react';
 
 interface RecordingPanelProps {
   onInsertNote?: (noteText: string) => void;
@@ -60,7 +61,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
 
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
   const [isProcessingDrawing, setIsProcessingDrawing] = useState(false);
-  const generateUploadUrl = useMutation(api.uploadImage.generateUploadUrl);
+  const uploadFile = useUploadFile(api.r2);
   const parseDocument = useAction(api.parseDocument.parseDocumentImages);
   const updateSessionMutation = useMutation(api.sessions.update);
 
@@ -71,14 +72,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
     }
     setIsProcessingDrawing(true);
     try {
-      // Generate upload URL and upload the drawn image
-      const uploadUrl = await generateUploadUrl();
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      });
-      const { storageId } = await uploadRes.json();
+      const storageId = await uploadFile(file);
 
       // Parse the image with Claude Vision
       const parseResult = await parseDocument({
@@ -219,49 +213,47 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           )}
         </button>
 
-         {/* Pause/Resume button */}
-         {isRecording && (
-           <Button
-             variant="secondary"
-             size="sm"
-             onClick={handlePauseResume}
-             className="gap-1.5 h-8 px-2 text-xs"
-           >
-             {isPaused ? (
-               <>
-                 <Play className="h-3 w-3" />
-                 Resume
-               </>
-             ) : (
-               <>
-                 <Pause className="h-3 w-3" />
-                 Pause
-               </>
-             )}
-           </Button>
-         )}
+        {/* Pause/Resume button */}
+        {isRecording && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handlePauseResume}
+            className="gap-1.5 h-8 px-2 text-xs"
+          >
+            {isPaused ? (
+              <>
+                <Play className="h-3 w-3" />
+                Resume
+              </>
+            ) : (
+              <>
+                <Pause className="h-3 w-3" />
+                Pause
+              </>
+            )}
+          </Button>
+        )}
 
-         {/* Draw note button (iPad pencil support) */}
-         {isRecording && (
-           <Button
-             variant="secondary"
-             size="sm"
-             onClick={() => setShowDrawingCanvas(true)}
-             disabled={isProcessingDrawing}
-             className="gap-1.5 h-8 px-2 text-xs"
-           >
-             {isProcessingDrawing ? (
-               <>
-                 <Loader2 className="h-3 w-3 animate-spin" />
-                 Processing...
-               </>
-             ) : (
-               <>
-                 ✏️ Draw Note
-               </>
-             )}
-           </Button>
-         )}
+        {/* Draw note button (iPad pencil support) */}
+        {isRecording && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowDrawingCanvas(true)}
+            disabled={isProcessingDrawing}
+            className="gap-1.5 h-8 px-2 text-xs"
+          >
+            {isProcessingDrawing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>✏️ Draw Note</>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Error display */}
