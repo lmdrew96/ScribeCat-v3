@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 const STEPS = [
   {
     icon: Mic,
-    title: 'Record your first lecture',
+    title: 'Record your first study session',
     description: 'Hit record on the home screen — audio and live transcript start right away.',
   },
   {
