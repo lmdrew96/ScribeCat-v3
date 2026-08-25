@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "5.21.0",
+  "version": "5.21.1",
   "description": "ADHD-friendly study companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {
@@ -14,7 +14,8 @@
     "lint:fix": "biome check --apply .",
     "format": "biome format --write .",
     "clean": "rm -rf dist",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "vitest run"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -112,6 +113,7 @@
     "tw-animate-css": "1.3.3",
     "typescript": "^5",
     "vite": "^7.3.0",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.1.11"
   }
 }

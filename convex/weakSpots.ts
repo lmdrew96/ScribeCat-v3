@@ -13,6 +13,55 @@ import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
 import { callClaude, extractJson } from './studyTools';
 
+// ─── Pure Helpers ────────────────────────────────────────────
+
+export interface TopicStat {
+  topic: string;
+  correctCount: number;
+  totalCount: number;
+  accuracy: number;
+  lastTestedAt: number;
+}
+
+/**
+ * Fold one quiz/flashcard answer into a topic stats list, matching topics
+ * case-insensitively. Returns a new array — does not mutate the input.
+ */
+export function updateTopicStats(
+  topics: TopicStat[],
+  topic: string,
+  correct: boolean,
+  now: number,
+): TopicStat[] {
+  const idx = topics.findIndex((t) => t.topic.toLowerCase() === topic.toLowerCase());
+
+  if (idx < 0) {
+    return [
+      ...topics,
+      {
+        topic,
+        correctCount: correct ? 1 : 0,
+        totalCount: 1,
+        accuracy: correct ? 1 : 0,
+        lastTestedAt: now,
+      },
+    ];
+  }
+
+  const existing = topics[idx];
+  const correctCount = existing.correctCount + (correct ? 1 : 0);
+  const totalCount = existing.totalCount + 1;
+  const updated = [...topics];
+  updated[idx] = {
+    ...existing,
+    correctCount,
+    totalCount,
+    accuracy: totalCount > 0 ? correctCount / totalCount : 0,
+    lastTestedAt: now,
+  };
+  return updated;
+}
+
 // ─── Queries ─────────────────────────────────────────────────
 
 /** Get weak spots for the current user in an exam room, sorted by accuracy (worst first). */
@@ -52,46 +101,13 @@ export const recordPerformance = mutation({
       .unique();
 
     if (doc) {
-      const topics = [...doc.topics];
-      const existingIdx = topics.findIndex(
-        (t) => t.topic.toLowerCase() === args.topic.toLowerCase(),
-      );
-
-      if (existingIdx >= 0) {
-        const existing = topics[existingIdx];
-        const newCorrect = existing.correctCount + (args.correct ? 1 : 0);
-        const newTotal = existing.totalCount + 1;
-        topics[existingIdx] = {
-          ...existing,
-          correctCount: newCorrect,
-          totalCount: newTotal,
-          accuracy: newTotal > 0 ? newCorrect / newTotal : 0,
-          lastTestedAt: now,
-        };
-      } else {
-        topics.push({
-          topic: args.topic,
-          correctCount: args.correct ? 1 : 0,
-          totalCount: 1,
-          accuracy: args.correct ? 1 : 0,
-          lastTestedAt: now,
-        });
-      }
-
+      const topics = updateTopicStats(doc.topics, args.topic, args.correct, now);
       await ctx.db.patch(doc._id, { topics, updatedAt: now });
     } else {
       await ctx.db.insert('weakSpots', {
         examRoomId: args.examRoomId,
         userId,
-        topics: [
-          {
-            topic: args.topic,
-            correctCount: args.correct ? 1 : 0,
-            totalCount: 1,
-            accuracy: args.correct ? 1 : 0,
-            lastTestedAt: now,
-          },
-        ],
+        topics: updateTopicStats([], args.topic, args.correct, now),
         updatedAt: now,
       });
     }
