@@ -250,15 +250,6 @@ ScribeCat-v3/
 │   ├── TERMS_OF_SERVICE.md   # Terms of Service content
 │   ├── PRIVACY_POLICY.md     # Privacy Policy content
 │   └── SPEC-privacy-compliance-overhaul.md # Privacy compliance spec
-├── browser-extension/         # Chrome extension for Canvas LMS course import
-│   ├── manifest.json         # Manifest V3 config
-│   ├── scripts/
-│   │   ├── content-script.js # Canvas course detection (4 DOM strategies)
-│   │   └── background.js    # Badge updates on detection
-│   └── popup/
-│       ├── popup.html        # Extension popup UI
-│       ├── popup.css         # ScribeCat-themed styling
-│       └── popup.js          # Course display + copy-to-clipboard
 ├── .github/                   # GitHub config
 │   ├── agents/               # Copilot agent configs (Brainstorm, Explain Error)
 │   └── instructions/         # Copilot instructions

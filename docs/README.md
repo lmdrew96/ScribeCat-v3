@@ -343,7 +343,6 @@ ScribeCat-v3/
 ├── public/                    # Static assets
 │   └── cats/                 # 11 cat variant sprite sheets (32x32 frames)
 ├── docs/                      # Documentation
-├── browser-extension/         # Chrome extension for Canvas LMS course import
 ├── .github/                   # GitHub config
 └── biome.json                 # Linting/formatting config
 ```
