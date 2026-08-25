@@ -6,9 +6,10 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useStudyQuest } from '@/hooks/use-study-quest';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Backpack, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Backpack, Monitor, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { InventoryPanel } from './inventory-panel';
 import { ShopPanel } from './shop-panel';
@@ -19,6 +20,7 @@ export function StudyQuestPage() {
   const { isLoading, isAdopted, variant, mood, name } = useStudyQuest();
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex h-full flex-col p-3">
@@ -51,6 +53,15 @@ export function StudyQuestPage() {
           <div className="flex max-w-sm flex-col items-center gap-3 text-center">
             <p className="text-sm text-muted-foreground">
               Adopt a cat from the widget in the bottom-left corner before starting your adventure.
+            </p>
+            <Button onClick={() => navigate({ to: '/' })}>Back home</Button>
+          </div>
+        ) : isMobile ? (
+          <div className="flex max-w-sm flex-col items-center gap-3 text-center">
+            <Monitor className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              StudyQuest needs a keyboard to play right now — touch controls are coming soon. Hop on
+              a desktop or laptop to explore the dungeon with {name}.
             </p>
             <Button onClick={() => navigate({ to: '/' })}>Back home</Button>
           </div>
