@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   soundEnabled: true,
   tosAcceptedAt: undefined as number | undefined,
   tosVersion: undefined as string | undefined,
+  onboardingDismissedAt: undefined as number | undefined,
 };
 
 export const getSettings = query({
@@ -44,6 +45,7 @@ export const updateSettings = mutation({
     tosVersion: v.optional(v.string()),
     audioRetentionMonths: v.optional(v.number()),
     timezone: v.optional(v.string()),
+    onboardingDismissedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);

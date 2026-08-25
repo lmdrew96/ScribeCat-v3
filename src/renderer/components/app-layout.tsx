@@ -1,4 +1,5 @@
 import { AudioDeletionWarning } from '@/components/audio-deletion-warning';
+import { FirstRunOnboarding } from '@/components/first-run-onboarding';
 import { MiniRecordingIndicator } from '@/components/mini-recording-indicator';
 import { NuggetChat } from '@/components/nugget-chat';
 import { RecordingNavigationGuard } from '@/components/recording-navigation-guard';
@@ -48,6 +49,7 @@ export function AppLayout() {
         <StudyQuestWidget />
         <RecordingNavigationGuard />
         <TosAcceptanceModal />
+        <FirstRunOnboarding />
       </div>
     </RecordingProvider>
   );
