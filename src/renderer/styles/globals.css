@@ -3,6 +3,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Landing page — fixed "Nugg's Favorite" brand palette, intentionally NOT
+   theme-reactive: the signed-out marketing page should look the same
+   regardless of any theme a previous session on this browser saved. */
+:root {
+  --landing-teal-soft: #8cbdb9;
+  --landing-teal-deep: #244952;
+  --landing-amber: #dea549;
+  --landing-purple-dusty: #88739e;
+  --landing-green: #96d080;
+  --landing-red: #c45c5c;
+  --landing-lavender: #dbd5e2;
+  --landing-purple-deep: #6b5a7d;
+}
+
 /* ScribeCat - ADHDesigns Brand Theme */
 /* Nugg's Favorite - Dusty purple + deep teal + warm amber palette */
 :root {
