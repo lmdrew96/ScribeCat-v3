@@ -1,10 +1,10 @@
 # ScribeCat v3 — Phase Implementation Guide
 
-> **Current Phase: 4 — Connect (COMPLETE)**
+> **Current Phase: 4 — Connect (COMPLETE)**, plus substantial post-Phase-4 expansion (see below)
 >
-> **Current Version: 4.27.0**
+> **Current Version: 5.20.3**
 >
-> Last updated: April 2026
+> Last updated: August 2026
 
 ---
 
@@ -321,16 +321,13 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
   - [x] Quiz Battle and Jeopardy via shared `studyGames` table with `examRoomId`
   - [x] XP rewards for game participation
 
-### Canvas LMS Integration — COMPLETE
+### Canvas LMS Integration — COMPLETE (import flow later simplified)
 
 - [x] `course` field on sessions (first-class, not just title prefix)
 - [x] Course filter dropdown in recordings sidebar
-- [x] Canvas import dialog in Settings (JSON paste from extension)
-- [x] Chrome browser extension (Manifest V3) for Canvas course detection
-  - [x] Content script with 4 DOM selector strategies (dashboard cards, links, nav, table)
-  - [x] MutationObserver-based waiting for Canvas SPA rendering
-  - [x] Copy-to-clipboard as JSON array
-  - [x] ScribeCat-themed popup UI
+- [x] Course field is a manual dropdown (v5.17.1)
+- [ ] ~~Canvas import dialog in Settings (JSON paste from extension)~~ — **removed in v5.17.2** ("remove defunct Canvas browser extension import from settings"). The `course` field is now entered manually; there's no in-app destination for the extension's clipboard output anymore.
+- [~] Chrome browser extension (`browser-extension/`, Manifest V3) for Canvas course detection — code is still present and functional (4 DOM selector strategies, MutationObserver-based waiting, copy-to-clipboard) but appears orphaned now that Settings has no paste-import UI to receive it. Worth confirming whether it's still used anywhere, or should be archived/removed.
 
 ### Technical Notes
 
@@ -348,6 +345,24 @@ Nugget Chat (persistent AI chat with session-based history + clickable suggestio
 **Shared Markdown Renderer:** `src/renderer/lib/render-markdown.tsx` — extracted from `nugget-chat.tsx` and shared across exam chat, exam tools, study tools, and weak spots panel for consistent AI content rendering.
 
 **Date Completed:** April 2026
+
+---
+
+## Post-Phase 4: Ongoing Expansion — v4.28.0 to v5.20.3
+
+Phase 4 (Connect) shipped complete in April 2026. Development continued past the phase framework — the major systems added since aren't tracked against phase acceptance criteria, but they're real, shipped, and in daily use:
+
+- **StudyQuest RPG** (v5.7.0–5.18.2): A full game layer beyond the Phase 3 Tamagotchi MVP — Excalibur.js-powered explorable town, procedurally generated dungeon with minimap, turn-based combat, cat evolution tiers (visual milestones at L5/L10/L20), equipment + inventory system, shop economy, and battle item drops. Game engine lives in `src/renderer/components/study-quest/game/` (~2,600 lines); widget/inventory/shop UI adds another ~1,300 lines. Backend: `convex/shop.ts`, `inventory.ts`, `items.ts`.
+- **ScribeCat MCP Server** (v5.18.0): Read-only HTTP API (`convex/mcpApi.ts`) so external MCP clients can list/get/search sessions and list courses. Authenticated via user-generated, SHA-256-hashed API keys (`convex/apiKeys.ts`).
+- **File storage migration to Cloudflare R2** (v5.20.0–5.20.1): Moved all file storage (audio, editor images, parsed documents) off Convex file storage to R2 via `@convex-dev/r2`, after the Convex free-tier file storage limit was exceeded and disabled deployments. Convex core bumped 1.31.2 → 1.43.0.
+- **Speaker detection** (v5.5.0): Post-recording diarization via `convex/speakerDetection.ts`.
+- **Session resilience & recovery** (v5.0.0, v5.4.0): Crash recovery, progressive chunk upload for long sessions, battery efficiency (pause idle work when the tab is hidden).
+- **Handwriting notes** (v5.16.0): Apple Pencil drawing canvas, uploaded as a document.
+- **Session merge** (v5.17.0): Combine fragmented recordings into one session.
+- **Failsafe recording + flagged transcript words** (v5.16.0): 3-hour forgot-to-stop prompt; click-to-flag incorrect transcript words during recording for post-edit.
+- **Session organization** (v5.19.0): Search, sort, and course grouping in the recordings sidebar.
+
+**Technical Notes:** See the full version table below for the complete, version-by-version breakdown of everything in this window, including bugfixes not called out above.
 
 ---
 
@@ -451,3 +466,42 @@ Before marking a phase complete:
 | 4.26.5 | Apr 2026 | Render TOS and Privacy Policy as formatted markdown |
 | 4.26.6 | Apr 2026 | Add table rendering to legal docs, update contact email |
 | 4.27.0 | Apr 2026 | Exam Study Room — multi-session exam prep with Session Conductor AI |
+| 4.27.1 | Apr 2026 | Shared markdown renderer + doc sync for v4.25.2–v4.27.0 features |
+| 4.28.0 | Apr 2026 | Timezone awareness — user setting, study stats fix, AI time context |
+| 4.28.1-3 | Apr 2026 | Exam simulation question count, dark-theme button contrast, per-user question scoping fixes |
+| 4.29.0 | Apr 2026 | Document/image upload with AI text extraction |
+| 4.29.1-3 | Apr 2026 | Document parsing fixes — URL sources, markdown rendering, base64 encoding |
+| 4.30.0 | Apr 2026 | `documentText` schema field, parsing fixes, full TypeScript error cleanup |
+| 4.30.1-3 | Apr 2026 | Image upload JPEG conversion, OOM fix (URL sources over base64), markdown heading rendering |
+| 4.31.0 | Apr 2026 | Exam room editing + session viewing for members |
+| 5.0.0 | Apr 2026 | Crash recovery + full mobile responsiveness |
+| 5.0.1-8 | Apr 2026 | Exam brain context fixes — Nugget chat wiring, countdown logic, markdown renderer, centralized Anthropic API calls, Sonnet model ID fix |
+| 5.1.0 | Apr 2026 | Collect and edit display name — replace "Student" default |
+| 5.2.0 | Apr 2026 | Audit cleanup — remove dead endpoint, wire flashcard spaced repetition |
+| 5.2.1 | Apr 2026 | Surface audio save + recovery errors via toasts |
+| 5.3.0 | Apr 2026 | Easter eggs ported from v2 + Nyan Cat themes |
+| 5.3.1-3 | Apr 2026 | Nyan theme gating, Clerk telemetry CSP fix, Cat Party sprite rain |
+| 5.4.0 | Apr 2026 | Progressive chunk upload — fix silent audio save failures on long sessions |
+| 5.4.1-3 | Apr–May 2026 | Transcript scrub/render fixes, battery efficiency (pause idle work when tab hidden) |
+| 5.5.0 | May 2026 | Detect Speakers button — post-recording diarization |
+| 5.5.1-2 | May 2026 | Sidebar scroll fix, iPad multi-window audio interruption survival |
+| 5.7.0 | May 2026 | StudyQuest game — Excalibur engine + explorable town |
+| 5.8.0 | May 2026 | StudyQuest Phase 2 — procgen dungeon + minimap |
+| 5.9.0 | May 2026 | StudyQuest Phase 3 — turn-based combat |
+| 5.9.1 | May 2026 | Battle action menu + question modal moved to React overlay |
+| 5.10.0 | May 2026 | Cat evolution tiers — visual milestones at L5/L10/L20 |
+| 5.11.0 | May 2026 | StudyQuest inventory + equipment foundation |
+| 5.12.0 | May 2026 | StudyQuest inventory UI — equip/unequip from a Dialog panel |
+| 5.13.0 | May 2026 | Healing potions wired into battle as the Item action |
+| 5.14.0 | May 2026 | Battle drops — items roll into your bag on victory |
+| 5.15.0 | May 2026 | StudyQuest shop — spend coins on gear and potions |
+| 5.16.0 | May 2026 | Failsafe recording, flagged transcript words, handwriting notes (Apple Pencil), ADHDesigns brand theme for Nugget |
+| 5.17.0 | May 2026 | Session merge — combine fragmented recordings into one |
+| 5.17.1-2 | May 2026 | Course field as dropdown, remove defunct Canvas browser extension import |
+| 5.18.0 | May 2026 | ScribeCat MCP server — API key management + session endpoints |
+| 5.18.1-3 | May 2026 | MCP setup instructions in Settings, orange cat variant, merge-modal overflow fix |
+| 5.19.0 | May 2026 | Session organization — search, sort, and course grouping in sidebar |
+| 5.20.0 | Aug 2026 | Migrate file storage from Convex to Cloudflare R2 |
+| 5.20.1 | Aug 2026 | Fix CSP blocking R2 uploads and playback |
+| 5.20.2 | Aug 2026 | Replace alert() and strip debug logs from Generate Notes flow |
+| 5.20.3 | Aug 2026 | Fix pre-commit hook not executable — lint-staged was silently skipped |
