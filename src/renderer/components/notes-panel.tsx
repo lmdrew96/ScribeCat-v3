@@ -33,6 +33,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { toast } from 'sonner';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -209,21 +210,13 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
   }, [editor, session]);
 
   const handleGenerateNotes = async () => {
-    console.log('=== Generate Notes Clicked ===');
-    console.log('sessionId:', sessionId);
-    console.log('session:', session);
-    console.log('session?.transcript:', session?.transcript);
-    console.log('transcript length:', session?.transcript?.length);
-
     if (!sessionId) {
-      console.error('No sessionId found');
-      alert('No recording session found. Please start a recording first.');
+      toast.error('No recording session found. Please start a recording first.');
       return;
     }
 
     if (!session) {
-      console.error('No session object found');
-      alert('Session not loaded yet. Please wait a moment and try again.');
+      toast.error('Session not loaded yet. Please wait a moment and try again.');
       return;
     }
 
@@ -231,18 +224,15 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
     const sourceText = session.transcript?.trim() || session.documentText?.trim();
 
     if (!sourceText || sourceText.length === 0) {
-      console.error('No transcript or document text available');
-      alert(
+      toast.error(
         'No transcript or uploaded document text available. Record audio or upload a document first.',
       );
       return;
     }
 
-    console.log('Starting AI generation with source text:', sourceText.substring(0, 100));
     setIsGenerating(true);
 
     try {
-      console.log('Calling generateNotesAction...');
       const data = await generateNotesAction({
         transcript: sourceText,
         transcriptSegments: session.transcript ? session.transcriptSegments : undefined,
@@ -250,17 +240,13 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
         lectureType: session.lectureType,
         existingNotes: editor?.getText() || undefined,
       });
-      console.log('Response data:', data);
 
       if (data.success && data.notes && editor) {
         // Convert markdown to TipTap JSON (with citation data if available)
-        console.log('Raw markdown notes:', data.notes);
         const tiptapContent = markdownToTipTap(data.notes, data.citations);
-        console.log('Converted TipTap content:', JSON.stringify(tiptapContent, null, 2));
 
         // Append to existing content
         const currentContent = editor.getJSON();
-        console.log('Current editor content:', JSON.stringify(currentContent, null, 2));
 
         const newContent = {
           ...currentContent,
@@ -274,21 +260,16 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
           ],
         };
 
-        console.log('New content to set:', JSON.stringify(newContent, null, 2));
-
         editor.commands.setContent(newContent);
         setIsEmpty(editor.isEmpty);
-        console.log('Notes generated and inserted successfully');
 
         // Scroll to the end
         editor.commands.focus('end');
       } else {
-        console.warn('Generation succeeded but data was invalid:', data);
-        alert('Received invalid response from AI. Please try again.');
+        toast.error('Received invalid response from AI. Please try again.');
       }
     } catch (error) {
-      console.error('Failed to generate notes:', error);
-      alert(
+      toast.error(
         `Failed to generate notes: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     } finally {
