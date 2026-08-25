@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { useStudySettings } from '@/hooks/use-productivity';
 import { Mic, PawPrint, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 const STEPS = [
   {
@@ -31,16 +33,24 @@ const STEPS = [
 
 export function FirstRunOnboarding() {
   const { settings, updateSettings } = useStudySettings();
+  // Closes the dialog immediately on click — don't make the user wait on the
+  // Convex round-trip. settings.onboardingDismissedAt is the source of truth
+  // for future sessions; this is just for instant feedback in this one.
+  const [dismissedLocally, setDismissedLocally] = useState(false);
 
   // Only show once the user has cleared the TOS gate, and only if they haven't dismissed this yet.
   const tosAccepted = Boolean(settings && 'tosAcceptedAt' in settings && settings.tosAcceptedAt);
-  const dismissed = Boolean(
+  const dismissedRemotely = Boolean(
     settings && 'onboardingDismissedAt' in settings && settings.onboardingDismissedAt,
   );
-  const open = tosAccepted && !dismissed;
+  const open = tosAccepted && !dismissedRemotely && !dismissedLocally;
 
-  const handleDismiss = async () => {
-    await updateSettings({ onboardingDismissedAt: Date.now() });
+  const handleDismiss = () => {
+    setDismissedLocally(true);
+    updateSettings({ onboardingDismissedAt: Date.now() }).catch((err) => {
+      console.error('Failed to persist onboarding dismissal:', err);
+      toast.error("Couldn't save that — you might see this again next time.");
+    });
   };
 
   if (!open) return null;
