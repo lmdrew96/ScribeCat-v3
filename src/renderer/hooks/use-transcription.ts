@@ -277,6 +277,70 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   }, [clearReconnectTimer]);
 
   /**
+   * Tear down the streaming pipeline: reconnect state, audio graph, context,
+   * and socket. Shared by stop(), the failed-start path, and unmount so a
+   * half-built pipeline can never leave an AssemblyAI session open.
+   *
+   * `stopTracks` is false when the recorder still owns the mic stream — a
+   * failed transcription start must not kill an otherwise healthy recording.
+   * Returns the AudioContext close promise so callers can await it.
+   */
+  const teardownPipeline = useCallback(
+    ({ stopTracks }: { stopTracks: boolean }): Promise<void> => {
+      shouldStreamRef.current = false;
+      isConnectedRef.current = false;
+      clearReconnectTimer();
+      reconnectAttemptsRef.current = 0;
+
+      releaseAudioKeepaliveRef.current?.();
+      releaseAudioKeepaliveRef.current = null;
+
+      for (const node of [sourceNodeRef, workletNodeRef, processorRef]) {
+        try {
+          node.current?.disconnect();
+        } catch {
+          // already disconnected
+        }
+        node.current = null;
+      }
+
+      const closing =
+        audioContextRef.current?.close().catch(() => {
+          // already closed
+        }) ?? Promise.resolve();
+      audioContextRef.current = null;
+
+      if (stopTracks && mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop();
+        }
+        mediaStreamRef.current = null;
+      }
+
+      const ws = wsRef.current;
+      if (ws) {
+        // Detach first — onclose must not schedule a reconnect or touch state
+        // for a pipeline we are deliberately dismantling.
+        ws.onclose = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onopen = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          try {
+            ws.close();
+          } catch {
+            // already closing
+          }
+        }
+        wsRef.current = null;
+      }
+
+      return closing;
+    },
+    [clearReconnectTimer],
+  );
+
+  /**
    * Start transcription
    */
   const start = useCallback(
@@ -382,15 +446,19 @@ export function useTranscription(options?: UseTranscriptionOptions) {
           console.log(`ScriptProcessorNode fallback — context rate: ${nativeRate} Hz → 16000 Hz`);
         }
       } catch (error) {
-        // Nothing is reliably streaming — make sure a half-built pipeline
-        // can't trigger the reconnect path and burn session tokens.
-        shouldStreamRef.current = false;
+        // Nothing is reliably streaming. Dismantle whatever got built — an
+        // opened socket here would otherwise hold an unused AssemblyAI
+        // session until the user stops recording. The mic stream belongs to
+        // the recorder, which is still using it, so leave the tracks running.
+        teardownPipeline({ stopTracks: false });
+        setIsConnected(false);
+        setIsReconnecting(false);
         console.error('Error starting transcription:', error);
         setError((error as Error).message);
         optionsRef.current?.onError?.(error as Error);
       }
     },
-    [openSocket],
+    [openSocket, teardownPipeline],
   );
 
   /**
@@ -398,76 +466,14 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   const stop = useCallback(async () => {
     try {
-      // Clear the streaming intent first so the socket's onclose treats this
-      // as a deliberate teardown rather than a drop worth reconnecting.
-      shouldStreamRef.current = false;
-      isConnectedRef.current = false;
-      clearReconnectTimer();
-      reconnectAttemptsRef.current = 0;
-      setIsReconnecting(false);
-
-      releaseAudioKeepaliveRef.current?.();
-      releaseAudioKeepaliveRef.current = null;
-
-      if (sourceNodeRef.current) {
-        try {
-          sourceNodeRef.current.disconnect();
-        } catch {
-          // already disconnected
-        }
-        sourceNodeRef.current = null;
-      }
-
-      if (workletNodeRef.current) {
-        try {
-          workletNodeRef.current.disconnect();
-        } catch {
-          // already disconnected
-        }
-        workletNodeRef.current = null;
-      }
-
-      if (processorRef.current) {
-        try {
-          processorRef.current.disconnect();
-        } catch {
-          // already disconnected
-        }
-        processorRef.current = null;
-      }
-
-      if (audioContextRef.current) {
-        try {
-          await audioContextRef.current.close();
-        } catch {
-          // already closed
-        }
-        audioContextRef.current = null;
-      }
-
-      if (mediaStreamRef.current) {
-        for (const track of mediaStreamRef.current.getTracks()) {
-          track.stop();
-        }
-        mediaStreamRef.current = null;
-      }
-
-      if (wsRef.current) {
-        if (
-          wsRef.current.readyState === WebSocket.OPEN ||
-          wsRef.current.readyState === WebSocket.CONNECTING
-        ) {
-          wsRef.current.close();
-        }
-        wsRef.current = null;
-      }
-
+      await teardownPipeline({ stopTracks: true });
       setIsConnected(false);
+      setIsReconnecting(false);
       console.log('🧹 Transcription cleanup complete');
     } catch (error) {
       console.error('Error stopping transcription:', error);
     }
-  }, [clearReconnectTimer]);
+  }, [teardownPipeline]);
 
   /**
    * Reset segments
@@ -492,72 +498,16 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   useEffect(() => {
     return () => {
-      shouldStreamRef.current = false;
-      if (reconnectTimerRef.current !== null) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
-      releaseAudioKeepaliveRef.current?.();
-      releaseAudioKeepaliveRef.current = null;
-
       if (isConnectedRef.current || wsRef.current || audioContextRef.current) {
-        isConnectedRef.current = false;
-
-        if (sourceNodeRef.current) {
-          try {
-            sourceNodeRef.current.disconnect();
-          } catch {
-            /* ignore */
-          }
-          sourceNodeRef.current = null;
-        }
-
-        if (workletNodeRef.current) {
-          try {
-            workletNodeRef.current.disconnect();
-          } catch {
-            /* ignore */
-          }
-          workletNodeRef.current = null;
-        }
-
-        if (processorRef.current) {
-          try {
-            processorRef.current.disconnect();
-          } catch {
-            /* ignore */
-          }
-          processorRef.current = null;
-        }
-
-        if (audioContextRef.current) {
-          audioContextRef.current.close().catch(() => {
-            /* ignore */
-          });
-          audioContextRef.current = null;
-        }
-
-        if (mediaStreamRef.current) {
-          for (const track of mediaStreamRef.current.getTracks()) {
-            track.stop();
-          }
-          mediaStreamRef.current = null;
-        }
-
-        if (wsRef.current) {
-          if (
-            wsRef.current.readyState === WebSocket.OPEN ||
-            wsRef.current.readyState === WebSocket.CONNECTING
-          ) {
-            wsRef.current.close();
-          }
-          wsRef.current = null;
-        }
-
+        teardownPipeline({ stopTracks: true });
         console.log('🧹 Transcription unmount cleanup complete');
+      } else {
+        // Nothing was built, but a queued reconnect or keepalive listener may
+        // still be outstanding.
+        teardownPipeline({ stopTracks: false });
       }
     };
-  }, []);
+  }, [teardownPipeline]);
 
   return {
     isConnected,
