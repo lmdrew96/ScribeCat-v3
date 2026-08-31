@@ -154,7 +154,6 @@ export function LandingPage() {
             >
               Get started free →
             </button>
-            <span className="text-muted-foreground text-sm">@udel.edu accounts only</span>
           </div>
         </div>
       </section>

@@ -14,7 +14,7 @@ import { useState } from 'react';
 import privacyContent from '../../../docs/PRIVACY_POLICY.md?raw';
 import tosContent from '../../../docs/TERMS_OF_SERVICE.md?raw';
 
-const CURRENT_TOS_VERSION = '1.0';
+const CURRENT_TOS_VERSION = '1.1';
 
 export function TosAcceptanceModal() {
   const { settings, updateSettings } = useStudySettings();

@@ -51,7 +51,7 @@
 
 - [x] **Infrastructure**
   - [x] Convex backend setup
-  - [x] Authentication (Clerk, restricted to @udel.edu)
+  - [x] Authentication (Clerk, open signup — the @udel.edu restriction was lifted in v5.24.0)
   - [x] Theme system (6 themes via CSS vars + glassmorphism)
   - [x] Resizable panels (Notes / Recording)
 

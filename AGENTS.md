@@ -52,7 +52,7 @@ This project is built in phases. At the end of each phase, the app must be **ful
 | **Styling** | Tailwind CSS 4 + shadcn/ui | CSS variables for theming, glassmorphism |
 | **Build** | Vite 7 | Dev server on port 5173 |
 | **State/Backend** | Convex 1.31+ | Realtime-first, TypeScript-native |
-| **Auth** | Clerk + Convex | @udel.edu restriction, JWT integration |
+| **Auth** | Clerk + Convex | Open signup (any email), JWT integration |
 | **Rich Text** | TipTap 3.14 | 15+ extensions, ProseMirror-based |
 | **Diagrams** | Excalidraw 0.18 | Lazy-loaded React component |
 | **Routing** | TanStack Router 1.x | URL-based routing with type-safe params |
@@ -417,9 +417,14 @@ Authentication uses **Clerk** with the **ConvexProviderWithClerk** integration.
 ```typescript
 // src/renderer/App.tsx — auth gates
 <AuthLoading>...</AuthLoading>
-<Unauthenticated><SignIn /></Unauthenticated>
-<Authenticated><AuthenticatedApp /></Authenticated>
+<Unauthenticated><LandingPage /></Unauthenticated>
+<Authenticated>
+  <SessionProvider><RouterProvider router={router} /></SessionProvider>
+</Authenticated>
 ```
+
+Signup is open to any email address. There is no domain allowlist in the app —
+if signups need restricting, that is configured in the Clerk dashboard.
 
 User ID comes from Clerk's JWT, validated by Convex via `auth.config.ts`.
 

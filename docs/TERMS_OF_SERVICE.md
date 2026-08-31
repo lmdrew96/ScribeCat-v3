@@ -1,7 +1,7 @@
 # ScribeCat — Terms of Service
 
-**Effective Date:** April 8, 2026
-**Version:** 1.0
+**Effective Date:** August 31, 2026
+**Version:** 1.1
 
 ---
 
@@ -52,9 +52,11 @@ By using these features, you consent to your data being processed by these servi
 
 You retain full ownership of all recordings, notes, and content you create using ScribeCat. ADHDesigns does not claim any rights to your content. We access your content only as necessary to provide the Service.
 
-## 8. Account Restrictions
+## 8. Account Eligibility
 
-ScribeCat is currently restricted to users with a valid **@udel.edu** email address. Access is provided through Clerk authentication.
+ScribeCat is open to anyone with a valid email address. Accounts are created and authenticated through Clerk.
+
+You are responsible for keeping your account credentials secure and for all activity that occurs under your account. We may suspend or terminate accounts that violate these Terms.
 
 ## 9. Disclaimer of Warranties
 

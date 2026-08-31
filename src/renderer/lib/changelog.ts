@@ -33,6 +33,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.24.0',
+    date: '2026-08-31',
+    title: 'ScribeCat is open to everyone',
+    changes: [
+      {
+        kind: 'improved',
+        text: 'Sign-up is no longer limited to @udel.edu addresses — anyone can make an account with any email.',
+      },
+      {
+        kind: 'improved',
+        text: 'Updated the Terms of Service to match. You will be asked to accept the new version once.',
+      },
+    ],
+  },
+  {
     version: '5.23.0',
     date: '2026-08-31',
     title: "What's New, in the app",
