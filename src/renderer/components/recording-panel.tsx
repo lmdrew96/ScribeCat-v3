@@ -31,6 +31,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
   const {
     isRecording,
     isPaused,
+    isTranscriptionReconnecting,
     audioLevel,
     recordingTime,
     devices,
@@ -101,6 +102,15 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
       setIsProcessingDrawing(false);
     }
   };
+
+  // Keep the transcription-reconnect state visible for as long as it lasts —
+  // the toast that announces it is gone in a few seconds.
+  let recordingStatusLabel = 'Recording...';
+  if (isPaused) {
+    recordingStatusLabel = 'Paused';
+  } else if (isTranscriptionReconnecting) {
+    recordingStatusLabel = 'Recording — reconnecting transcript...';
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -189,9 +199,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
             <div className="font-mono text-lg font-medium text-foreground">
               {formatTime(recordingTime)}
             </div>
-            <div className="text-xs text-muted-foreground truncate">
-              {isPaused ? 'Paused' : 'Recording...'}
-            </div>
+            <div className="text-xs text-muted-foreground truncate">{recordingStatusLabel}</div>
           </div>
         )}
 

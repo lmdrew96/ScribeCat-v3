@@ -64,6 +64,8 @@ interface RecordingContextValue {
   // Transcription
   segments: TranscriptSegment[];
   transcriptionError: string | null;
+  /** True while a dropped transcription session is being re-established. */
+  isTranscriptionReconnecting: boolean;
 
   // Nugget notes
   nuggetNotes: UseNuggetNotesReturn;
@@ -194,6 +196,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     getStream,
     getUnuploadedChunks,
     markChunksUploaded,
+    getElapsedSeconds,
   } = useAudioRecorder({
     onChunkAvailable: (chunk, index) => {
       // Fire-and-forget: save chunk to IndexedDB for crash recovery.
@@ -216,6 +219,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   const {
     error: transcriptionError,
+    isReconnecting: isTranscriptionReconnecting,
     segments,
     start: startTranscription,
     stop: stopTranscription,
@@ -226,20 +230,54 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   // Break reminder toasts during recording
   useBreakReminder(isRecording);
 
-  // Surface unrecoverable transcription failures during an active recording.
-  // Most likely trigger: iPadOS multi-window audio session interruption
-  // killed the AssemblyAI WebSocket. We can't auto-recover the v3 session,
-  // so warn the user immediately so they can stop + restart.
+  // Keep the user informed while the transcription socket recovers. A dropped
+  // AssemblyAI session is now reconnected automatically (page-visibility
+  // interruptions on Safari/iPadOS are the usual cause), so this is a
+  // transient status rather than the end of the transcript.
+  const wasReconnectingRef = useRef(false);
+  useEffect(() => {
+    if (!isRecording) {
+      wasReconnectingRef.current = false;
+      return;
+    }
+
+    if (isTranscriptionReconnecting && !wasReconnectingRef.current) {
+      wasReconnectingRef.current = true;
+      toast.warning('Reconnecting transcription', {
+        description:
+          'Lost the live transcript connection — reconnecting. Audio is still recording.',
+        duration: 5000,
+      });
+      return;
+    }
+
+    if (!isTranscriptionReconnecting && wasReconnectingRef.current) {
+      wasReconnectingRef.current = false;
+      // A failed recovery surfaces through transcriptionError below instead.
+      if (!transcriptionError) {
+        toast.success('Transcription resumed', { duration: 4000 });
+      }
+    }
+  }, [isRecording, isTranscriptionReconnecting, transcriptionError]);
+
+  // Surface transcription failures we could not recover from during an active
+  // recording, so the user knows the live transcript stopped even though the
+  // audio recording itself is still running.
   const lastSurfacedTranscriptionErrorRef = useRef<string | null>(null);
   useEffect(() => {
     if (!isRecording) {
       lastSurfacedTranscriptionErrorRef.current = null;
       return;
     }
-    if (!transcriptionError) return;
+    if (!transcriptionError) {
+      // Cleared by a successful reconnect — allow the same message to surface
+      // again if we later drop for good.
+      lastSurfacedTranscriptionErrorRef.current = null;
+      return;
+    }
     if (transcriptionError === lastSurfacedTranscriptionErrorRef.current) return;
     lastSurfacedTranscriptionErrorRef.current = transcriptionError;
-    toast.error('Recording interrupted', {
+    toast.error('Transcription stopped', {
       description: transcriptionError,
       duration: 15000,
     });
@@ -266,6 +304,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   // both new segments AND scrubVersion bumps, so a fresh scrub flushes to
   // the DB immediately. Replaces the prior race where this effect's raw
   // write would clobber a separate scrub-driven write within milliseconds.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scrubVersion is an intentional re-run trigger — the scrub result itself lives in refs
   useEffect(() => {
     const saveTranscript = async () => {
       if (!currentSessionIdRef.current) return;
@@ -484,7 +523,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   const handleStop = useCallback(async () => {
     const capturedSessionId = currentSessionIdRef.current;
-    const capturedRecordingTime = recordingTime;
+    // Read the clock directly rather than the ticked state — Safari throttles
+    // the tick for occluded windows, so the state can lag the true duration.
+    const capturedRecordingTime = getElapsedSeconds();
 
     setIsSavingAudio(true);
 
@@ -645,7 +686,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     appendAudioChunk,
     nuggetNotes,
     updateSession,
-    recordingTime,
+    getElapsedSeconds,
     segments,
     logStudyTime,
     setSessionTitle,
@@ -774,6 +815,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     courses,
     segments,
     transcriptionError,
+    isTranscriptionReconnecting,
     nuggetNotes,
     handleRecord,
     handleStop,

@@ -1,3 +1,4 @@
+import { keepAudioContextAwake } from '@/lib/audio-context-keepalive';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface TranscriptSegment {
@@ -12,8 +13,16 @@ export interface UseTranscriptionOptions {
   autoStart?: boolean;
 }
 
+/**
+ * Backoff schedule for re-establishing a dropped AssemblyAI session. The
+ * length of this array is also the retry cap before we give up and tell the
+ * user.
+ */
+const RECONNECT_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000];
+
 export function useTranscription(options?: UseTranscriptionOptions) {
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
 
@@ -24,9 +33,248 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const startTimeRef = useRef<number>(0);
+  const releaseAudioKeepaliveRef = useRef<(() => void) | null>(null);
 
   // Track connection state with ref to avoid stale closure in cleanup
   const isConnectedRef = useRef(false);
+
+  // True from start() until stop() — "the user still wants a live transcript".
+  // Distinguishes a deliberate teardown from a socket we lost underneath us.
+  const shouldStreamRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  // True while a connect attempt is in flight (the token fetch is async, so
+  // two overlapping attempts would leave an orphaned socket behind).
+  const isConnectingRef = useRef(false);
+  // Set below — breaks the connect <-> reconnect callback cycle.
+  const scheduleReconnectRef = useRef<() => void>(() => {});
+
+  // Stable ref for options so socket handlers never hold stale callbacks
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
+  const clearReconnectTimer = useCallback(() => {
+    if (reconnectTimerRef.current !== null) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * True while the captured mic stream still has a live track. If the track
+   * has ended (device unplugged, permission revoked) a new AssemblyAI session
+   * would just idle out again, so we stop retrying.
+   */
+  const hasLiveAudioTrack = useCallback(() => {
+    const stream = mediaStreamRef.current;
+    if (!stream) return false;
+    return stream.getAudioTracks().some((track) => track.readyState === 'live');
+  }, []);
+
+  /**
+   * Open an AssemblyAI v3 streaming session and point wsRef at it.
+   *
+   * Used for both the initial connect and every reconnect: the audio graph
+   * sends through `wsRef.current`, so swapping the socket is all it takes to
+   * resume streaming into a fresh session. Accumulated segments and the
+   * recording-relative timestamp origin are deliberately left untouched.
+   */
+  const openSocketInner = useCallback(async () => {
+    // Retire any socket still hanging around so we never leave one orphaned.
+    const stale = wsRef.current;
+    if (stale && stale.readyState !== WebSocket.CLOSED) {
+      stale.onclose = null;
+      stale.onmessage = null;
+      stale.onerror = null;
+      try {
+        stale.close();
+      } catch {
+        /* already closing */
+      }
+    }
+
+    // Get AssemblyAI streaming token from Convex backend
+    const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+    const httpBase = convexUrl.replace('.cloud', '.site');
+    const tokenRes = await fetch(`${httpBase}/assemblyai/token`);
+    const tokenResponse = (await tokenRes.json()) as {
+      success: boolean;
+      token?: string;
+      error?: string;
+    };
+
+    if (!tokenResponse.success || !tokenResponse.token) {
+      throw new Error(tokenResponse.error || 'Failed to get AssemblyAI token');
+    }
+
+    // Build WebSocket URL for v3 API with token as query parameter
+    const params = new URLSearchParams({
+      sample_rate: '16000',
+      format_turns: 'true',
+      token: tokenResponse.token,
+    });
+    const wsUrl = `wss://streaming.assemblyai.com/v3/ws?${params.toString()}`;
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('AssemblyAI v3 connection opened');
+      isConnectedRef.current = true;
+      reconnectAttemptsRef.current = 0;
+      setIsConnected(true);
+      setIsReconnecting(false);
+      setError(null);
+    };
+
+    ws.onerror = (event) => {
+      // Don't surface this directly — onclose follows and drives recovery.
+      console.error('AssemblyAI WebSocket error:', event);
+    };
+
+    ws.onclose = (event) => {
+      console.log('AssemblyAI connection closed:', event.code, event.reason);
+      isConnectedRef.current = false;
+      setIsConnected(false);
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+      }
+
+      // Deliberate teardown from stop()/unmount — nothing to recover.
+      if (!shouldStreamRef.current) return;
+
+      // The socket died while we were still recording. The usual cause is a
+      // page-visibility interruption (an occluded Safari window, iPadOS Split
+      // View) suspending the AudioContext until AssemblyAI's idle timeout
+      // closes the session. v3 sessions can't be continued, but a fresh
+      // session can — reconnect and keep appending to the same transcript.
+      scheduleReconnectRef.current();
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+
+        if (message.type === 'Begin') {
+          console.log('Session started:', message.id);
+        } else if (message.type === 'Turn') {
+          const segment: TranscriptSegment = {
+            text: message.transcript || '',
+            timestamp: Date.now() - startTimeRef.current,
+            isFinal: message.end_of_turn === true,
+          };
+
+          setSegments((prev) => {
+            // Keep all finals; always replace the single pending partial
+            const finals = prev.filter((s) => s.isFinal);
+            return [...finals, segment];
+          });
+
+          optionsRef.current?.onSegment?.(segment);
+        } else if (message.type === 'Termination') {
+          console.log('Session terminated:', message);
+        } else if (message.type === 'Error') {
+          console.error('AssemblyAI error:', message.error);
+          setError(message.error);
+          optionsRef.current?.onError?.(new Error(message.error));
+        }
+      } catch (err) {
+        console.error('Error parsing message:', err);
+      }
+    };
+  }, []);
+
+  /**
+   * Open a session, flagging the attempt so overlapping connects can't race.
+   */
+  const openSocket = useCallback(async () => {
+    isConnectingRef.current = true;
+    try {
+      await openSocketInner();
+    } finally {
+      isConnectingRef.current = false;
+    }
+  }, [openSocketInner]);
+
+  /**
+   * Give up on reconnecting and tell the caller. The audio recording itself
+   * is unaffected — only the live transcript stops here.
+   */
+  const failReconnect = useCallback(
+    (reason: string) => {
+      clearReconnectTimer();
+      reconnectAttemptsRef.current = 0;
+      setIsReconnecting(false);
+      setError(reason);
+      optionsRef.current?.onError?.(new Error(reason));
+    },
+    [clearReconnectTimer],
+  );
+
+  const scheduleReconnect = useCallback(() => {
+    if (!shouldStreamRef.current) return;
+    if (reconnectTimerRef.current !== null) return; // one attempt already queued
+    if (isConnectingRef.current) return; // one attempt already in flight
+
+    if (!hasLiveAudioTrack()) {
+      failReconnect(
+        'Microphone stopped delivering audio, so transcription ended. Stop the recording and start a new one to resume.',
+      );
+      return;
+    }
+
+    const attempt = reconnectAttemptsRef.current;
+    if (attempt >= RECONNECT_DELAYS_MS.length) {
+      failReconnect(
+        'Transcription disconnected and could not reconnect. Your audio is still being recorded — stop and start a new recording to resume live transcription.',
+      );
+      return;
+    }
+
+    reconnectAttemptsRef.current = attempt + 1;
+    setIsReconnecting(true);
+
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      if (!shouldStreamRef.current) return;
+
+      // A suspended context would starve the new session exactly like the old
+      // one, so nudge it awake before spending a token.
+      audioContextRef.current?.resume().catch(() => {
+        /* rejected while hidden — the keepalive retries on visibility */
+      });
+
+      openSocket().catch((err) => {
+        console.warn('Transcription reconnect failed:', err);
+        scheduleReconnectRef.current();
+      });
+    }, RECONNECT_DELAYS_MS[attempt]);
+  }, [failReconnect, hasLiveAudioTrack, openSocket]);
+
+  scheduleReconnectRef.current = scheduleReconnect;
+
+  /**
+   * Reconnect immediately when the user comes back to the tab. WebKit
+   * suspends the AudioContext for a hidden page, so any attempt made while
+   * away was likely doomed — reset the backoff and try again now that audio
+   * can actually flow.
+   */
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) return;
+      if (!shouldStreamRef.current) return;
+      if (isConnectingRef.current) return;
+      const state = wsRef.current?.readyState;
+      if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) return;
+
+      clearReconnectTimer();
+      reconnectAttemptsRef.current = 0;
+      scheduleReconnectRef.current();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [clearReconnectTimer]);
 
   /**
    * Start transcription
@@ -34,103 +282,13 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const start = useCallback(
     async (stream: MediaStream) => {
       try {
-        // Get AssemblyAI streaming token from Convex backend
-        const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
-        const httpBase = convexUrl.replace('.cloud', '.site');
-        const tokenRes = await fetch(`${httpBase}/assemblyai/token`);
-        const tokenResponse = (await tokenRes.json()) as {
-          success: boolean;
-          token?: string;
-          error?: string;
-        };
-
-        if (!tokenResponse.success || !tokenResponse.token) {
-          throw new Error(tokenResponse.error || 'Failed to get AssemblyAI token');
-        }
-
-        const token = tokenResponse.token;
-
-        // Build WebSocket URL for v3 API with token as query parameter
-        const params = new URLSearchParams({
-          sample_rate: '16000',
-          format_turns: 'true',
-          token: token,
-        });
-        const wsUrl = `wss://streaming.assemblyai.com/v3/ws?${params.toString()}`;
-
-        // Create WebSocket connection
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
         mediaStreamRef.current = stream;
         startTimeRef.current = Date.now();
+        shouldStreamRef.current = true;
+        reconnectAttemptsRef.current = 0;
+        setIsReconnecting(false);
 
-        // Set up WebSocket event handlers
-        ws.onopen = () => {
-          console.log('AssemblyAI v3 connection opened');
-          isConnectedRef.current = true;
-          setIsConnected(true);
-          setError(null);
-        };
-
-        ws.onerror = (event) => {
-          console.error('AssemblyAI WebSocket error:', event);
-          const errorMessage = 'WebSocket connection error';
-          setError(errorMessage);
-          options?.onError?.(new Error(errorMessage));
-        };
-
-        ws.onclose = (event) => {
-          console.log('AssemblyAI connection closed:', event.code, event.reason);
-          const wasActivelyTranscribing = isConnectedRef.current;
-          isConnectedRef.current = false;
-          setIsConnected(false);
-
-          // If the WS died while we were still actively transcribing, the
-          // session is unrecoverable — AssemblyAI v3 sessions can't be
-          // continued. Surface an error so the UI can prompt the user to
-          // stop and start over instead of trusting a dead pipeline. The
-          // most common trigger is an iPadOS audio session interruption
-          // (Split View / Stage Manager) starving the WS of audio frames
-          // until AssemblyAI's idle timeout closes the session.
-          if (wasActivelyTranscribing && mediaStreamRef.current) {
-            const errorMessage =
-              'Recording interrupted — transcription stopped. Stop and start a new recording to continue capturing.';
-            setError(errorMessage);
-            options?.onError?.(new Error(errorMessage));
-          }
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-
-            if (message.type === 'Begin') {
-              console.log('Session started:', message.id);
-            } else if (message.type === 'Turn') {
-              const segment: TranscriptSegment = {
-                text: message.transcript || '',
-                timestamp: Date.now() - startTimeRef.current,
-                isFinal: message.end_of_turn === true,
-              };
-
-              setSegments((prev) => {
-                // Keep all finals; always replace the single pending partial
-                const finals = prev.filter((s) => s.isFinal);
-                return [...finals, segment];
-              });
-
-              options?.onSegment?.(segment);
-            } else if (message.type === 'Termination') {
-              console.log('Session terminated:', message);
-            } else if (message.type === 'Error') {
-              console.error('AssemblyAI error:', message.error);
-              setError(message.error);
-              options?.onError?.(new Error(message.error));
-            }
-          } catch (err) {
-            console.error('Error parsing message:', err);
-          }
-        };
+        await openSocket();
 
         // Set up audio processing.
         //
@@ -140,20 +298,15 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
 
-        // Auto-resume if iPadOS suspends the context during a multi-window
-        // transition. Without this, the AudioWorklet stops emitting frames
-        // and AssemblyAI silently times out the session.
-        audioContext.addEventListener('statechange', () => {
-          if (
-            audioContext.state === 'suspended' &&
-            isConnectedRef.current &&
-            audioContextRef.current === audioContext
-          ) {
-            audioContext.resume().catch((err) => {
-              console.warn('Failed to resume transcription AudioContext:', err);
-            });
-          }
-        });
+        // Keep the context running across visibility changes. Without this the
+        // AudioWorklet stops emitting frames the moment the window is occluded
+        // and AssemblyAI times the session out.
+        releaseAudioKeepaliveRef.current?.();
+        releaseAudioKeepaliveRef.current = keepAudioContextAwake(
+          audioContext,
+          () => shouldStreamRef.current && audioContextRef.current === audioContext,
+          'transcription',
+        );
 
         const source = audioContext.createMediaStreamSource(stream);
         sourceNodeRef.current = source;
@@ -229,12 +382,15 @@ export function useTranscription(options?: UseTranscriptionOptions) {
           console.log(`ScriptProcessorNode fallback — context rate: ${nativeRate} Hz → 16000 Hz`);
         }
       } catch (error) {
+        // Nothing is reliably streaming — make sure a half-built pipeline
+        // can't trigger the reconnect path and burn session tokens.
+        shouldStreamRef.current = false;
         console.error('Error starting transcription:', error);
         setError((error as Error).message);
-        options?.onError?.(error as Error);
+        optionsRef.current?.onError?.(error as Error);
       }
     },
-    [options],
+    [openSocket],
   );
 
   /**
@@ -242,7 +398,16 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   const stop = useCallback(async () => {
     try {
+      // Clear the streaming intent first so the socket's onclose treats this
+      // as a deliberate teardown rather than a drop worth reconnecting.
+      shouldStreamRef.current = false;
       isConnectedRef.current = false;
+      clearReconnectTimer();
+      reconnectAttemptsRef.current = 0;
+      setIsReconnecting(false);
+
+      releaseAudioKeepaliveRef.current?.();
+      releaseAudioKeepaliveRef.current = null;
 
       if (sourceNodeRef.current) {
         try {
@@ -302,7 +467,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
     } catch (error) {
       console.error('Error stopping transcription:', error);
     }
-  }, []);
+  }, [clearReconnectTimer]);
 
   /**
    * Reset segments
@@ -327,6 +492,14 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    */
   useEffect(() => {
     return () => {
+      shouldStreamRef.current = false;
+      if (reconnectTimerRef.current !== null) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      releaseAudioKeepaliveRef.current?.();
+      releaseAudioKeepaliveRef.current = null;
+
       if (isConnectedRef.current || wsRef.current || audioContextRef.current) {
         isConnectedRef.current = false;
 
@@ -388,6 +561,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
 
   return {
     isConnected,
+    isReconnecting,
     error,
     segments,
     start,

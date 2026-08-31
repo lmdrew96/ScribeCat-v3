@@ -1,3 +1,12 @@
+import { keepAudioContextAwake } from '@/lib/audio-context-keepalive';
+import {
+  type RecordingClock,
+  createRecordingClock,
+  elapsedSeconds,
+  pauseClock,
+  resumeClock,
+  startClock,
+} from '@/lib/recording-clock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface AudioDevice {
@@ -38,9 +47,10 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   const chunkIndexCounterRef = useRef<number>(0);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const startTimeRef = useRef<number>(0);
-  const pausedTimeRef = useRef<number>(0);
+  // Wall-clock bookkeeping for the elapsed-time display. See lib/recording-clock.
+  const clockRef = useRef<RecordingClock>(createRecordingClock());
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const releaseAudioKeepaliveRef = useRef<(() => void) | null>(null);
 
   // Track recording state with ref to avoid stale closure in cleanup
   const isRecordingRef = useRef(false);
@@ -48,6 +58,23 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   // Stable ref for options to avoid re-running effects on every render
   const optionsRef = useRef(options);
   optionsRef.current = options;
+
+  /**
+   * Push the current elapsed time to state. Called on each tick and whenever
+   * the tab becomes visible again, so a throttled timer snaps back to the
+   * true value immediately instead of catching up a second at a time.
+   */
+  const syncRecordingTime = useCallback(() => {
+    setRecordingTime(elapsedSeconds(clockRef.current, Date.now()));
+  }, []);
+
+  /**
+   * Current elapsed seconds straight from the clock, bypassing React state.
+   * Callers that persist a duration (session length, study-time XP) should
+   * use this rather than the `recordingTime` state, which can lag behind by
+   * however long the browser throttled our tick.
+   */
+  const getElapsedSeconds = useCallback(() => elapsedSeconds(clockRef.current, Date.now()), []);
 
   /**
    * Load available audio input devices
@@ -96,6 +123,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
    * Does NOT touch chunksRef — callers may still need it for upload.
    */
   const cleanupAudioGraph = useCallback(() => {
+    releaseAudioKeepaliveRef.current?.();
+    releaseAudioKeepaliveRef.current = null;
+
     if (streamRef.current) {
       for (const track of streamRef.current.getTracks()) {
         track.stop();
@@ -177,20 +207,15 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
 
-      // Auto-resume if iPadOS suspends the context during a multi-window
-      // transition. Without this, the analyser silently freezes after the
-      // user enters Split View / Stage Manager.
-      audioContext.addEventListener('statechange', () => {
-        if (
-          audioContext.state === 'suspended' &&
-          isRecordingRef.current &&
-          audioContextRef.current === audioContext
-        ) {
-          audioContext.resume().catch((err) => {
-            console.warn('Failed to resume visualization AudioContext:', err);
-          });
-        }
-      });
+      // Keep the analyser context alive across visibility changes — an
+      // occluded Safari window or an iPadOS Split View transition otherwise
+      // suspends it and freezes the level meter for the rest of the session.
+      releaseAudioKeepaliveRef.current?.();
+      releaseAudioKeepaliveRef.current = keepAudioContextAwake(
+        audioContext,
+        () => isRecordingRef.current && audioContextRef.current === audioContext,
+        'visualization',
+      );
 
       const source = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
@@ -224,12 +249,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       mediaRecorder.start(1000); // Collect data every second
 
       // Start timer
-      startTimeRef.current = Date.now();
-      pausedTimeRef.current = 0;
-      timerIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
-        setRecordingTime(Math.floor(elapsed / 1000));
-      }, 1000);
+      clockRef.current = startClock(Date.now());
+      setRecordingTime(0);
+      timerIntervalRef.current = setInterval(syncRecordingTime, 1000);
 
       // Start audio level monitoring
       updateAudioLevel();
@@ -241,7 +263,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       console.error('Error starting recording:', error);
       optionsRef.current?.onError?.(error as Error);
     }
-  }, [selectedDeviceId, updateAudioLevel, loadDevices]);
+  }, [selectedDeviceId, updateAudioLevel, loadDevices, syncRecordingTime]);
 
   /**
    * Stop recording. Resolves after `onstop` fires and any final buffered
@@ -297,23 +319,27 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     if (!mediaRecorderRef.current) return;
 
     if (isPaused) {
-      // Resume
+      // Resume — bank the duration of the pause we're ending, then let the
+      // clock run again from the current wall-clock time.
       mediaRecorderRef.current.resume();
-      const pauseDuration = Date.now() - (pausedTimeRef.current || 0);
-      pausedTimeRef.current += pauseDuration;
+      clockRef.current = resumeClock(clockRef.current, Date.now());
+      syncRecordingTime();
       updateAudioLevel();
       setIsPaused(false);
     } else {
-      // Pause
+      // Pause — freeze the clock at this instant so the display holds steady
+      // while the tick keeps running.
       mediaRecorderRef.current.pause();
-      pausedTimeRef.current = Date.now();
+      clockRef.current = pauseClock(clockRef.current, Date.now());
+      syncRecordingTime();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = undefined;
       }
       setAudioLevel(0);
       setIsPaused(true);
     }
-  }, [isPaused, updateAudioLevel]);
+  }, [isPaused, updateAudioLevel, syncRecordingTime]);
 
   /**
    * Reset recording state (timer + in-memory chunk buffer).
@@ -321,8 +347,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
    */
   const reset = useCallback(() => {
     setRecordingTime(0);
-    startTimeRef.current = 0;
-    pausedTimeRef.current = 0;
+    clockRef.current = createRecordingClock();
     chunksRef.current = [];
     chunkIndexCounterRef.current = 0;
   }, []);
@@ -391,13 +416,20 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   }, [loadDevices]);
 
   /**
-   * Restart the audio level rAF loop when the tab becomes visible again,
-   * if we're actively recording (and not paused) and the loop has bailed.
+   * On returning to the tab: snap the timer back to the true elapsed value
+   * (Safari throttles our 1s tick to a crawl while the window is occluded)
+   * and restart the audio level rAF loop if we're actively recording (and
+   * not paused) and the loop has bailed.
    */
   useEffect(() => {
     const handleVisibility = () => {
+      if (document.hidden) return;
+
+      if (isRecordingRef.current) {
+        syncRecordingTime();
+      }
+
       if (
-        !document.hidden &&
         isRecordingRef.current &&
         !isPaused &&
         analyserRef.current &&
@@ -410,13 +442,16 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [isPaused, updateAudioLevel]);
+  }, [isPaused, updateAudioLevel, syncRecordingTime]);
 
   /**
    * Cleanup on unmount
    */
   useEffect(() => {
     return () => {
+      releaseAudioKeepaliveRef.current?.();
+      releaseAudioKeepaliveRef.current = null;
+
       // Use ref to check recording state to avoid stale closure
       if (isRecordingRef.current || mediaRecorderRef.current || audioContextRef.current) {
         isRecordingRef.current = false;
@@ -492,6 +527,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     selectedDeviceId,
     audioLevel,
     recordingTime,
+    getElapsedSeconds,
     startRecording,
     stopRecording,
     togglePause,
