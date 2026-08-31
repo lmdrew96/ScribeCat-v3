@@ -1,12 +1,13 @@
-import { Bug, ExternalLink, FileText, Github, Palette, Shield } from 'lucide-react';
+import { Bug, ChevronRight, ExternalLink, FileText, Github, Palette, Shield } from 'lucide-react';
 import packageJson from '../../../../package.json';
 
 interface AboutTabProps {
   onShowTos: () => void;
   onShowPrivacy: () => void;
+  onShowWhatsNew: () => void;
 }
 
-export function AboutTab({ onShowTos, onShowPrivacy }: AboutTabProps) {
+export function AboutTab({ onShowTos, onShowPrivacy, onShowWhatsNew }: AboutTabProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-4">
@@ -17,7 +18,14 @@ export function AboutTab({ onShowTos, onShowPrivacy }: AboutTabProps) {
         />
         <div>
           <h3 className="text-lg font-semibold text-foreground">ScribeCat</h3>
-          <p className="text-sm text-muted-foreground">v{packageJson.version}</p>
+          <button
+            type="button"
+            className="flex items-center gap-1 text-sm text-accent hover:underline"
+            onClick={onShowWhatsNew}
+          >
+            v{packageJson.version} — see what's new
+            <ChevronRight className="h-3 w-3" />
+          </button>
         </div>
       </div>
 

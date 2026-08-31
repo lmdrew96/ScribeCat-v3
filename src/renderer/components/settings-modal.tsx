@@ -6,15 +6,17 @@ import { AppearanceTab } from '@/components/settings/appearance-tab';
 import { AudioTab } from '@/components/settings/audio-tab';
 import { NotificationsTab } from '@/components/settings/notifications-tab';
 import { StudyTab } from '@/components/settings/study-tab';
+import { WhatsNewTab } from '@/components/settings/whats-new-tab';
 import { type Theme, useTheme } from '@/components/theme-provider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useApiKeys } from '@/hooks/use-api-keys';
+import { readChangelogSeenVersion, useChangelog } from '@/hooks/use-changelog';
 import { useAchievements, useStudySettings, useStudyStats } from '@/hooks/use-productivity';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { getPermissionStatus, requestNotificationPermission } from '@/lib/push-notifications';
 import { cn } from '@/lib/utils';
 import { useClerk, useUser } from '@clerk/clerk-react';
-import { Bell, BookOpen, Info, Mic, Palette, User } from 'lucide-react';
+import { Bell, BookOpen, Info, Mic, Palette, Sparkles, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -26,7 +28,14 @@ interface SettingsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type SettingsCategory = 'appearance' | 'audio' | 'study' | 'notifications' | 'account' | 'about';
+type SettingsCategory =
+  | 'appearance'
+  | 'audio'
+  | 'study'
+  | 'notifications'
+  | 'account'
+  | 'whats-new'
+  | 'about';
 
 const categories = [
   { id: 'appearance' as const, label: 'Appearance', icon: Palette },
@@ -34,6 +43,7 @@ const categories = [
   { id: 'study' as const, label: 'Study', icon: BookOpen },
   { id: 'notifications' as const, label: 'Notifications', icon: Bell },
   { id: 'account' as const, label: 'Account', icon: User },
+  { id: 'whats-new' as const, label: "What's New", icon: Sparkles },
   { id: 'about' as const, label: 'About', icon: Info },
 ];
 
@@ -72,6 +82,11 @@ const themes = [
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('appearance');
+  const { hasUnseen: hasUnseenChanges, markSeen: markChangelogRead } = useChangelog();
+  // Snapshot of the last-read version, taken as the tab opens. `markChangelogRead`
+  // immediately advances the stored value, so without this the "previously read"
+  // divider would vanish the instant the user looked at it.
+  const [changelogSeenSnapshot, setChangelogSeenSnapshot] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const nyanUnlocked = useNyanUnlocked();
   // Hide secret (unlockable) themes from the picker until their trigger has fired —
@@ -112,6 +127,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       setIsSavingDisplayName(false);
     }
   };
+
+  // Opening What's New counts as reading it.
+  useEffect(() => {
+    if (activeCategory !== 'whats-new') return;
+    setChangelogSeenSnapshot(readChangelogSeenVersion());
+    markChangelogRead();
+  }, [activeCategory, markChangelogRead]);
 
   const handleNavigateToFriends = () => {
     onOpenChange(false);
@@ -313,6 +335,12 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 >
                   <Icon className="h-4 w-4" />
                   {category.label}
+                  {category.id === 'whats-new' && hasUnseenChanges && (
+                    <span
+                      className="ml-auto h-2 w-2 shrink-0 rounded-full bg-destructive"
+                      aria-label="Unread updates"
+                    />
+                  )}
                 </button>
               );
             })}
@@ -403,10 +431,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               />
             )}
 
+            {activeCategory === 'whats-new' && (
+              <WhatsNewTab previouslySeenVersion={changelogSeenSnapshot} />
+            )}
+
             {activeCategory === 'about' && (
               <AboutTab
                 onShowTos={() => setShowTos(true)}
                 onShowPrivacy={() => setShowPrivacy(true)}
+                onShowWhatsNew={() => setActiveCategory('whats-new')}
               />
             )}
           </div>

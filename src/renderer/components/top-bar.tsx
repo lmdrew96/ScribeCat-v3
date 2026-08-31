@@ -2,6 +2,7 @@ import { SettingsModal } from '@/components/settings-modal';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useSessionContext } from '@/contexts/session-context';
+import { useChangelog } from '@/hooks/use-changelog';
 import { usePendingExamRoomCount } from '@/hooks/use-exam-room';
 import { useFriends } from '@/hooks/use-friends';
 import { useIsMobile } from '@/hooks/use-is-mobile';
@@ -39,6 +40,7 @@ export function TopBar() {
   const pendingRoomCount = usePendingRoomCount();
   const pendingExamRoomCount = usePendingExamRoomCount();
   const isMobile = useIsMobile();
+  const { hasUnseen: hasUnseenChanges } = useChangelog();
   const navigate = useNavigate();
 
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
@@ -163,11 +165,16 @@ export function TopBar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="relative h-8 w-8"
             onClick={() => setSettingsOpen(true)}
           >
             <Settings className="h-4 w-4" />
-            <span className="sr-only">Settings</span>
+            {hasUnseenChanges && (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
+            )}
+            <span className="sr-only">
+              {hasUnseenChanges ? 'Settings — new updates to read' : 'Settings'}
+            </span>
           </Button>
         </div>
       </header>
