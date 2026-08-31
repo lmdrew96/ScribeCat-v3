@@ -258,7 +258,7 @@ export function NuggetChat({
           description: bugDescription.trim(),
           userDisplayName: userProfile?.displayName,
           browserInfo: navigator.userAgent,
-          appVersion: '4.17.1',
+          appVersion: __APP_VERSION__,
           pageUrl: window.location.href,
         }),
       });

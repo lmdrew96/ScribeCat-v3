@@ -1,9 +1,19 @@
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const pkgVersion = (JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
+  version: string;
+}).version;
+
 export default defineConfig({
+  // Bug reports quote this, so it has to track package.json automatically —
+  // a hardcoded string silently misattributes every report to an old build.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkgVersion),
+  },
   plugins: [
     react(),
     VitePWA({
