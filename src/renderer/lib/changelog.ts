@@ -33,6 +33,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.26.0',
+    date: '2026-08-31',
+    title: 'Nugget catches more, and tells you when it can\u2019t',
+    changes: [
+      {
+        kind: 'fixed',
+        text: 'Nugget now reads everything said since its last note. It used to look at a fixed-size window, which quietly skipped part of faster-paced lectures.',
+      },
+      {
+        kind: 'added',
+        text: 'Dismiss a note Nugget got wrong. It leaves your notes, stops steering later ones, and is left out of what Nugget sees in chat \u2014 with an undo if you miss.',
+      },
+      {
+        kind: 'fixed',
+        text: 'If Nugget stops being able to generate notes, it now says so instead of showing \u201cListening\u2026\u201d for the rest of the lecture.',
+      },
+    ],
+  },
+  {
     version: '5.25.0',
     date: '2026-08-31',
     title: 'Recording notice reads for everyone',

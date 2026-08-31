@@ -6,7 +6,17 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { NuggetNote } from '@/hooks/use-nugget-notes';
-import { Cat, ChevronDown, ChevronUp, FileText, Loader2, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  AlertTriangle,
+  Cat,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Loader2,
+  Plus,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface NuggetNotesPanelProps {
@@ -14,7 +24,10 @@ interface NuggetNotesPanelProps {
   isRecording: boolean;
   isProcessing: boolean;
   isEnabled: boolean;
+  /** Non-null when the last generation failed — shown instead of "Listening…". */
+  noteError?: string | null;
   onInsertNote: (noteText: string) => void;
+  onDismissNote?: (noteId: string) => void;
   onToggleEnabled?: (enabled: boolean) => void;
 }
 
@@ -23,10 +36,17 @@ export function NuggetNotesPanel({
   isRecording,
   isProcessing,
   isEnabled,
+  noteError,
   onInsertNote,
+  onDismissNote,
   // onToggleEnabled - reserved for future settings integration
 }: NuggetNotesPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // A failed generation must not keep claiming Nugget is listening — a student
+  // who believes notes are being captured stops taking their own.
+  const isDegraded = isRecording && isEnabled && !isProcessing && !!noteError;
+  const isListening = isRecording && isEnabled && !isProcessing && !noteError;
 
   // Format recording time from seconds
   const formatTime = (seconds: number) => {
@@ -55,10 +75,16 @@ export function NuggetNotesPanel({
               <span>Finishing up...</span>
             </span>
           )}
-          {isRecording && isEnabled && !isProcessing && (
+          {isListening && (
             <span className="flex items-center gap-1 text-xs text-primary">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Listening...</span>
+            </span>
+          )}
+          {isDegraded && (
+            <span className="flex items-center gap-1 text-xs text-amber-500">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Not updating</span>
             </span>
           )}
         </div>
@@ -73,7 +99,7 @@ export function NuggetNotesPanel({
       {!isCollapsed && (
         <div className="border-t border-[var(--glass-border)]">
           {notes.length === 0 ? (
-            <EmptyState isRecording={isRecording} isEnabled={isEnabled} />
+            <EmptyState isRecording={isRecording} isEnabled={isEnabled} isDegraded={isDegraded} />
           ) : (
             <ScrollArea className="h-32">
               <div className="flex flex-col gap-1.5 p-2">
@@ -82,6 +108,7 @@ export function NuggetNotesPanel({
                     key={note.id}
                     note={note}
                     onInsert={() => onInsertNote(note.text)}
+                    onDismiss={onDismissNote ? () => onDismissNote(note.id) : undefined}
                     formatTime={formatTime}
                   />
                 ))}
@@ -91,12 +118,13 @@ export function NuggetNotesPanel({
                     <span>Processing remaining transcript...</span>
                   </div>
                 )}
-                {isRecording && isEnabled && !isProcessing && (
+                {isListening && (
                   <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Notes in progress...</span>
                   </div>
                 )}
+                {isDegraded && <DegradedNotice />}
               </div>
             </ScrollArea>
           )}
@@ -106,8 +134,25 @@ export function NuggetNotesPanel({
   );
 }
 
+/** Shown in place of the "listening" spinner once generation has failed. */
+function DegradedNotice() {
+  return (
+    <div className="flex items-start gap-2 px-2 py-1.5 text-xs text-amber-500">
+      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+      <span className="leading-snug">
+        Nugget can&apos;t reach its notes service right now. Your recording and transcript are still
+        saving.
+      </span>
+    </div>
+  );
+}
+
 // Empty state component
-function EmptyState({ isRecording, isEnabled }: { isRecording: boolean; isEnabled: boolean }) {
+function EmptyState({
+  isRecording,
+  isEnabled,
+  isDegraded,
+}: { isRecording: boolean; isEnabled: boolean; isDegraded: boolean }) {
   if (!isEnabled) {
     return (
       <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
@@ -115,6 +160,18 @@ function EmptyState({ isRecording, isEnabled }: { isRecording: boolean; isEnable
         <p className="text-sm text-muted-foreground">Nugget&apos;s Notes is disabled</p>
         <p className="text-xs text-muted-foreground/70">
           Enable in settings to auto-generate notes
+        </p>
+      </div>
+    );
+  }
+
+  if (isDegraded) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
+        <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
+        <p className="text-sm text-foreground">Nugget isn&apos;t generating notes</p>
+        <p className="text-xs text-muted-foreground">
+          Your recording and transcript are still saving normally.
         </p>
       </div>
     );
@@ -146,30 +203,60 @@ function EmptyState({ isRecording, isEnabled }: { isRecording: boolean; isEnable
 function NoteBubble({
   note,
   onInsert,
+  onDismiss,
   formatTime,
 }: {
   note: NuggetNote;
   onInsert: () => void;
+  onDismiss?: () => void;
   formatTime: (seconds: number) => string;
 }) {
+  // Reveal-on-hover hides these entirely on touch, where there is no hover —
+  // so they stay visible below the sm breakpoint.
+  const actionVisibility = 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100';
+
   return (
     <div className="group flex items-start gap-3 rounded-lg glass-light hover:bg-[var(--glass-bg)] px-3 py-2.5 transition-all">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-foreground leading-snug">{note.text}</p>
         <p className="text-xs text-muted-foreground mt-0.5">@ {formatTime(note.recordingTime)}</p>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
-        onClick={(e) => {
-          e.stopPropagation();
-          onInsert();
-        }}
-        title="Insert note into editor"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex shrink-0 items-center gap-0.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            'h-6 w-6 transition-opacity hover:bg-primary/10 hover:text-primary',
+            actionVisibility,
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onInsert();
+          }}
+          title="Insert note into editor"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span className="sr-only">Insert note into editor</span>
+        </Button>
+        {onDismiss && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'h-6 w-6 transition-opacity hover:bg-destructive/10 hover:text-destructive',
+              actionVisibility,
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDismiss();
+            }}
+            title="Dismiss this note"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span className="sr-only">Dismiss this note</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,9 @@
  * Lecture-type-aware for context-specific note generation.
  */
 
+import { buildUnprocessedWindows } from '@/lib/nugget-windows';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import type { LectureType } from '../components/lecture-type-select';
 
 // Types
@@ -21,6 +23,22 @@ export interface NuggetNote {
   timestamp: number;
   recordingTime: number;
 }
+
+/** A note removed by the user, kept so the dismissal can be undone in place. */
+export interface DismissedNote {
+  note: NuggetNote;
+  index: number;
+}
+
+/**
+ * Outcome of one generation attempt. Distinguishes "the model had nothing new
+ * to say" (a valid, expected result) from "the request failed" — the old
+ * `NuggetNote[]` return collapsed both into an empty array, which is why
+ * failures were invisible.
+ */
+type GenerateNotesResult =
+  | { ok: true; notes: NuggetNote[] }
+  | { ok: false; aborted: boolean; message: string };
 
 interface UseNuggetNotesConfig {
   /** Minimum words before generating notes (default: 30) */
@@ -67,6 +85,8 @@ const EMPTY_CONTEXT: LectureContext = {
 export interface UseNuggetNotesReturn {
   notes: NuggetNote[];
   context: LectureContext;
+  /** Message from the most recent failed generation, or null while healthy. */
+  noteError: string | null;
   isEnabled: boolean;
   isRecording: boolean;
   isProcessing: boolean;
@@ -88,11 +108,24 @@ export interface UseNuggetNotesReturn {
     userNotes?: string,
   ) => Promise<void>;
   clearNotes: () => void;
+  /**
+   * Drops a note. It leaves the panel, the dedup context sent to the model, the
+   * chat payload, and what gets persisted — all of which read the same array.
+   */
+  dismissNote: (id: string) => DismissedNote | null;
+  /** Puts a dismissed note back at the position it came from. */
+  restoreNote: (dismissed: DismissedNote) => void;
   /** Get the latest notes synchronously (bypasses React state batching) */
   getLatestNotes: () => NuggetNote[];
 }
 
 const SCRUB_WINDOW_WORDS = 800;
+
+/** Most windows one live cycle will generate from, bounding API calls on a backlog. */
+const LIVE_MAX_WINDOWS = 3;
+
+/** Consecutive failed generations before we tell the user something is wrong. */
+const NOTE_FAILURE_TOAST_THRESHOLD = 2;
 
 export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesReturn {
   const cfg = { ...DEFAULT_CONFIG, ...config };
@@ -111,6 +144,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [lastScrubAt, setLastScrubAt] = useState<number | null>(null);
   const [scrubbedText, setScrubbedText] = useState<string>('');
   const [scrubBoundaryAt, setScrubBoundaryAt] = useState<number>(0);
@@ -138,6 +172,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   const wordsSinceScrubRef = useRef(0);
   const recordingStartTimeRef = useRef(0);
   const noteCounterRef = useRef(0);
+
+  // Consecutive non-abort generation failures. Drives the one-shot toast, and
+  // resets the moment a generation succeeds.
+  const noteFailureCountRef = useRef(0);
 
   // AbortController for canceling pending fetch requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -215,9 +253,9 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       recordingTimeSeconds: number,
       lectureType?: LectureType,
       userNotes?: string,
-    ): Promise<NuggetNote[]> => {
+    ): Promise<GenerateNotesResult> => {
       // Don't start new requests if not recording
-      if (!isRecordingRef.current) return [];
+      if (!isRecordingRef.current) return { ok: false, aborted: true, message: 'not recording' };
 
       // Cancel any pending request
       abortControllerRef.current?.abort();
@@ -243,37 +281,85 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
         });
 
         // Check if we're still recording after await
-        if (!isRecordingRef.current) return [];
+        if (!isRecordingRef.current) return { ok: false, aborted: true, message: 'not recording' };
 
         const data = await response.json();
 
-        if (data.success && data.notes && data.notes.length > 0) {
-          // Add unique IDs with our counter
-          const newNotes = data.notes.map((note: NuggetNote) => {
-            noteCounterRef.current++;
-            return {
-              ...note,
-              id: `note-${Date.now()}-${noteCounterRef.current}`,
-            };
-          });
+        // Mark the attempt regardless of outcome so the interval gate throttles
+        // retries too — otherwise a failing endpoint gets hammered every chunk.
+        lastNoteTimeRef.current = Date.now();
 
-          const updated = [...notesRef.current, ...newNotes];
-          notesRef.current = updated;
-          setNotes(updated);
-          lastNoteTimeRef.current = Date.now();
-          wordsSinceNoteRef.current = 0;
-          console.log(`📝 Generated ${newNotes.length} notes`);
-          return newNotes;
+        if (!data.success) {
+          const message =
+            typeof data.error === 'string' ? data.error : 'Nugget could not generate notes';
+          console.warn('⚠️ Note generation reported failure:', message);
+          return { ok: false, aborted: false, message };
         }
+
+        const incoming: NuggetNote[] = Array.isArray(data.notes) ? data.notes : [];
+
+        // Zero notes is a valid outcome — the prompt explicitly tells the model
+        // to stay silent on transitional or repetitive segments.
+        if (incoming.length === 0) return { ok: true, notes: [] };
+
+        // Add unique IDs with our counter
+        const newNotes = incoming.map((note: NuggetNote) => {
+          noteCounterRef.current++;
+          return {
+            ...note,
+            id: `note-${Date.now()}-${noteCounterRef.current}`,
+          };
+        });
+
+        const updated = [...notesRef.current, ...newNotes];
+        notesRef.current = updated;
+        setNotes(updated);
+        console.log(`📝 Generated ${newNotes.length} notes`);
+        return { ok: true, notes: newNotes };
       } catch (error) {
         // Ignore abort errors
-        if (error instanceof Error && error.name === 'AbortError') return [];
+        if (error instanceof Error && error.name === 'AbortError') {
+          return { ok: false, aborted: true, message: 'aborted' };
+        }
+        // A thrown fetch (offline, DNS, CORS) never reached the response handler
+        // above, so record the attempt here too. Without this the interval gate
+        // stays open and every subsequent transcript chunk retries immediately.
+        lastNoteTimeRef.current = Date.now();
         console.warn('⚠️ Failed to generate notes:', error);
+        return {
+          ok: false,
+          aborted: false,
+          message: error instanceof Error ? error.message : 'Nugget could not generate notes',
+        };
       }
-      return [];
     },
     [getApiUrl],
   );
+
+  /**
+   * Folds one generation outcome into the user-visible health state.
+   *
+   * Aborts are deliberate cancellations, not faults, so they never count toward
+   * the failure streak. The toast fires exactly once per streak (on the Nth
+   * failure) rather than on every failure past the threshold.
+   */
+  const recordNoteResult = useCallback((result: GenerateNotesResult) => {
+    if (result.ok) {
+      noteFailureCountRef.current = 0;
+      setNoteError((prev) => (prev === null ? prev : null));
+      return;
+    }
+    if (result.aborted) return;
+
+    noteFailureCountRef.current += 1;
+    setNoteError(result.message);
+
+    if (noteFailureCountRef.current === NOTE_FAILURE_TOAST_THRESHOLD) {
+      toast.error("Nugget's Notes stopped updating", {
+        description: 'Your recording and transcript are still saving normally.',
+      });
+    }
+  }, []);
 
   // Check if we should update context
   const shouldUpdateContext = useCallback(
@@ -373,12 +459,6 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     [getApiUrl],
   );
 
-  // Get recent transcript (~150 words) for note generation
-  const getRecentTranscript = useCallback((): string => {
-    const words = transcriptBufferRef.current.trim().split(/\s+/);
-    return words.slice(-150).join(' ');
-  }, []);
-
   // Process incoming transcript chunk
   const processTranscriptChunk = useCallback(
     async (
@@ -412,16 +492,39 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
         currentContext = await updateContext(transcript, lectureType, userNotes);
       }
 
-      // Check if we should generate notes (Haiku - every ~45s)
+      // Check if we should generate notes (see DEFAULT_CONFIG for the cadence)
       if (shouldGenerateNotes(wordCount)) {
-        const recentTranscript = getRecentTranscript();
-        await generateNotes(
-          recentTranscript,
-          currentContext,
-          durationSeconds,
-          lectureType,
-          userNotes,
+        // Size the window from what was actually said since the last generation,
+        // not a fixed tail — a fixed tail silently drops the overflow.
+        const { windows, consumedWordCount } = buildUnprocessedWindows(
+          transcriptBufferRef.current,
+          wordsSinceNoteRef.current,
+          LIVE_MAX_WINDOWS,
         );
+
+        let allSucceeded = windows.length > 0;
+        for (const window of windows) {
+          if (!isRecordingRef.current) break;
+          const result = await generateNotes(
+            window,
+            currentContext,
+            durationSeconds,
+            lectureType,
+            userNotes,
+          );
+          recordNoteResult(result);
+          if (!result.ok) {
+            allSucceeded = false;
+            break;
+          }
+        }
+
+        // Credit only what actually went out. Words beyond the live cap — and
+        // everything after a failure — stay on the counter for the next cycle
+        // rather than being dropped.
+        if (allSucceeded) {
+          wordsSinceNoteRef.current = Math.max(0, wordsSinceNoteRef.current - consumedWordCount);
+        }
       }
 
       // Check if we should scrub transcript (Haiku - every ~2 min, sliding 800-word window)
@@ -438,7 +541,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       shouldScrub,
       updateContext,
       generateNotes,
-      getRecentTranscript,
+      recordNoteResult,
       scrubTranscriptWindow,
     ],
   );
@@ -448,6 +551,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     isRecordingRef.current = true;
     setIsRecording(true);
     setIsScrubbing(false);
+    setNoteError(null);
+    noteFailureCountRef.current = 0;
     setLastScrubAt(null);
     setScrubbedText('');
     setScrubBoundaryAt(0);
@@ -494,36 +599,16 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
         // Temporarily re-enable so generateNotes doesn't bail out
         isRecordingRef.current = true;
 
-        const words = transcriptBufferRef.current.trim().split(/\s+/);
-        const totalWords = words.length;
-        const unprocessedWordCount = wordsSinceNoteRef.current;
+        // Uncapped — the final flush should drain the whole backlog.
+        const { windows } = buildUnprocessedWindows(
+          transcriptBufferRef.current,
+          wordsSinceNoteRef.current,
+        );
 
-        // Where unprocessed content starts, with ~20 words of prior context
-        const unprocessedStart = Math.max(0, totalWords - unprocessedWordCount);
-        const contextStart = Math.max(0, unprocessedStart - 20);
-
-        if (unprocessedWordCount <= 120) {
-          // Small enough for a single generation
-          const chunk = words.slice(contextStart).join(' ');
-          if (chunk.trim()) {
-            await generateNotes(chunk, context, recordingTimeSeconds);
-          }
-        } else {
-          // Large amount of unprocessed content — process in overlapping windows
-          const CHUNK_SIZE = 100;
-          const STEP_SIZE = 80;
-          let pos = contextStart;
-
-          while (pos < totalWords && isRecordingRef.current) {
-            const endPos = Math.min(pos + CHUNK_SIZE, totalWords);
-            const chunk = words.slice(pos, endPos).join(' ');
-            if (chunk.trim()) {
-              await generateNotes(chunk, context, recordingTimeSeconds);
-            }
-            // If this chunk reached the end, we're done
-            if (endPos >= totalWords) break;
-            pos += STEP_SIZE;
-          }
+        for (const window of windows) {
+          if (!isRecordingRef.current) break;
+          const result = await generateNotes(window, context, recordingTimeSeconds);
+          recordNoteResult(result);
         }
 
         isRecordingRef.current = false;
@@ -536,8 +621,34 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       setIsRecording(false);
       console.log('⏹️ Nugget Notes recording stopped');
     },
-    [isRecording, isEnabled, context, generateNotes],
+    [isRecording, isEnabled, context, generateNotes, recordNoteResult],
   );
+
+  /**
+   * Drops a note the user judged wrong. Because the dedup context, the chat
+   * payload, and the persisted array all read `notesRef`/`notes`, removing it
+   * here removes it from every downstream consumer too.
+   */
+  const dismissNote = useCallback((id: string): DismissedNote | null => {
+    const index = notesRef.current.findIndex((n) => n.id === id);
+    if (index === -1) return null;
+
+    const note = notesRef.current[index];
+    const updated = notesRef.current.filter((n) => n.id !== id);
+    notesRef.current = updated;
+    setNotes(updated);
+    return { note, index };
+  }, []);
+
+  /** Reinserts a dismissed note at its original index so undo preserves order. */
+  const restoreNote = useCallback(({ note, index }: DismissedNote) => {
+    if (notesRef.current.some((n) => n.id === note.id)) return;
+
+    const updated = [...notesRef.current];
+    updated.splice(Math.min(index, updated.length), 0, note);
+    notesRef.current = updated;
+    setNotes(updated);
+  }, []);
 
   // Clear all notes
   const clearNotes = useCallback(() => {
@@ -548,6 +659,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     notesRef.current = [];
     setNotes([]);
     setContext(EMPTY_CONTEXT);
+    setNoteError(null);
+    noteFailureCountRef.current = 0;
     setIsScrubbing(false);
     setLastScrubAt(null);
     setScrubbedText('');
@@ -588,6 +701,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   return {
     notes,
     context,
+    noteError,
     isEnabled,
     isRecording,
     isProcessing,
@@ -600,6 +714,8 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     stopRecording,
     processTranscriptChunk,
     clearNotes,
+    dismissNote,
+    restoreNote,
     getLatestNotes: useCallback(() => notesRef.current, []),
   };
 }

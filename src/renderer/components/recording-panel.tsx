@@ -138,7 +138,19 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
         isRecording={isRecording}
         isProcessing={nuggetNotes.isProcessing}
         isEnabled={nuggetNotes.isEnabled}
+        noteError={nuggetNotes.noteError}
         onInsertNote={onInsertNote ?? (() => {})}
+        onDismissNote={(noteId) => {
+          const dismissed = nuggetNotes.dismissNote(noteId);
+          if (!dismissed) return;
+          toast('Note dismissed', {
+            description: 'Nugget will stop using it for context.',
+            action: {
+              label: 'Undo',
+              onClick: () => nuggetNotes.restoreNote(dismissed),
+            },
+          });
+        }}
         onToggleEnabled={nuggetNotes.setEnabled}
       />
 
