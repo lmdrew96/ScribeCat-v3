@@ -33,6 +33,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.25.0',
+    date: '2026-08-31',
+    title: 'Recording notice reads for everyone',
+    changes: [
+      {
+        kind: 'improved',
+        text: 'The recording consent notice no longer singles out one state. It now points you to the recording laws that apply where you actually are.',
+      },
+    ],
+  },
+  {
     version: '5.24.0',
     date: '2026-08-31',
     title: 'ScribeCat is open to everyone',

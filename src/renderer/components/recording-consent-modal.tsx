@@ -60,8 +60,8 @@ export function RecordingConsentModal({ open, onConfirm, onCancel }: RecordingCo
             </li>
           </ul>
           <p className="text-xs text-muted-foreground italic">
-            In Delaware and other two-party consent states, recording someone without their
-            knowledge or permission may be illegal.
+            Recording laws vary by location. In many places it is illegal to record someone without
+            the consent of everyone involved — check the rules that apply where you are.
           </p>
         </div>
 

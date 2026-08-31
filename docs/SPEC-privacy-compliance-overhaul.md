@@ -29,8 +29,13 @@ This feature records audio from your device's microphone. By proceeding, you con
 • You will use recordings only for personal study purposes
 • You comply with all applicable laws and institutional policies regarding audio recording
 
-In Delaware and other two-party consent states, recording someone without their knowledge or permission may be illegal.
+Recording laws vary by location. In many places it is illegal to record someone without the consent of everyone involved — check the rules that apply where you are.
 ```
+
+> **Note (v5.25.0):** the notice above originally read *"In Delaware and other two-party
+> consent states…"*. It was generalized when the @udel.edu signup restriction was lifted in
+> v5.24.0 and ScribeCat opened to users anywhere. The Context section at the top of this
+> spec is kept as the original compliance rationale, not a description of the current audience.
 
 **Implementation:**
 - Add a consent modal/banner component to the recording UI in `src/renderer/`

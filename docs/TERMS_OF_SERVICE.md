@@ -19,7 +19,7 @@ You agree to:
 
 - Use ScribeCat only for **personal study purposes**
 - Obtain **consent from all parties** before recording any audio that captures other people's voices
-- Comply with all **applicable federal, state, and local laws** regarding audio recording, including two-party consent laws
+- Comply with all **recording laws that apply where you are**, including any that require the consent of everyone being recorded
 - Comply with your **institution's policies** regarding recording, AI use, and academic integrity
 - Keep your account credentials secure
 
