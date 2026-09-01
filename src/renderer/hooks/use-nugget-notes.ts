@@ -178,8 +178,23 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   // resets the moment a generation succeeds.
   const noteFailureCountRef = useRef(0);
 
-  // AbortController for canceling pending fetch requests
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // One controller per job, not one shared between them. Each job should only
+  // supersede its OWN in-flight request; with a single ref, note generation
+  // cancelled context extraction (and vice versa) whenever two
+  // processTranscriptChunk calls overlapped — silently, since AbortError is
+  // swallowed. Context extraction is the slow one, so it lost most often,
+  // precisely during the dense segments where it matters.
+  const contextAbortRef = useRef<AbortController | null>(null);
+  const notesAbortRef = useRef<AbortController | null>(null);
+  const scrubAbortRef = useRef<AbortController | null>(null);
+
+  /** Aborts every in-flight Nugget request. For teardown, not for superseding. */
+  const abortAllRequests = useCallback(() => {
+    for (const ref of [contextAbortRef, notesAbortRef, scrubAbortRef]) {
+      ref.current?.abort();
+      ref.current = null;
+    }
+  }, []);
   const isRecordingRef = useRef(false);
 
   // Max buffer size to prevent unbounded growth (approximately 10k words)
@@ -206,10 +221,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return context;
 
-      // Cancel any pending request
-      abortControllerRef.current?.abort();
+      // Supersede only a previous context request
+      contextAbortRef.current?.abort();
       const controller = new AbortController();
-      abortControllerRef.current = controller;
+      contextAbortRef.current = controller;
 
       try {
         const response = await fetch(getApiUrl('lectureContext'), {
@@ -258,10 +273,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return { ok: false, aborted: true, message: 'not recording' };
 
-      // Cancel any pending request
-      abortControllerRef.current?.abort();
+      // Supersede only a previous note request
+      notesAbortRef.current?.abort();
       const controller = new AbortController();
-      abortControllerRef.current = controller;
+      notesAbortRef.current = controller;
 
       // Pass the last 8 note texts so Claude avoids redundancy
       const recentNoteTexts = notesRef.current.slice(-8).map((n) => n.text);
@@ -427,12 +442,17 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       const rawWindow = words.slice(windowStart).join(' ');
       if (!rawWindow.trim()) return;
 
+      scrubAbortRef.current?.abort();
+      const controller = new AbortController();
+      scrubAbortRef.current = controller;
+
       setIsScrubbing(true);
       try {
         const response = await fetch(getApiUrl('scrubTranscript'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rawWindow, lectureContext: currentContext }),
+          signal: controller.signal,
         });
 
         if (!isRecordingRef.current) return;
@@ -580,8 +600,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       isRecordingRef.current = false;
 
       // Abort any pending fetch requests
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = null;
+      abortAllRequests();
 
       // Process all unprocessed transcript content into notes
       const hasUnprocessedWords = wordsSinceNoteRef.current > 0;
@@ -622,7 +641,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       setIsRecording(false);
       console.log('⏹️ Nugget Notes recording stopped');
     },
-    [isRecording, isEnabled, context, generateNotes, recordNoteResult],
+    [isRecording, isEnabled, context, generateNotes, recordNoteResult, abortAllRequests],
   );
 
   /**
@@ -654,8 +673,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   // Clear all notes
   const clearNotes = useCallback(() => {
     // Abort any pending fetch requests
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
+    abortAllRequests();
 
     notesRef.current = [];
     setNotes([]);
@@ -676,7 +694,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
     wordsSinceScrubRef.current = 0;
     noteCounterRef.current = 0;
     console.log('🔄 Nugget Notes cleared');
-  }, []);
+  }, [abortAllRequests]);
 
   // Toggle enabled
   const handleSetEnabled = useCallback((enabled: boolean) => {
@@ -688,8 +706,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   useEffect(() => {
     return () => {
       // Abort any pending fetch requests
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = null;
+      abortAllRequests();
       isRecordingRef.current = false;
 
       // Clear the buffer to free memory
@@ -697,7 +714,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
       console.log('🧹 Nugget Notes cleanup complete');
     };
-  }, []);
+  }, [abortAllRequests]);
 
   return {
     notes,
