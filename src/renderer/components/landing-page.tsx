@@ -24,7 +24,7 @@ const FEATURES = [
   {
     emoji: '✨',
     title: 'Nugget Takes Notes',
-    desc: "While you record, our AI cat writes bullet notes every 45 seconds. Zone out a little. We've got you.",
+    desc: "While you record, our AI cat writes bullet notes as the lecture goes. Zone out a little. We've got you.",
     color: 'from-[var(--landing-amber)]/20 to-[var(--landing-purple-dusty)]/20',
     border: 'border-[var(--landing-amber)]/30',
   },

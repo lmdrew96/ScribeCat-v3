@@ -1,6 +1,7 @@
 /**
- * useNuggetNotes - React hook for real-time AI note generation
- * Orchestrates the two-model pipeline (Sonnet for context, Haiku for notes)
+ * useNuggetNotes - React hook for real-time AI note generation.
+ * Orchestrates three server calls — context extraction, note generation, and
+ * transcript scrubbing — all on the callClaude default model (convex/config.ts).
  * Lecture-type-aware for context-specific note generation.
  */
 
@@ -43,7 +44,7 @@ type GenerateNotesResult =
 interface UseNuggetNotesConfig {
   /** Minimum words before generating notes (default: 30) */
   minWordsForNotes?: number;
-  /** Minimum interval between note generations in ms (default: 45000 = 45s) */
+  /** Minimum interval between note generations in ms (see DEFAULT_CONFIG) */
   noteIntervalMs?: number;
   /** Minimum words before updating context (default: 200) */
   minWordsForContext?: number;

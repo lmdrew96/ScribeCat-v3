@@ -23,7 +23,7 @@ const corsHandler = httpAction(async () => {
   });
 });
 
-// Lecture Context (Sonnet - every ~2 min during recording)
+// Lecture Context (cadence set by the client — see DEFAULT_CONFIG)
 http.route({
   path: '/lectureContext',
   method: 'OPTIONS',
@@ -36,7 +36,7 @@ http.route({
   handler: extractLectureContext,
 });
 
-// Nugget Notes (Haiku - every ~45s during recording)
+// Nugget Notes (cadence set by the client — see DEFAULT_CONFIG)
 http.route({
   path: '/nuggetNotes',
   method: 'OPTIONS',
@@ -49,7 +49,7 @@ http.route({
   handler: generateNuggetNotes,
 });
 
-// Nugget Chat (Sonnet - Q&A about content)
+// Nugget Chat (Q&A about content)
 http.route({
   path: '/nuggetChat',
   method: 'OPTIONS',

@@ -1,5 +1,7 @@
 /**
- * NuggetChat - Sonnet-powered chat for Q&A about transcript/notes
+ * NuggetChat - chat for Q&A about transcript/notes.
+ * Runs on the callClaude default model (see convex/config.ts) — it does not
+ * pass its own, so naming a model here would drift the moment that changes.
  * Provides contextual responses based on the lecture content.
  * Accepts lecture type and Nugget's AI-generated notes for richer context.
  */

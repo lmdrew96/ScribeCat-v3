@@ -1,7 +1,9 @@
 /**
- * NuggetNotes - Haiku-powered note generation
- * Called every ~45 seconds during recording to generate 1-3 bullet notes.
- * Uses context from Sonnet for better understanding.
+ * NuggetNotes - note generation during recording.
+ * Runs on the callClaude default model (see convex/config.ts); cadence and
+ * window size are owned by the client (DEFAULT_CONFIG in use-nugget-notes.ts).
+ * The prompt asks for 0-2 notes and may return none — silence on a transitional
+ * segment is a valid result, not a failure.
  * Lecture-type-aware for context-specific note generation.
  */
 
@@ -65,7 +67,8 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     let noteCounter = 0;
 
     const notes: NuggetNote[] = lines
-      .slice(0, 3) // Max 3 notes per generation
+      // Safety net for a model that overruns the prompt's 0-2 request.
+      .slice(0, 3)
       .map((line) => {
         // Remove bullet point prefix and clean up
         const text = line

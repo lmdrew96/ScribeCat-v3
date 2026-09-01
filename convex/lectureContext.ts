@@ -1,6 +1,7 @@
 /**
- * LectureContext - Haiku-powered context extraction
- * Called every ~2 minutes during recording to extract lecture understanding.
+ * LectureContext - context extraction during recording.
+ * Runs on the callClaude default model (see convex/config.ts); cadence is owned
+ * by the client (DEFAULT_CONFIG in use-nugget-notes.ts).
  * Returns themes, current topic, definitions, and structure hints.
  * Now lecture-type-aware for better context extraction.
  */
