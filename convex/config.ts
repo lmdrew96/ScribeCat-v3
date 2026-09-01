@@ -16,13 +16,31 @@ export const AI_MODEL_SONNET = 'claude-sonnet-5';
 
 type MessageContent = string | Anthropic.Messages.ContentBlockParam[];
 
+/**
+ * A plain string, or structured blocks when part of the prompt should be cached.
+ *
+ * Caching is a strict PREFIX match: any byte change invalidates everything after
+ * it. So a block carrying `cache_control` must be preceded only by content that
+ * is stable across calls, and anything volatile (timestamps, per-request values)
+ * has to come after it. Getting that order wrong doesn't error — it silently
+ * yields a 0% hit rate and costs MORE than not caching, since writes bill at
+ * ~1.25x.
+ */
+type SystemPrompt = string | Anthropic.Messages.TextBlockParam[];
+
 interface CallClaudeOptions {
   /** Model to use. Defaults to AI_MODEL (Haiku). */
   model?: string;
   maxTokens: number;
   temperature?: number;
-  system?: string;
+  system?: SystemPrompt;
   messages: Array<{ role: 'user' | 'assistant'; content: MessageContent }>;
+  /**
+   * Receives the response's token usage. Mainly for confirming a cache is
+   * actually working — `cache_read_input_tokens` stuck at 0 across repeated
+   * calls means something in the prefix is still varying.
+   */
+  onUsage?: (usage: Anthropic.Messages.Usage) => void;
 }
 
 /**
@@ -43,6 +61,8 @@ export async function callClaude(options: CallClaudeOptions): Promise<string> {
     ...(options.system && { system: options.system }),
     messages: options.messages,
   });
+
+  options.onUsage?.(response.usage);
 
   return response.content[0].type === 'text' ? response.content[0].text : '';
 }
