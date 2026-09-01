@@ -12,6 +12,7 @@ import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
 import { FontSize } from '@/lib/font-size-extension';
+import { formatRecordingTime } from '@/lib/format-time';
 import { renderMarkdown } from '@/lib/render-markdown';
 import { TextBox } from '@/lib/textbox-extension';
 import CodeBlock from '@tiptap/extension-code-block';
@@ -70,7 +71,8 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
   const courseInputRef = useRef<HTMLInputElement>(null);
 
   const { settings: studySettings, updateSettings } = useStudySettings();
-  const savedCourses: string[] = studySettings && '_id' in studySettings ? (studySettings.courses ?? []) : [];
+  const savedCourses: string[] =
+    studySettings && '_id' in studySettings ? (studySettings.courses ?? []) : [];
 
   const updateSession = useMutation(api.sessions.update);
   const submitSpeakerDetection = useAction(api.speakerDetection.submit);
@@ -246,12 +248,6 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
     }
   }, [recording.audioUrl, load]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleSeek = (value: number[]) => {
     seek(value[0]);
   };
@@ -265,9 +261,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
       <div className={`mb-2 ${sidebarCollapsed ? 'pl-8' : ''}`}>
         {/* Editable title (desktop only) */}
         {isMobile ? (
-          <h1 className="text-base font-semibold text-foreground mb-0.5">
-            {recording.title}
-          </h1>
+          <h1 className="text-base font-semibold text-foreground mb-0.5">{recording.title}</h1>
         ) : editingTitle ? (
           <div className="flex items-center gap-1 mb-0.5">
             <Input
@@ -334,7 +328,12 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
             </div>
           ) : null
         ) : (
-          <Popover open={coursePopoverOpen} onOpenChange={(open) => { if (!open) closeCoursePopover(); }}>
+          <Popover
+            open={coursePopoverOpen}
+            onOpenChange={(open) => {
+              if (!open) closeCoursePopover();
+            }}
+          >
             <PopoverTrigger asChild>
               {recording.course ? (
                 <button
@@ -370,7 +369,9 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
                         type="button"
                         onClick={() => selectCourse(course)}
                         className={`flex items-center gap-2 text-left text-xs px-2 py-1.5 rounded hover:bg-secondary transition-colors w-full ${
-                          recording.course === course ? 'text-primary font-medium' : 'text-foreground'
+                          recording.course === course
+                            ? 'text-primary font-medium'
+                            : 'text-foreground'
                         }`}
                       >
                         {recording.course === course && <Check className="h-3 w-3 shrink-0" />}
@@ -399,7 +400,10 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 shrink-0"
-                    onMouseDown={(e) => { e.preventDefault(); saveNewCourse(); }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      saveNewCourse();
+                    }}
                   >
                     <Check className="h-3 w-3 text-primary" />
                   </Button>
@@ -407,7 +411,10 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 shrink-0"
-                    onMouseDown={(e) => { e.preventDefault(); closeCoursePopover(); }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      closeCoursePopover();
+                    }}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -436,7 +443,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
             </Button>
 
             <span className="text-xs font-mono text-muted-foreground">
-              {formatTime(currentTime)}
+              {formatRecordingTime(currentTime)}
             </span>
 
             <Slider
@@ -447,7 +454,9 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
               className="flex-1"
             />
 
-            <span className="text-xs font-mono text-muted-foreground">{formatTime(duration)}</span>
+            <span className="text-xs font-mono text-muted-foreground">
+              {formatRecordingTime(duration)}
+            </span>
           </div>
         </div>
       )}
@@ -606,7 +615,7 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
                       onClick={() => seek(note.recordingTime)}
                       className="shrink-0 text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
                     >
-                      @ {formatTime(note.recordingTime)}
+                      @ {formatRecordingTime(note.recordingTime)}
                     </button>
                   </div>
                 ))}

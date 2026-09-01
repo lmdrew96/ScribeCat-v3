@@ -6,6 +6,7 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { NuggetNote } from '@/hooks/use-nugget-notes';
+import { formatRecordingTime } from '@/lib/format-time';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -47,13 +48,6 @@ export function NuggetNotesPanel({
   // who believes notes are being captured stops taking their own.
   const isDegraded = isRecording && isEnabled && !isProcessing && !!noteError;
   const isListening = isRecording && isEnabled && !isProcessing && !noteError;
-
-  // Format recording time from seconds
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="flex flex-col rounded-xl glass overflow-hidden">
@@ -109,7 +103,6 @@ export function NuggetNotesPanel({
                     note={note}
                     onInsert={() => onInsertNote(note.text)}
                     onDismiss={onDismissNote ? () => onDismissNote(note.id) : undefined}
-                    formatTime={formatTime}
                   />
                 ))}
                 {isProcessing && (
@@ -204,12 +197,10 @@ function NoteBubble({
   note,
   onInsert,
   onDismiss,
-  formatTime,
 }: {
   note: NuggetNote;
   onInsert: () => void;
   onDismiss?: () => void;
-  formatTime: (seconds: number) => string;
 }) {
   // Reveal-on-hover hides these entirely on touch, where there is no hover —
   // so they stay visible below the sm breakpoint.
@@ -219,7 +210,9 @@ function NoteBubble({
     <div className="group flex items-start gap-3 rounded-lg glass-light hover:bg-[var(--glass-bg)] px-3 py-2.5 transition-all">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-foreground leading-snug">{note.text}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">@ {formatTime(note.recordingTime)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          @ {formatRecordingTime(note.recordingTime)}
+        </p>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <Button

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useExamRoomSessionContent } from '@/hooks/use-exam-room';
 import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
+import { formatRecordingTime } from '@/lib/format-time';
 import { renderMarkdown } from '@/lib/render-markdown';
 import { BookOpen, Clock, FileText, Loader2, Mic, Pause, Play, User } from 'lucide-react';
 import { useEffect } from 'react';
@@ -27,12 +28,6 @@ function formatDuration(ms: number) {
   const totalSeconds = Math.floor(ms / 1000);
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function formatAudioTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
@@ -233,8 +228,8 @@ export function ExamSessionViewer({
                             className="w-full accent-[var(--accent)]"
                           />
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>{formatAudioTime(currentTime)}</span>
-                            <span>{formatAudioTime(duration)}</span>
+                            <span>{formatRecordingTime(currentTime)}</span>
+                            <span>{formatRecordingTime(duration)}</span>
                           </div>
                         </div>
                       </div>
@@ -258,7 +253,7 @@ export function ExamSessionViewer({
                           className="rounded-lg p-3 glass-light border border-[var(--glass-border)]"
                         >
                           <div className="text-xs text-muted-foreground mb-1">
-                            {formatAudioTime(note.recordingTime / 1000)}
+                            {formatRecordingTime(note.recordingTime)}
                           </div>
                           <div className="text-sm text-foreground">{renderMarkdown(note.text)}</div>
                         </div>
