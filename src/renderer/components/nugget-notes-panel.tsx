@@ -18,7 +18,14 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+/**
+ * How close to the bottom still counts as "following along". Further up means
+ * the reader is deliberately looking at an earlier note, and new arrivals must
+ * not yank them back down.
+ */
+const STICK_TO_BOTTOM_PX = 48;
 
 interface NuggetNotesPanelProps {
   notes: NuggetNote[];
@@ -43,6 +50,43 @@ export function NuggetNotesPanel({
   // onToggleEnabled - reserved for future settings integration
 }: NuggetNotesPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  // Whether new notes should scroll into view. Starts true so the first notes of
+  // a lecture appear without any interaction.
+  const stickToBottomRef = useRef(true);
+
+  const getViewport = useCallback(
+    () =>
+      scrollRootRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]') ??
+      null,
+    [],
+  );
+
+  const noteCount = notes.length;
+
+  // Depends on noteCount because the scroll area only mounts once there are
+  // notes to show — the listener has nothing to attach to before that.
+  useEffect(() => {
+    if (noteCount === 0) return;
+    const viewport = getViewport();
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      stickToBottomRef.current = distanceFromBottom <= STICK_TO_BOTTOM_PX;
+    };
+
+    viewport.addEventListener('scroll', handleScroll, { passive: true });
+    return () => viewport.removeEventListener('scroll', handleScroll);
+  }, [getViewport, noteCount]);
+
+  // Follow new notes, but only while the reader is already at the bottom.
+  useEffect(() => {
+    if (noteCount === 0 || !stickToBottomRef.current) return;
+    const viewport = getViewport();
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
+  }, [getViewport, noteCount]);
 
   // A failed generation must not keep claiming Nugget is listening — a student
   // who believes notes are being captured stops taking their own.
@@ -95,7 +139,7 @@ export function NuggetNotesPanel({
           {notes.length === 0 ? (
             <EmptyState isRecording={isRecording} isEnabled={isEnabled} isDegraded={isDegraded} />
           ) : (
-            <ScrollArea className="h-32">
+            <ScrollArea ref={scrollRootRef} className="h-40 sm:h-56">
               <div className="flex flex-col gap-1.5 p-2">
                 {notes.map((note) => (
                   <NoteBubble
