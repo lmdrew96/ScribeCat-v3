@@ -23,6 +23,15 @@ export const generateNotesFromTranscript = action({
     sessionId: v.string(),
     lectureType: v.optional(v.string()),
     existingNotes: v.optional(v.string()),
+    // The live pass's output, used as an outline for the deep pass.
+    nuggetNotes: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+          recordingTime: v.number(),
+        }),
+      ),
+    ),
   },
   handler: async (_ctx, args) => {
     const lectureType = (args.lectureType || 'general') as LectureType;
@@ -34,8 +43,14 @@ export const generateNotesFromTranscript = action({
             args.transcriptSegments,
             lectureType,
             args.existingNotes,
+            args.nuggetNotes,
           )
-        : getNoteGenerationPrompt(args.transcript, lectureType, args.existingNotes);
+        : getNoteGenerationPrompt(
+            args.transcript,
+            lectureType,
+            args.existingNotes,
+            args.nuggetNotes,
+          );
 
     const generatedNotes = await callClaude({
       maxTokens: 4096,

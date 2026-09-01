@@ -239,6 +239,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
         sessionId: sessionId as string,
         lectureType: session.lectureType,
         existingNotes: editor?.getText() || undefined,
+        nuggetNotes: session.nuggetNotes,
       });
 
       if (data.success && data.notes && editor) {

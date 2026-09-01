@@ -11,6 +11,42 @@ interface TranscriptSegment {
   isFinal: boolean;
 }
 
+/** A note Nugget captured live, as persisted on the session. */
+export interface NuggetNoteInput {
+  text: string;
+  /** Seconds since the recording started. */
+  recordingTime: number;
+}
+
+/** Most live notes folded into a full-generation prompt, guarding against bloat. */
+const MAX_NUGGET_NOTES_IN_PROMPT = 60;
+
+/** `m:ss` for prompt display. Server-side twin of the renderer's formatRecordingTime. */
+function formatPromptTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Renders the live notes as an outline for the full pass.
+ *
+ * Framed distinctly from the student's own notes: these are the model's earlier
+ * observations, each derived from a short excerpt, so the full pass is told it
+ * may overrule them when the complete transcript disagrees.
+ */
+function buildNuggetNotesSection(nuggetNotes?: NuggetNoteInput[]): string {
+  if (!nuggetNotes || nuggetNotes.length === 0) return '';
+
+  const lines = nuggetNotes
+    .slice(-MAX_NUGGET_NOTES_IN_PROMPT)
+    .map((note) => `- [${formatPromptTime(note.recordingTime)}] ${note.text}`)
+    .join('\n');
+
+  return `\nKEY POINTS CAPTURED DURING THE LECTURE:\n${lines}\n\nThese were noted in real time as the lecture progressed, with the time each was captured. Treat them as an outline of what mattered and roughly when — use them to shape the structure and emphasis of your notes. Expand them into full notes and fill in what they missed. Each was written from a short excerpt, so correct anything the full transcript contradicts rather than repeating it.\n`;
+}
+
 export interface LectureContext {
   themes: string[];
   currentTopic: string;
@@ -89,6 +125,7 @@ export function getNoteGenerationPrompt(
   transcript: string,
   lectureType: LectureType,
   userNotes?: string,
+  nuggetNotes?: NuggetNoteInput[],
 ): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
 
@@ -105,7 +142,7 @@ FORMATTING GUIDELINES:
 2. Use **bold** for key terms and concepts
 3. Use *italics* for emphasis
 4. Keep notes concise but comprehensive
-${userNotesSection}
+${buildNuggetNotesSection(nuggetNotes)}${userNotesSection}
 TRANSCRIPT:
 ${transcript}
 
@@ -116,6 +153,7 @@ export function getNoteGenerationPromptWithCitations(
   segments: TranscriptSegment[],
   lectureType: LectureType,
   userNotes?: string,
+  nuggetNotes?: NuggetNoteInput[],
 ): string {
   const style = NOTE_STYLE[lectureType] || NOTE_STYLE.general;
 
@@ -141,7 +179,7 @@ Each transcript line is prefixed with a timestamp in milliseconds [XXXXX].
 For each key note or bullet point, include a citation reference to the most relevant transcript timestamp.
 Format citations as [cite:XXXXX] at the end of the line, where XXXXX is the timestamp number.
 Only use timestamps that appear in the transcript segments below.
-${userNotesSection}
+${buildNuggetNotesSection(nuggetNotes)}${userNotesSection}
 TIMESTAMPED TRANSCRIPT:
 ${timestampedTranscript}
 
