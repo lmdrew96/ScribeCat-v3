@@ -19,6 +19,7 @@ import {
   saveAudioChunk,
   startRecoverySession,
 } from '@/lib/audio-recovery';
+import { getNuggetDensityPreset } from '@/lib/nugget-density';
 import { useUploadFile } from '@convex-dev/r2/react';
 import { useMutation } from 'convex/react';
 import {
@@ -135,6 +136,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const courses = settings && '_id' in settings ? (settings.courses ?? []) : [];
   const nuggetNotesInitialEnabled =
     settings && '_id' in settings ? (settings.nuggetNotesEnabled ?? true) : true;
+  const nuggetDensityPreset = getNuggetDensityPreset(
+    settings && '_id' in settings ? settings.nuggetNoteDensity : undefined,
+  );
 
   // Refs for dedup
   const lastSavedTranscriptRef = useRef('');
@@ -172,6 +176,9 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
 
   const nuggetNotes = useNuggetNotes({
     initialEnabled: nuggetNotesInitialEnabled,
+    noteIntervalMs: nuggetDensityPreset.noteIntervalMs,
+    minWordsForNotes: nuggetDensityPreset.minWordsForNotes,
+    maxNotesPerCycle: nuggetDensityPreset.maxNotesPerCycle,
     onScrubComplete: handleScrubComplete,
   });
 

@@ -40,6 +40,7 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     userNotes,
     recentNoteTexts,
     earlierNoteTexts,
+    maxNotes,
   } = (await request.json()) as {
     transcript: string;
     context: LectureContext;
@@ -48,7 +49,11 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     userNotes?: string;
     recentNoteTexts?: string[];
     earlierNoteTexts?: string[];
+    maxNotes?: number;
   };
+
+  // Density-driven, clamped so a malformed request can't uncap generation.
+  const notesPerCycle = Math.min(Math.max(Math.trunc(maxNotes ?? 2), 1), 5);
 
   const prompt = getNuggetNotePrompt(
     transcript,
@@ -57,6 +62,7 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     userNotes,
     recentNoteTexts,
     earlierNoteTexts,
+    notesPerCycle,
   );
 
   try {
@@ -76,8 +82,8 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     let noteCounter = 0;
 
     const notes: NuggetNote[] = lines
-      // Safety net for a model that overruns the prompt's 0-2 request.
-      .slice(0, 3)
+      // Safety net for a model that overruns the prompt's request.
+      .slice(0, notesPerCycle)
       .map((line) => {
         // Remove bullet point prefix and clean up
         const text = line

@@ -46,6 +46,8 @@ interface UseNuggetNotesConfig {
   minWordsForNotes?: number;
   /** Minimum interval between note generations in ms (see DEFAULT_CONFIG) */
   noteIntervalMs?: number;
+  /** Most notes one generation may produce — set from the user's density setting. */
+  maxNotesPerCycle?: number;
   /** Minimum words before updating context (default: 200) */
   minWordsForContext?: number;
   /** Minimum interval between context updates in ms (default: 120000 = 2 min) */
@@ -68,6 +70,7 @@ interface UseNuggetNotesConfig {
 const DEFAULT_CONFIG: Required<Omit<UseNuggetNotesConfig, 'onScrubComplete'>> = {
   minWordsForNotes: 60,
   noteIntervalMs: 90000,
+  maxNotesPerCycle: 2,
   minWordsForContext: 200,
   contextIntervalMs: 120000,
   minWordsForScrub: 150,
@@ -319,6 +322,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             userNotes,
             recentNoteTexts,
             earlierNoteTexts,
+            maxNotes: cfg.maxNotesPerCycle,
           }),
           signal: controller.signal,
         });
@@ -376,7 +380,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
         };
       }
     },
-    [getApiUrl],
+    [getApiUrl, cfg.maxNotesPerCycle],
   );
 
   /**

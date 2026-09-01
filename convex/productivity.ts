@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   weeklyGoalMinutes: 600,
   courses: [] as string[],
   nuggetNotesEnabled: true,
+  nuggetNoteDensity: 'normal' as const,
   soundEnabled: true,
   tosAcceptedAt: undefined as number | undefined,
   tosVersion: undefined as string | undefined,
@@ -40,6 +41,9 @@ export const updateSettings = mutation({
     weeklyGoalMinutes: v.optional(v.number()),
     courses: v.optional(v.array(v.string())),
     nuggetNotesEnabled: v.optional(v.boolean()),
+    nuggetNoteDensity: v.optional(
+      v.union(v.literal('terse'), v.literal('normal'), v.literal('detailed')),
+    ),
     soundEnabled: v.optional(v.boolean()),
     tosAcceptedAt: v.optional(v.number()),
     tosVersion: v.optional(v.string()),

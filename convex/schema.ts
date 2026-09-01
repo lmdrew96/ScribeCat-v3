@@ -84,6 +84,10 @@ export default defineSchema({
     weeklyGoalMinutes: v.number(),
     courses: v.optional(v.array(v.string())),
     nuggetNotesEnabled: v.optional(v.boolean()),
+    // Absent reads as 'normal', which is the previous hardcoded behaviour.
+    nuggetNoteDensity: v.optional(
+      v.union(v.literal('terse'), v.literal('normal'), v.literal('detailed')),
+    ),
     soundEnabled: v.optional(v.boolean()),
     tosAcceptedAt: v.optional(v.number()),
     tosVersion: v.optional(v.string()),

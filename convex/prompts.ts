@@ -195,6 +195,7 @@ export function getNuggetNotePrompt(
   userNotes?: string,
   recentNoteTexts?: string[],
   earlierNoteTexts?: string[],
+  maxNotes = 2,
 ): string {
   const style = NUGGET_STYLE[lectureType] || NUGGET_STYLE.general;
   const contextStr = context?.currentTopic
@@ -225,7 +226,7 @@ ${style}
 CONTEXT: ${contextStr}
 ${earlierSection}${alreadyCapturedSection}${userNotesSection}
 RULES:
-- Output 0-2 bullet points. If nothing genuinely new or important was said, output nothing at all.
+- Output 0-${maxNotes} bullet point${maxNotes === 1 ? '' : 's'}. If nothing genuinely new or important was said, output nothing at all.
 - Each note must cover a DISTINCT concept not already listed above — including
   the condensed "EARLIER IN THIS LECTURE" items, which are abbreviated but still count.
 - Be concise: one clear sentence per note. No filler, no repetition.

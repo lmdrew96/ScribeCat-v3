@@ -11,6 +11,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import type { useAchievements, useStudySettings, useStudyStats } from '@/hooks/use-productivity';
+import {
+  NUGGET_DENSITY_PRESETS,
+  NUGGET_DENSITY_VALUES,
+  type NuggetNoteDensity,
+  resolveNuggetDensity,
+} from '@/lib/nugget-density';
 import { cn } from '@/lib/utils';
 import { Award, Check, Clock, Lock } from 'lucide-react';
 import { ACHIEVEMENT_DEFINITIONS } from '../../../shared/achievements';
@@ -36,6 +42,8 @@ interface StudyTabProps {
   onWeeklyGoalChange: (hours: string) => void;
   nuggetNotesEnabled: boolean;
   onNuggetNotesEnabledChange: (checked: boolean) => void;
+  nuggetNoteDensity: NuggetNoteDensity;
+  onNuggetNoteDensityChange: (density: NuggetNoteDensity) => void;
   newCourse: string;
   onNewCourseChange: (value: string) => void;
   onAddCourse: () => void;
@@ -66,6 +74,8 @@ export function StudyTab({
   onWeeklyGoalChange,
   nuggetNotesEnabled,
   onNuggetNotesEnabledChange,
+  nuggetNoteDensity,
+  onNuggetNoteDensityChange,
   newCourse,
   onNewCourseChange,
   onAddCourse,
@@ -172,6 +182,34 @@ export function StudyTab({
           <p className="text-xs text-muted-foreground">Auto-generate AI notes during recording</p>
         </div>
         <Switch checked={nuggetNotesEnabled} onCheckedChange={onNuggetNotesEnabledChange} />
+      </div>
+
+      {/* Note density — only meaningful while Nugget's Notes are on */}
+      <div className="space-y-2">
+        <Label
+          className={cn('text-sm text-foreground', !nuggetNotesEnabled && 'text-muted-foreground')}
+        >
+          How much Nugget writes
+        </Label>
+        <Select
+          value={nuggetNoteDensity}
+          onValueChange={(value) => onNuggetNoteDensityChange(resolveNuggetDensity(value))}
+          disabled={!nuggetNotesEnabled}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {NUGGET_DENSITY_VALUES.map((density) => (
+              <SelectItem key={density} value={density}>
+                {NUGGET_DENSITY_PRESETS[density].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          {NUGGET_DENSITY_PRESETS[nuggetNoteDensity].description}
+        </p>
       </div>
 
       {/* Courses */}

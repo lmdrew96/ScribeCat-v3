@@ -13,6 +13,7 @@ import { useApiKeys } from '@/hooks/use-api-keys';
 import { readChangelogSeenVersion, useChangelog } from '@/hooks/use-changelog';
 import { useAchievements, useStudySettings, useStudyStats } from '@/hooks/use-productivity';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { type NuggetNoteDensity, resolveNuggetDensity } from '@/lib/nugget-density';
 import { getPermissionStatus, requestNotificationPermission } from '@/lib/push-notifications';
 import { cn } from '@/lib/utils';
 import { useClerk, useUser } from '@clerk/clerk-react';
@@ -153,6 +154,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState('0');
   const [weeklyGoal, setWeeklyGoal] = useState('10');
   const [nuggetNotesEnabled, setNuggetNotesEnabled] = useState(true);
+  const [nuggetNoteDensity, setNuggetNoteDensity] = useState<NuggetNoteDensity>('normal');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
 
@@ -205,6 +207,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setDailyGoalMinutes(String(mins));
     setWeeklyGoal(String(Math.floor(settings.weeklyGoalMinutes / 60)));
     setNuggetNotesEnabled(settings.nuggetNotesEnabled ?? true);
+    setNuggetNoteDensity(resolveNuggetDensity(settings.nuggetNoteDensity));
     setSoundEnabled(settings.soundEnabled ?? true);
     if (settings.timezone) {
       setTimezone(settings.timezone);
@@ -228,6 +231,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       theme?: string;
       courses?: string[];
       nuggetNotesEnabled?: boolean;
+      nuggetNoteDensity?: NuggetNoteDensity;
       soundEnabled?: boolean;
       timezone?: string;
     }) => {
@@ -388,6 +392,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 onNuggetNotesEnabledChange={(checked) => {
                   setNuggetNotesEnabled(checked);
                   saveSettings({ nuggetNotesEnabled: checked });
+                }}
+                nuggetNoteDensity={nuggetNoteDensity}
+                onNuggetNoteDensityChange={(density) => {
+                  setNuggetNoteDensity(density);
+                  saveSettings({ nuggetNoteDensity: density });
                 }}
                 newCourse={newCourse}
                 onNewCourseChange={setNewCourse}
