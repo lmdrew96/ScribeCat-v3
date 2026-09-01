@@ -156,6 +156,7 @@ export function getNuggetNotePrompt(
   lectureType: LectureType,
   userNotes?: string,
   recentNoteTexts?: string[],
+  earlierNoteTexts?: string[],
 ): string {
   const style = NUGGET_STYLE[lectureType] || NUGGET_STYLE.general;
   const contextStr = context?.currentTopic
@@ -165,6 +166,14 @@ export function getNuggetNotePrompt(
   const userNotesSection = userNotes?.trim()
     ? `\nSTUDENT'S NOTES SO FAR:\n${userNotes.slice(-300)}\n`
     : '';
+
+  // Two tiers so the model's memory spans the whole lecture without prior notes
+  // dominating a deliberately small prompt: recent notes verbatim (most likely to
+  // be echoed), older ones as fragments.
+  const earlierSection =
+    earlierNoteTexts && earlierNoteTexts.length > 0
+      ? `\nEARLIER IN THIS LECTURE (already covered, condensed):\n${earlierNoteTexts.map((n) => `- ${n}`).join('\n')}\n`
+      : '';
 
   const alreadyCapturedSection =
     recentNoteTexts && recentNoteTexts.length > 0
@@ -176,10 +185,11 @@ export function getNuggetNotePrompt(
 ${style}
 
 CONTEXT: ${contextStr}
-${alreadyCapturedSection}${userNotesSection}
+${earlierSection}${alreadyCapturedSection}${userNotesSection}
 RULES:
 - Output 0-2 bullet points. If nothing genuinely new or important was said, output nothing at all.
-- Each note must cover a DISTINCT concept not already in "ALREADY CAPTURED" above.
+- Each note must cover a DISTINCT concept not already listed above — including
+  the condensed "EARLIER IN THIS LECTURE" items, which are abbreviated but still count.
 - Be concise: one clear sentence per note. No filler, no repetition.
 - If the segment is transitional, off-topic, or just repeats prior points, output nothing.
 

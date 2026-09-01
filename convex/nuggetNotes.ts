@@ -32,15 +32,23 @@ export interface NuggetNote {
 }
 
 export const generateNuggetNotes = httpAction(async (_ctx, request) => {
-  const { transcript, context, recordingTimeSeconds, lectureType, userNotes, recentNoteTexts } =
-    (await request.json()) as {
-      transcript: string;
-      context: LectureContext;
-      recordingTimeSeconds: number;
-      lectureType: string;
-      userNotes?: string;
-      recentNoteTexts?: string[];
-    };
+  const {
+    transcript,
+    context,
+    recordingTimeSeconds,
+    lectureType,
+    userNotes,
+    recentNoteTexts,
+    earlierNoteTexts,
+  } = (await request.json()) as {
+    transcript: string;
+    context: LectureContext;
+    recordingTimeSeconds: number;
+    lectureType: string;
+    userNotes?: string;
+    recentNoteTexts?: string[];
+    earlierNoteTexts?: string[];
+  };
 
   const prompt = getNuggetNotePrompt(
     transcript,
@@ -48,6 +56,7 @@ export const generateNuggetNotes = httpAction(async (_ctx, request) => {
     (lectureType || 'general') as LectureType,
     userNotes,
     recentNoteTexts,
+    earlierNoteTexts,
   );
 
   try {

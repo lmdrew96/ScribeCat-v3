@@ -128,6 +128,27 @@ const LIVE_MAX_WINDOWS = 3;
 /** Consecutive failed generations before we tell the user something is wrong. */
 const NOTE_FAILURE_TOAST_THRESHOLD = 2;
 
+// Dedup context is sent in two tiers. Eight notes alone is only a ~12-minute
+// memory at the default cadence, and lectures are repetitive by design —
+// professors restate definitions and recap before moving on. Sending every note
+// verbatim would let prior notes dominate a deliberately small prompt, so older
+// ones go as fragments instead.
+/** Most recent notes sent verbatim. */
+const DEDUP_VERBATIM_NOTES = 8;
+/** Older notes sent as condensed fragments, beyond the verbatim ones. */
+const DEDUP_CONDENSED_NOTES = 20;
+/** Characters kept from each condensed note, trimmed at a word boundary. */
+const DEDUP_CONDENSED_CHARS = 60;
+
+/** Shortens a note to a recognisable fragment for the condensed dedup tier. */
+function condenseNoteText(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= DEDUP_CONDENSED_CHARS) return trimmed;
+  const cut = trimmed.slice(0, DEDUP_CONDENSED_CHARS);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
 export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesReturn {
   const cfg = { ...DEFAULT_CONFIG, ...config };
 
@@ -278,8 +299,13 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       const controller = new AbortController();
       notesAbortRef.current = controller;
 
-      // Pass the last 8 note texts so Claude avoids redundancy
-      const recentNoteTexts = notesRef.current.slice(-8).map((n) => n.text);
+      // Recent notes verbatim, older ones condensed — see the DEDUP_* constants.
+      const allNotes = notesRef.current;
+      const verbatimStart = Math.max(0, allNotes.length - DEDUP_VERBATIM_NOTES);
+      const recentNoteTexts = allNotes.slice(verbatimStart).map((n) => n.text);
+      const earlierNoteTexts = allNotes
+        .slice(Math.max(0, verbatimStart - DEDUP_CONDENSED_NOTES), verbatimStart)
+        .map((n) => condenseNoteText(n.text));
 
       try {
         const response = await fetch(getApiUrl('nuggetNotes'), {
@@ -292,6 +318,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             lectureType: lectureType || 'general',
             userNotes,
             recentNoteTexts,
+            earlierNoteTexts,
           }),
           signal: controller.signal,
         });
