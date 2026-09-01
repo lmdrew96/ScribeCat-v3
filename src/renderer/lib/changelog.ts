@@ -33,6 +33,37 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.27.0',
+    date: '2026-09-01',
+    title: 'A pass over Nugget',
+    changes: [
+      {
+        kind: 'added',
+        text: 'Choose how much Nugget writes \u2014 terse, normal, or detailed \u2014 in Settings \u2192 Study. Previously the only choice was on or off.',
+      },
+      {
+        kind: 'improved',
+        text: 'The notes panel is taller and scrolls to keep up with new notes, unless you have scrolled back to re-read something.',
+      },
+      {
+        kind: 'improved',
+        text: 'Generating full notes now uses what Nugget captured live as an outline, instead of starting over from the transcript.',
+      },
+      {
+        kind: 'improved',
+        text: 'Nugget remembers what it already wrote for the whole lecture, not just the last twelve minutes, so it repeats itself less.',
+      },
+      {
+        kind: 'fixed',
+        text: 'Nugget note timestamps in the exam session viewer showed 0:00 for every note.',
+      },
+      {
+        kind: 'improved',
+        text: 'Chatting with Nugget about a long lecture is faster and cheaper \u2014 the transcript is no longer re-sent from scratch on every message.',
+      },
+    ],
+  },
+  {
     version: '5.26.0',
     date: '2026-08-31',
     title: 'Nugget catches more, and tells you when it can\u2019t',
