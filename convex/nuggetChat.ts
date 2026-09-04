@@ -126,6 +126,8 @@ export const nuggetChat = httpAction(async (_ctx, request) => {
     currentDateTime,
   });
 
+  const cachedChars = system[0].cache_control ? system[0].text.length : 0;
+
   // Build messages array
   const messages: ChatMessage[] = [
     ...(conversationHistory || []),
@@ -140,8 +142,12 @@ export const nuggetChat = httpAction(async (_ctx, request) => {
         // The only reliable signal that the cache is working. If
         // cache_read_input_tokens stays 0 across turns of one conversation,
         // something in the prefix is still varying.
+        //
+        // cachedChars answers what cache_write=0 leaves open: was the prefix
+        // varying, or simply too small? Haiku creates no entry at all below
+        // 4096 tokens (~16k chars), and reports that identically to a miss.
         console.log(
-          `[nuggetChat] tokens in=${usage.input_tokens} cache_write=${usage.cache_creation_input_tokens ?? 0} cache_read=${usage.cache_read_input_tokens ?? 0}`,
+          `[nuggetChat] tokens in=${usage.input_tokens} cached_chars=${cachedChars} cache_write=${usage.cache_creation_input_tokens ?? 0} cache_read=${usage.cache_read_input_tokens ?? 0}`,
         );
       },
       messages: messages.map((m) => ({
