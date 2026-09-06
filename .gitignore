@@ -42,5 +42,4 @@ coverage/
 next-env.d.ts
 
 # Agent Instructions
-.claude/CLAUDE.md
 copilot-instructions.md
