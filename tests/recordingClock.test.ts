@@ -3,6 +3,7 @@ import {
   createRecordingClock,
   elapsedMs,
   elapsedSeconds,
+  nextSegmentTimestamp,
   pauseClock,
   resumeClock,
   startClock,
@@ -80,5 +81,37 @@ describe('recording clock', () => {
   it('resets to zero for the next recording', () => {
     const clock = createRecordingClock();
     expect(elapsedSeconds(clock, T0 + 999_999)).toBe(0);
+  });
+});
+
+describe('nextSegmentTimestamp', () => {
+  it('uses the clock while it is moving forward', () => {
+    expect(nextSegmentTimestamp(5_000, -1)).toBe(5_000);
+    expect(nextSegmentTimestamp(9_000, 5_000)).toBe(9_000);
+  });
+
+  it('never ties or goes backwards, so stamps stay unique', () => {
+    expect(nextSegmentTimestamp(5_000, 5_000)).toBe(5_001);
+    expect(nextSegmentTimestamp(4_000, 5_000)).toBe(5_001);
+  });
+
+  it('keeps segments in step with paused audio', () => {
+    // Record 10s, pause 60s (two segments finalize mid-pause), resume, speak 5s.
+    let clock = startClock(T0);
+    let last = -1;
+    const stamp = (now: number): number => {
+      last = nextSegmentTimestamp(elapsedMs(clock, now), last);
+      return last;
+    };
+
+    expect(stamp(T0 + 10_000)).toBe(10_000);
+    clock = pauseClock(clock, T0 + 10_000);
+    const duringPause = [stamp(T0 + 30_000), stamp(T0 + 50_000)];
+    clock = resumeClock(clock, T0 + 70_000);
+
+    // Frozen clock, but still strictly increasing.
+    expect(duringPause).toEqual([10_001, 10_002]);
+    // 5s of audio after resuming is 15s into the saved recording, not 75s.
+    expect(stamp(T0 + 75_000)).toBe(15_000);
   });
 });

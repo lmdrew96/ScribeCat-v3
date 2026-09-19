@@ -2,6 +2,7 @@ import { keepAudioContextAwake } from '@/lib/audio-context-keepalive';
 import {
   type RecordingClock,
   createRecordingClock,
+  elapsedMs,
   elapsedSeconds,
   pauseClock,
   resumeClock,
@@ -75,6 +76,9 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
    * however long the browser throttled our tick.
    */
   const getElapsedSeconds = useCallback(() => elapsedSeconds(clockRef.current, Date.now()), []);
+
+  /** Same clock in milliseconds — what transcript segments are stamped with. */
+  const getElapsedMs = useCallback(() => elapsedMs(clockRef.current, Date.now()), []);
 
   /**
    * Load available audio input devices
@@ -528,6 +532,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     audioLevel,
     recordingTime,
     getElapsedSeconds,
+    getElapsedMs,
     startRecording,
     stopRecording,
     togglePause,

@@ -55,3 +55,18 @@ export function elapsedMs(clock: RecordingClock, now: number): number {
 export function elapsedSeconds(clock: RecordingClock, now: number): number {
   return Math.floor(elapsedMs(clock, now) / 1000);
 }
+
+/**
+ * Timestamp for the next transcript segment, in ms on the recording clock.
+ *
+ * Segments are stamped with elapsed recording time (not wall clock) so they
+ * line up with the saved audio, which skips paused spans. But that clock
+ * stands still during a pause, and segments keep arriving — so each stamp is
+ * forced strictly past the previous one. Timestamps double as React keys and
+ * as the "after this scrub" boundary test, and both break on ties.
+ *
+ * @param previous The last stamp handed out, or -1 before the first segment.
+ */
+export function nextSegmentTimestamp(clockMs: number, previous: number): number {
+  return Math.max(clockMs, previous + 1);
+}

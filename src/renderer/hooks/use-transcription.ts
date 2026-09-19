@@ -1,4 +1,5 @@
 import { keepAudioContextAwake } from '@/lib/audio-context-keepalive';
+import { nextSegmentTimestamp } from '@/lib/recording-clock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface TranscriptSegment {
@@ -11,6 +12,12 @@ export interface UseTranscriptionOptions {
   onSegment?: (segment: TranscriptSegment) => void;
   onError?: (error: Error) => void;
   autoStart?: boolean;
+  /**
+   * Elapsed recording time in ms, excluding pauses — the clock the saved audio
+   * follows. Without it segments fall back to wall clock since start(), which
+   * drifts from the audio by every pause.
+   */
+  getElapsedMs?: () => number;
 }
 
 /**
@@ -33,6 +40,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const startTimeRef = useRef<number>(0);
+  const lastTimestampRef = useRef(-1);
   const releaseAudioKeepaliveRef = useRef<(() => void) | null>(null);
 
   // Track connection state with ref to avoid stale closure in cleanup
@@ -158,9 +166,12 @@ export function useTranscription(options?: UseTranscriptionOptions) {
         if (message.type === 'Begin') {
           console.log('Session started:', message.id);
         } else if (message.type === 'Turn') {
+          const clockMs = optionsRef.current?.getElapsedMs?.() ?? Date.now() - startTimeRef.current;
+          const timestamp = nextSegmentTimestamp(clockMs, lastTimestampRef.current);
+          lastTimestampRef.current = timestamp;
           const segment: TranscriptSegment = {
             text: message.transcript || '',
-            timestamp: Date.now() - startTimeRef.current,
+            timestamp,
             isFinal: message.end_of_turn === true,
           };
 
@@ -348,6 +359,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
       try {
         mediaStreamRef.current = stream;
         startTimeRef.current = Date.now();
+        lastTimestampRef.current = -1;
         shouldStreamRef.current = true;
         reconnectAttemptsRef.current = 0;
         setIsReconnecting(false);
@@ -479,6 +491,7 @@ export function useTranscription(options?: UseTranscriptionOptions) {
    * Reset segments
    */
   const reset = useCallback(() => {
+    lastTimestampRef.current = -1;
     setSegments([]);
     setError(null);
   }, []);

@@ -475,14 +475,22 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
   // call onScrubComplete. Each iteration uses `priorScrubbedText + newRawTailSinceLastScrub`
   // as input — so successive passes clean older portions instead of leaving them raw forever.
   const scrubTranscriptWindow = useCallback(
-    async (fullTranscript: string, currentContext: LectureContext): Promise<void> => {
+    async (
+      fullTranscript: string,
+      currentContext: LectureContext,
+      segments?: AnchorSegments,
+    ): Promise<void> => {
       if (!isRecordingRef.current) return;
 
-      // Boundary captured at scrub START (not completion) so segments arriving during
-      // the network round-trip are properly attributed as "after this scrub" / live tail.
-      // Stored as ms-since-recording-start to match segment.timestamp units — comparing
-      // against absolute Date.now() would always evaluate false and freeze the live tail.
-      const boundary = Date.now() - recordingStartTimeRef.current;
+      // Segments with a timestamp above the boundary have NOT been folded into this
+      // scrub and render as the live tail. The exact boundary is the last final
+      // segment in `fullTranscript` — segment stamps are strictly increasing, so
+      // anything arriving during the round-trip lands above it. (A clock reading
+      // here would tie with segments stamped during a pause and drop them.)
+      const boundary =
+        segments && segments.length > 0
+          ? segments[segments.length - 1].timestamp
+          : Date.now() - recordingStartTimeRef.current;
 
       // Build the input: prior scrubbed text + the new raw tail since the last scrub.
       // First pass (no prior scrubbed text) just uses the raw transcript.
@@ -610,7 +618,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
       // Check if we should scrub transcript (Haiku - every ~2 min, sliding 800-word window)
       if (shouldScrub(wordCount)) {
-        await scrubTranscriptWindow(transcript, currentContext);
+        await scrubTranscriptWindow(transcript, currentContext, segments);
       }
     },
     [

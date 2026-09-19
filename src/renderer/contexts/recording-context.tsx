@@ -204,6 +204,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     getUnuploadedChunks,
     markChunksUploaded,
     getElapsedSeconds,
+    getElapsedMs,
   } = useAudioRecorder({
     onChunkAvailable: (chunk, index) => {
       // Fire-and-forget: save chunk to IndexedDB for crash recovery.
@@ -232,7 +233,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     stop: stopTranscription,
     reset: resetTranscription,
     getFullTranscript,
-  } = useTranscription();
+  } = useTranscription({ getElapsedMs });
 
   // Break reminder toasts during recording
   useBreakReminder(isRecording);
