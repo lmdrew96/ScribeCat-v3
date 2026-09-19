@@ -4,6 +4,7 @@ import {
   SINGLE_WINDOW_MAX_WORDS,
   WINDOW_OVERLAP_WORDS,
   buildUnprocessedWindows,
+  spanForTailRange,
 } from '../src/renderer/lib/nugget-windows';
 
 /** Builds a transcript of `count` uniquely identifiable words: "w0 w1 w2 ...". */
@@ -20,10 +21,12 @@ describe('buildUnprocessedWindows', () => {
   it('returns nothing when there is no unprocessed content', () => {
     expect(buildUnprocessedWindows(transcriptOf(500), 0)).toEqual({
       windows: [],
+      tailRanges: [],
       consumedWordCount: 0,
     });
     expect(buildUnprocessedWindows(transcriptOf(500), -5)).toEqual({
       windows: [],
+      tailRanges: [],
       consumedWordCount: 0,
     });
   });
@@ -138,5 +141,73 @@ describe('buildUnprocessedWindows — chunking', () => {
     expect(
       buildUnprocessedWindows(transcriptOf(1000), SINGLE_WINDOW_MAX_WORDS + 1).windows.length,
     ).toBeGreaterThan(1);
+  });
+});
+
+describe('tailRanges', () => {
+  /** Re-derives a window's text from its tail range, to prove the two agree. */
+  const sliceByTail = (transcript: string, fromEnd: number, toEnd: number): string => {
+    const words = transcript.split(' ');
+    return words.slice(words.length - fromEnd, words.length - toEnd).join(' ');
+  };
+
+  it('locates the single window', () => {
+    const transcript = transcriptOf(500);
+    const { windows, tailRanges } = buildUnprocessedWindows(transcript, 60);
+    expect(tailRanges).toEqual([{ fromEnd: 60 + WINDOW_OVERLAP_WORDS, toEnd: 0 }]);
+    expect(sliceByTail(transcript, tailRanges[0].fromEnd, tailRanges[0].toEnd)).toBe(windows[0]);
+  });
+
+  it('locates every chunked window', () => {
+    const transcript = transcriptOf(1000);
+    const { windows, tailRanges } = buildUnprocessedWindows(transcript, 400);
+    expect(tailRanges).toHaveLength(windows.length);
+    windows.forEach((window, i) => {
+      expect(sliceByTail(transcript, tailRanges[i].fromEnd, tailRanges[i].toEnd)).toBe(window);
+    });
+  });
+});
+
+describe('spanForTailRange', () => {
+  // Three words per segment, 10s apart: "a0 a1 a2" @0, "b0 b1 b2" @10000, ...
+  const segments = ['a', 'b', 'c', 'd'].map((p, i) => ({
+    text: `${p}0 ${p}1 ${p}2`,
+    timestamp: i * 10_000,
+  }));
+
+  it('maps a window at the tail to its first and last segments', () => {
+    // Last 4 words: c2 d0 d1 d2
+    expect(spanForTailRange(segments, { fromEnd: 4, toEnd: 0 })).toEqual({
+      startMs: 20_000,
+      endMs: 30_000,
+    });
+  });
+
+  it('maps a window that stops short of the end', () => {
+    // fromEnd 9 → starts at b0; toEnd 4 → ends at c1 (4 words after it: c2 d0 d1 d2)
+    expect(spanForTailRange(segments, { fromEnd: 9, toEnd: 4 })).toEqual({
+      startMs: 10_000,
+      endMs: 20_000,
+    });
+  });
+
+  it('clamps to the earliest segment when the range reaches past them', () => {
+    expect(spanForTailRange(segments, { fromEnd: 50, toEnd: 0 })).toEqual({
+      startMs: 0,
+      endMs: 30_000,
+    });
+  });
+
+  it('skips empty segments', () => {
+    const withGap = [...segments.slice(0, 3), { text: '  ', timestamp: 25_000 }, segments[3]];
+    expect(spanForTailRange(withGap, { fromEnd: 4, toEnd: 3 })).toEqual({
+      startMs: 20_000,
+      endMs: 20_000,
+    });
+  });
+
+  it('returns null for no segments or an empty range', () => {
+    expect(spanForTailRange([], { fromEnd: 4, toEnd: 0 })).toBeNull();
+    expect(spanForTailRange(segments, { fromEnd: 2, toEnd: 2 })).toBeNull();
   });
 });

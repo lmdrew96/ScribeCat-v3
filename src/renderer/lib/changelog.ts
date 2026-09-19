@@ -33,14 +33,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.29.1',
-    label: '5.28.0 \u2013 5.29.1',
+    version: '5.30.0',
+    label: '5.28.0 \u2013 5.30.0',
     date: '2026-09-19',
     title: 'Jump back to the moment',
     changes: [
       {
         kind: 'added',
         text: 'After you stop recording, click any timestamp in Nugget\u2019s Notes to open the saved recording and play from that moment.',
+      },
+      {
+        kind: 'added',
+        text: 'Wondering where one of Nugget\u2019s notes came from? Click it in a saved session to see the part of the transcript it was written from. Works for recordings made from now on.',
       },
       {
         kind: 'added',

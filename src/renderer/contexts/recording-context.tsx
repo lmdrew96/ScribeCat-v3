@@ -422,6 +422,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
           nuggetNotes: latestNotes.map((n) => ({
             text: n.text,
             recordingTime: n.recordingTime,
+            sourceStartMs: n.sourceStartMs,
+            sourceEndMs: n.sourceEndMs,
           })),
         });
       } catch (error) {
@@ -458,6 +460,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
         recordingTime,
         lectureType,
         sessionForNotes?.notesPlainText || undefined,
+        finalSegments,
       );
     };
 
@@ -614,6 +617,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
           nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
             text: n.text,
             recordingTime: n.recordingTime,
+            sourceStartMs: n.sourceStartMs,
+            sourceEndMs: n.sourceEndMs,
           })),
         });
       } catch (error) {
@@ -664,7 +669,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     if (capturedSessionId) {
       const beforeCount = nuggetNotes.getLatestNotes().length;
       nuggetNotes
-        .stopRecording(finalTranscript)
+        .stopRecording(
+          finalTranscript,
+          segments.filter((s) => s.isFinal),
+        )
         .then(async () => {
           const afterNotes = nuggetNotes.getLatestNotes();
           if (afterNotes.length > beforeCount) {
@@ -674,6 +682,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
                 nuggetNotes: afterNotes.map((n) => ({
                   text: n.text,
                   recordingTime: n.recordingTime,
+                  sourceStartMs: n.sourceStartMs,
+                  sourceEndMs: n.sourceEndMs,
                 })),
               });
             } catch (err) {

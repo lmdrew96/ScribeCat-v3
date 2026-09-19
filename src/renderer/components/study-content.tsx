@@ -1,3 +1,4 @@
+import { StudyNuggetNotes } from '@/components/study-nugget-notes';
 import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -613,37 +614,11 @@ export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyCont
         </TabsContent>
 
         <TabsContent value="nugget-notes" className="h-[calc(100%-2rem)] mt-0">
-          <ScrollArea className="h-full rounded-xl glass p-4">
-            {recording.nuggetNotes && recording.nuggetNotes.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {recording.nuggetNotes.map((note, index) => (
-                  <div
-                    key={`${note.recordingTime}-${index}`}
-                    className="flex items-start gap-3 rounded-lg glass-light px-3 py-2.5"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug">{note.text}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => seek(note.recordingTime)}
-                      className="shrink-0 text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
-                    >
-                      @ {formatRecordingTime(note.recordingTime)}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Cat className="h-8 w-8 text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">No Nugget notes for this session</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  Nugget generates notes automatically during recording
-                </p>
-              </div>
-            )}
-          </ScrollArea>
+          <StudyNuggetNotes
+            notes={recording.nuggetNotes}
+            segments={recording.transcriptSegments}
+            onSeek={seek}
+          />
         </TabsContent>
       </Tabs>
     </div>

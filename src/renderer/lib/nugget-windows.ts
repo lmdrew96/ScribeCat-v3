@@ -24,9 +24,23 @@ export const CHUNK_SIZE_WORDS = 100;
 /** How far each window advances. Smaller than the chunk size, so windows overlap. */
 export const CHUNK_STEP_WORDS = 80;
 
+/**
+ * Where a window sits, counted in words from the END of the transcript. The
+ * buffer is trimmed from the front as it grows, so front-relative positions
+ * shift between calls; tail-relative ones stay valid.
+ */
+export interface TailRange {
+  /** Words from the window's first word through the end of the transcript. */
+  fromEnd: number;
+  /** Words after the window's last word. 0 when the window runs to the end. */
+  toEnd: number;
+}
+
 export interface UnprocessedWindows {
   /** Transcript slices to generate from, oldest first. Each carries overlap context. */
   windows: string[];
+  /** Parallel to `windows`: each one's position, for anchoring notes to the transcript. */
+  tailRanges: TailRange[];
   /**
    * How many of the unprocessed words these windows cover. Callers decrement
    * their unprocessed counter by this rather than zeroing it, so anything left
@@ -35,7 +49,7 @@ export interface UnprocessedWindows {
   consumedWordCount: number;
 }
 
-const EMPTY: UnprocessedWindows = { windows: [], consumedWordCount: 0 };
+const EMPTY: UnprocessedWindows = { windows: [], tailRanges: [], consumedWordCount: 0 };
 
 /**
  * Builds the transcript windows covering the unprocessed tail of `transcript`.
@@ -65,10 +79,17 @@ export function buildUnprocessedWindows(
 
   if (unprocessed <= SINGLE_WINDOW_MAX_WORDS) {
     const window = words.slice(contextStart).join(' ');
-    return window ? { windows: [window], consumedWordCount: unprocessed } : EMPTY;
+    return window
+      ? {
+          windows: [window],
+          tailRanges: [{ fromEnd: totalWords - contextStart, toEnd: 0 }],
+          consumedWordCount: unprocessed,
+        }
+      : EMPTY;
   }
 
   const windows: string[] = [];
+  const tailRanges: TailRange[] = [];
   let pos = contextStart;
   // Exclusive index of the furthest word any returned window reaches.
   let coveredTo = unprocessedStart;
@@ -78,11 +99,64 @@ export function buildUnprocessedWindows(
     const window = words.slice(pos, end).join(' ');
     if (window) {
       windows.push(window);
+      tailRanges.push({ fromEnd: totalWords - pos, toEnd: totalWords - end });
       coveredTo = Math.max(coveredTo, end);
     }
     if (end >= totalWords) break;
     pos += CHUNK_STEP_WORDS;
   }
 
-  return { windows, consumedWordCount: Math.max(0, coveredTo - unprocessedStart) };
+  return {
+    windows,
+    tailRanges,
+    consumedWordCount: Math.max(0, coveredTo - unprocessedStart),
+  };
+}
+
+export interface SourceSpan {
+  /** Timestamp of the first transcript segment the window drew on (ms since recording start). */
+  startMs: number;
+  /** Timestamp of the last such segment — segments in [startMs, endMs] are the source. */
+  endMs: number;
+}
+
+const countWords = (text: string): number => text.trim().split(/\s+/).filter(Boolean).length;
+
+/**
+ * Maps a window's tail range onto the segments its words came from.
+ *
+ * Assumes the transcript the window was cut from ends with these segments'
+ * text — true for the live path (a plain join of final segments) and for the
+ * unprocessed tail at stop, where only the scrubbed prefix differs. If the
+ * range reaches past the segments, it clamps to the earliest one.
+ */
+export function spanForTailRange(
+  segments: ReadonlyArray<{ text: string; timestamp: number }>,
+  range: TailRange,
+): SourceSpan | null {
+  if (segments.length === 0 || range.fromEnd <= range.toEnd) return null;
+
+  // 0-based word indices counted back from the last word (0 = final word).
+  const firstWordFromEnd = range.fromEnd - 1;
+  const lastWordFromEnd = range.toEnd;
+
+  let wordsAfter = 0; // words in segments later than the one being examined
+  let startMs: number | null = null;
+  let endMs: number | null = null;
+
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const segmentWords = countWords(segments[i].text);
+    const lastIndexInSegment = wordsAfter + segmentWords - 1;
+    if (endMs === null && segmentWords > 0 && lastWordFromEnd <= lastIndexInSegment) {
+      endMs = segments[i].timestamp;
+    }
+    if (segmentWords > 0 && firstWordFromEnd <= lastIndexInSegment) {
+      startMs = segments[i].timestamp;
+      break;
+    }
+    wordsAfter += segmentWords;
+  }
+
+  const earliest = segments[0].timestamp;
+  return { startMs: startMs ?? earliest, endMs: endMs ?? earliest };
 }

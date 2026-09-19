@@ -5,7 +5,7 @@
  * Lecture-type-aware for context-specific note generation.
  */
 
-import { buildUnprocessedWindows } from '@/lib/nugget-windows';
+import { type SourceSpan, buildUnprocessedWindows, spanForTailRange } from '@/lib/nugget-windows';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { LectureType } from '../components/lecture-type-select';
@@ -23,7 +23,17 @@ export interface NuggetNote {
   text: string;
   timestamp: number;
   recordingTime: number;
+  /**
+   * The transcript this note was generated from: segments with timestamps in
+   * [sourceStartMs, sourceEndMs] (ms since recording start). Absent on notes
+   * saved before anchoring existed.
+   */
+  sourceStartMs?: number;
+  sourceEndMs?: number;
 }
+
+/** Final transcript segments, as far as anchoring needs them. */
+type AnchorSegments = ReadonlyArray<{ text: string; timestamp: number }>;
 
 /** A note removed by the user, kept so the dismissal can be undone in place. */
 export interface DismissedNote {
@@ -104,12 +114,15 @@ export interface UseNuggetNotesReturn {
   scrubBoundaryAt: number;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
-  stopRecording: (finalTranscript?: string) => Promise<void>;
+  /** `segments` are the final segments whose text ends `finalTranscript` — used to anchor notes. */
+  stopRecording: (finalTranscript?: string, segments?: AnchorSegments) => Promise<void>;
   processTranscriptChunk: (
     transcript: string,
     durationSeconds: number,
     lectureType?: LectureType,
     userNotes?: string,
+    /** The final segments `transcript` was joined from — used to anchor notes. */
+    segments?: AnchorSegments,
   ) => Promise<void>;
   clearNotes: () => void;
   /**
@@ -293,6 +306,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       recordingTimeSeconds: number,
       lectureType?: LectureType,
       userNotes?: string,
+      sourceSpan?: SourceSpan | null,
     ): Promise<GenerateNotesResult> => {
       // Don't start new requests if not recording
       if (!isRecordingRef.current) return { ok: false, aborted: true, message: 'not recording' };
@@ -355,6 +369,10 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
           return {
             ...note,
             id: `note-${Date.now()}-${noteCounterRef.current}`,
+            ...(sourceSpan && {
+              sourceStartMs: sourceSpan.startMs,
+              sourceEndMs: sourceSpan.endMs,
+            }),
           };
         });
 
@@ -518,6 +536,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       durationSeconds: number,
       lectureType?: LectureType,
       userNotes?: string,
+      segments?: AnchorSegments,
     ): Promise<void> => {
       if (!isEnabled || !isRecording) return;
 
@@ -548,14 +567,14 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
       if (shouldGenerateNotes(wordCount)) {
         // Size the window from what was actually said since the last generation,
         // not a fixed tail — a fixed tail silently drops the overflow.
-        const { windows, consumedWordCount } = buildUnprocessedWindows(
+        const { windows, tailRanges, consumedWordCount } = buildUnprocessedWindows(
           transcriptBufferRef.current,
           wordsSinceNoteRef.current,
           LIVE_MAX_WINDOWS,
         );
 
         let allSucceeded = windows.length > 0;
-        for (const window of windows) {
+        for (const [i, window] of windows.entries()) {
           if (!isRecordingRef.current) break;
           const result = await generateNotes(
             window,
@@ -563,6 +582,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
             durationSeconds,
             lectureType,
             userNotes,
+            segments ? spanForTailRange(segments, tailRanges[i]) : null,
           );
           recordNoteResult(result);
           if (!result.ok) {
@@ -622,7 +642,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
   // Stop recording — process all remaining unprocessed transcript into notes
   const stopRecording = useCallback(
-    async (finalTranscript?: string): Promise<void> => {
+    async (finalTranscript?: string, segments?: AnchorSegments): Promise<void> => {
       if (!isRecording) return;
 
       console.log('⏹️ Nugget Notes stopping, processing remaining transcript...');
@@ -651,14 +671,21 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
         isRecordingRef.current = true;
 
         // Uncapped — the final flush should drain the whole backlog.
-        const { windows } = buildUnprocessedWindows(
+        const { windows, tailRanges } = buildUnprocessedWindows(
           transcriptBufferRef.current,
           wordsSinceNoteRef.current,
         );
 
-        for (const window of windows) {
+        for (const [i, window] of windows.entries()) {
           if (!isRecordingRef.current) break;
-          const result = await generateNotes(window, context, recordingTimeSeconds);
+          const result = await generateNotes(
+            window,
+            context,
+            recordingTimeSeconds,
+            undefined,
+            undefined,
+            segments ? spanForTailRange(segments, tailRanges[i]) : null,
+          );
           recordNoteResult(result);
         }
 

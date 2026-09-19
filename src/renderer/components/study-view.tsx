@@ -48,7 +48,13 @@ export interface Recording {
   transcriptSegments?: TranscriptSegment[];
   lectureType?: string;
   course?: string;
-  nuggetNotes?: { text: string; recordingTime: number }[];
+  nuggetNotes?: {
+    text: string;
+    recordingTime: number;
+    /** Source transcript span, ms — see NuggetNote in use-nugget-notes. */
+    sourceStartMs?: number;
+    sourceEndMs?: number;
+  }[];
   documentText?: string;
   speakerLabelsStatus?: 'processing' | 'labeled' | 'failed';
   speakerLabelsError?: string;

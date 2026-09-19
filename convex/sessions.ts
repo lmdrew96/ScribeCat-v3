@@ -126,6 +126,8 @@ export const update = mutation({
         v.object({
           text: v.string(),
           recordingTime: v.number(),
+          sourceStartMs: v.optional(v.number()),
+          sourceEndMs: v.optional(v.number()),
         }),
       ),
     ),
@@ -443,7 +445,7 @@ export const mergeSessions = mutation({
     let cumulativeDuration = 0;
     const allTranscripts: string[] = [];
     const allSegments: { text: string; timestamp: number; isFinal: boolean }[] = [];
-    const allNuggetNotes: { text: string; recordingTime: number }[] = [];
+    const allNuggetNotes: NonNullable<Doc<'sessions'>['nuggetNotes']> = [];
     const allAudioIds: string[] = [];
     const allDocumentTexts: string[] = [];
     const allFlaggedWords: { text: string; timestamp: number; segmentIndex?: number }[] = [];
@@ -458,8 +460,14 @@ export const mergeSessions = mutation({
       }
 
       for (const note of session.nuggetNotes ?? []) {
-        // recordingTime is seconds; the offset (session.duration) is milliseconds.
-        allNuggetNotes.push({ ...note, recordingTime: note.recordingTime + offset / 1000 });
+        // recordingTime is seconds; the offset (session.duration) and the source
+        // span are milliseconds.
+        allNuggetNotes.push({
+          ...note,
+          recordingTime: note.recordingTime + offset / 1000,
+          sourceStartMs: note.sourceStartMs === undefined ? undefined : note.sourceStartMs + offset,
+          sourceEndMs: note.sourceEndMs === undefined ? undefined : note.sourceEndMs + offset,
+        });
       }
 
       const audioIds =

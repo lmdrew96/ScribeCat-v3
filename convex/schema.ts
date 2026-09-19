@@ -37,6 +37,9 @@ export default defineSchema({
         v.object({
           text: v.string(),
           recordingTime: v.number(),
+          // Transcript span the note was generated from (ms since recording start).
+          sourceStartMs: v.optional(v.number()),
+          sourceEndMs: v.optional(v.number()),
         }),
       ),
     ),

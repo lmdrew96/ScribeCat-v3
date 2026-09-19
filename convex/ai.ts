@@ -29,6 +29,8 @@ export const generateNotesFromTranscript = action({
         v.object({
           text: v.string(),
           recordingTime: v.number(),
+          sourceStartMs: v.optional(v.number()),
+          sourceEndMs: v.optional(v.number()),
         }),
       ),
     ),
