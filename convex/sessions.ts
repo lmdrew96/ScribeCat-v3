@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
+import type { Doc } from './_generated/dataModel';
 import { internalMutation, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import type { Doc } from './_generated/dataModel';
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({
@@ -458,7 +458,8 @@ export const mergeSessions = mutation({
       }
 
       for (const note of session.nuggetNotes ?? []) {
-        allNuggetNotes.push({ ...note, recordingTime: note.recordingTime + offset });
+        // recordingTime is seconds; the offset (session.duration) is milliseconds.
+        allNuggetNotes.push({ ...note, recordingTime: note.recordingTime + offset / 1000 });
       }
 
       const audioIds =
