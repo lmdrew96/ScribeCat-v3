@@ -25,10 +25,29 @@ const studyIndexRoute = createRoute({
   component: StudyView,
 });
 
+/** Search params for a saved session. */
+export interface StudySessionSearch {
+  /**
+   * Start playback here, in seconds — the same unit as a Nugget note's
+   * `recordingTime` and `formatRecordingTime`, not the milliseconds citations use.
+   */
+  t?: number;
+}
+
 const studySessionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/study/$sessionId',
   component: StudyView,
+  // URLs get pasted and hand-edited, so a bad `t` is dropped rather than trusted.
+  // The upper bound is clamped later, once the audio's duration is known.
+  validateSearch: (search: Record<string, unknown>): StudySessionSearch => {
+    const raw = search.t;
+    const t =
+      typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '')
+        ? Number(raw)
+        : Number.NaN;
+    return Number.isFinite(t) ? { t: Math.max(0, t) } : {};
+  },
 });
 
 const friendsRoute = createRoute({

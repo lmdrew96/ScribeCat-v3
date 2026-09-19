@@ -6,6 +6,7 @@ import { NuggetNotesPanel } from '@/components/nugget-notes-panel';
 import { RecordingConsentModal } from '@/components/recording-consent-modal';
 import { RecordingContinueModal } from '@/components/recording-continue-modal';
 import { useUploadFile } from '@convex-dev/r2/react';
+import { useNavigate } from '@tanstack/react-router';
 import { useAction, useMutation } from 'convex/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -60,6 +61,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
     cancelContinuePrompt,
   } = useRecordingContext();
 
+  const navigate = useNavigate();
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false);
   const [isProcessingDrawing, setIsProcessingDrawing] = useState(false);
   const uploadFile = useUploadFile(api.r2);
@@ -151,6 +153,16 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
             },
           });
         }}
+        onJumpToNote={
+          !isRecording && currentSessionId
+            ? (recordingTime) =>
+                navigate({
+                  to: '/study/$sessionId',
+                  params: { sessionId: currentSessionId },
+                  search: { t: recordingTime },
+                })
+            : undefined
+        }
         onToggleEnabled={nuggetNotes.setEnabled}
       />
 

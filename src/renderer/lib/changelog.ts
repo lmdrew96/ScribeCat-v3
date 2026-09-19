@@ -33,6 +33,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.29.0',
+    label: '5.28.0 \u2013 5.29.0',
+    date: '2026-09-19',
+    title: 'Jump back to the moment',
+    changes: [
+      {
+        kind: 'added',
+        text: 'After you stop recording, click any timestamp in Nugget\u2019s Notes to open the saved recording and play from that moment.',
+      },
+      {
+        kind: 'added',
+        text: 'ScribeCat now tells you when a new version is ready, so a tab left open for days doesn\u2019t quietly run old code. It never shows up while you\u2019re recording, and it never refreshes on its own.',
+      },
+    ],
+  },
+  {
     version: '5.27.0',
     date: '2026-09-01',
     title: 'A pass over Nugget',

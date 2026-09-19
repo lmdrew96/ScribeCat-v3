@@ -54,9 +54,11 @@ import type { Id } from '../../../convex/_generated/dataModel';
 interface StudyContentProps {
   recording: Recording;
   sidebarCollapsed?: boolean;
+  /** Seconds to seek to once the audio is ready — from the route's `?t=` param. */
+  startAt?: number;
 }
 
-export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps) {
+export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -247,6 +249,18 @@ export function StudyContent({ recording, sidebarCollapsed }: StudyContentProps)
       load(recording.audioUrl);
     }
   }, [recording.audioUrl, load]);
+
+  // Seeking before metadata loads is a no-op (duration is 0 until then), and the
+  // audio may still be uploading when the student arrives — so wait for a real
+  // duration. Apply once per recording + time, or scrubbing away would snap back.
+  const appliedStartRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (startAt === undefined || duration <= 0) return;
+    const key = `${recording.id}:${startAt}`;
+    if (appliedStartRef.current === key) return;
+    appliedStartRef.current = key;
+    seek(startAt); // seek() clamps to [0, duration]
+  }, [startAt, duration, recording.id, seek]);
 
   const handleSeek = (value: number[]) => {
     seek(value[0]);

@@ -36,6 +36,11 @@ interface NuggetNotesPanelProps {
   noteError?: string | null;
   onInsertNote: (noteText: string) => void;
   onDismissNote?: (noteId: string) => void;
+  /**
+   * Opens the saved recording at a note's moment. Only passed once audio for
+   * the session exists — while recording, timestamps stay plain text.
+   */
+  onJumpToNote?: (recordingTime: number) => void;
   onToggleEnabled?: (enabled: boolean) => void;
 }
 
@@ -47,6 +52,7 @@ export function NuggetNotesPanel({
   noteError,
   onInsertNote,
   onDismissNote,
+  onJumpToNote,
   // onToggleEnabled - reserved for future settings integration
 }: NuggetNotesPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -147,6 +153,7 @@ export function NuggetNotesPanel({
                     note={note}
                     onInsert={() => onInsertNote(note.text)}
                     onDismiss={onDismissNote ? () => onDismissNote(note.id) : undefined}
+                    onJump={onJumpToNote ? () => onJumpToNote(note.recordingTime) : undefined}
                   />
                 ))}
                 {isProcessing && (
@@ -241,10 +248,12 @@ function NoteBubble({
   note,
   onInsert,
   onDismiss,
+  onJump,
 }: {
   note: NuggetNote;
   onInsert: () => void;
   onDismiss?: () => void;
+  onJump?: () => void;
 }) {
   // Reveal-on-hover hides these entirely on touch, where there is no hover —
   // so they stay visible below the sm breakpoint.
@@ -254,9 +263,20 @@ function NoteBubble({
     <div className="group flex items-start gap-3 rounded-lg glass-light hover:bg-[var(--glass-bg)] px-3 py-2.5 transition-all">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-foreground leading-snug">{note.text}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          @ {formatRecordingTime(note.recordingTime)}
-        </p>
+        {onJump ? (
+          <button
+            type="button"
+            onClick={onJump}
+            className="mt-0.5 text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
+            title="Play the recording from here"
+          >
+            @ {formatRecordingTime(note.recordingTime)}
+          </button>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            @ {formatRecordingTime(note.recordingTime)}
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <Button
