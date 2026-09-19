@@ -672,6 +672,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
         .stopRecording(
           finalTranscript,
           segments.filter((s) => s.isFinal),
+          capturedRecordingTime,
         )
         .then(async () => {
           const afterNotes = nuggetNotes.getLatestNotes();

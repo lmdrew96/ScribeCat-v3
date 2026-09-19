@@ -114,8 +114,17 @@ export interface UseNuggetNotesReturn {
   scrubBoundaryAt: number;
   setEnabled: (enabled: boolean) => void;
   startRecording: () => void;
-  /** `segments` are the final segments whose text ends `finalTranscript` — used to anchor notes. */
-  stopRecording: (finalTranscript?: string, segments?: AnchorSegments) => Promise<void>;
+  /**
+   * `segments` are the final segments whose text ends `finalTranscript` — used
+   * to anchor notes. `recordingTimeSeconds` stamps the tail notes; pass the
+   * pause-aware recording clock read at stop, the same clock the session's
+   * duration comes from.
+   */
+  stopRecording: (
+    finalTranscript?: string,
+    segments?: AnchorSegments,
+    recordingTimeSeconds?: number,
+  ) => Promise<void>;
   processTranscriptChunk: (
     transcript: string,
     durationSeconds: number,
@@ -642,7 +651,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
 
   // Stop recording — process all remaining unprocessed transcript into notes
   const stopRecording = useCallback(
-    async (finalTranscript?: string, segments?: AnchorSegments): Promise<void> => {
+    async (
+      finalTranscript?: string,
+      segments?: AnchorSegments,
+      recordingTimeSeconds?: number,
+    ): Promise<void> => {
       if (!isRecording) return;
 
       console.log('⏹️ Nugget Notes stopping, processing remaining transcript...');
@@ -665,7 +678,11 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
           transcriptBufferRef.current = finalTranscript;
         }
 
-        const recordingTimeSeconds = (Date.now() - recordingStartTimeRef.current) / 1000;
+        // Wall-clock-since-start counts pauses and the flush itself, which stamped
+        // tail notes past the end of the recording. Fall back to it only if the
+        // caller didn't supply the recording clock.
+        const tailTimeSeconds =
+          recordingTimeSeconds ?? (Date.now() - recordingStartTimeRef.current) / 1000;
 
         // Temporarily re-enable so generateNotes doesn't bail out
         isRecordingRef.current = true;
@@ -681,7 +698,7 @@ export function useNuggetNotes(config?: UseNuggetNotesConfig): UseNuggetNotesRet
           const result = await generateNotes(
             window,
             context,
-            recordingTimeSeconds,
+            tailTimeSeconds,
             undefined,
             undefined,
             segments ? spanForTailRange(segments, tailRanges[i]) : null,
