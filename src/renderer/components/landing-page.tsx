@@ -24,7 +24,7 @@ const FEATURES = [
   {
     emoji: '✨',
     title: 'Nugget Takes Notes',
-    desc: "While you record, our AI cat writes bullet notes as the lecture goes. Zone out a little. We've got you.",
+    desc: "While you record, Nugget writes bullet notes as the lecture goes. Zone out a little. The cat's got you.",
     color: 'from-[var(--landing-amber)]/20 to-[var(--landing-purple-dusty)]/20',
     border: 'border-[var(--landing-amber)]/30',
   },
@@ -198,7 +198,7 @@ export function LandingPage() {
             {
               step: '4',
               label: 'Pass the exam',
-              sub: "We can't guarantee this but Nugget believes in you",
+              sub: "I can't guarantee this, but Nugget believes in you",
             },
           ].map((item) => (
             <div key={item.step} className="flex flex-col items-center gap-2 text-center">
