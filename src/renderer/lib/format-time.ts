@@ -20,3 +20,19 @@ export function formatRecordingTime(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
+/**
+ * The moment a Nugget note refers to, in SECONDS — the time it shows and seeks to.
+ *
+ * `recordingTime` is when the note was *generated*, at the end of its window,
+ * so it lands after the words were said. Notes anchored to the transcript
+ * (v5.30.0+) know where their source window starts; that runs a few seconds
+ * early because the window includes lead-in context, and early beats late when
+ * you're trying to hear where something came from. Older notes fall back.
+ */
+export function noteMomentSeconds(note: {
+  recordingTime: number;
+  sourceStartMs?: number;
+}): number {
+  return note.sourceStartMs === undefined ? note.recordingTime : note.sourceStartMs / 1000;
+}

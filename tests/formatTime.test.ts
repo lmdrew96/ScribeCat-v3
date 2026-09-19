@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRecordingTime } from '../src/renderer/lib/format-time';
+import { formatRecordingTime, noteMomentSeconds } from '../src/renderer/lib/format-time';
 
 describe('formatRecordingTime', () => {
   it('formats seconds as m:ss', () => {
@@ -26,5 +26,19 @@ describe('formatRecordingTime', () => {
     expect(formatRecordingTime(Number.NaN)).toBe('0:00');
     // Audio duration reads as Infinity before metadata loads on some browsers.
     expect(formatRecordingTime(Number.POSITIVE_INFINITY)).toBe('0:00');
+  });
+});
+
+describe('noteMomentSeconds', () => {
+  it('uses the start of the source span when the note has one', () => {
+    expect(noteMomentSeconds({ recordingTime: 750, sourceStartMs: 708_000 })).toBe(708);
+  });
+
+  it('falls back to recordingTime for notes saved before anchoring', () => {
+    expect(noteMomentSeconds({ recordingTime: 750 })).toBe(750);
+  });
+
+  it('treats a span starting at 0 as a real anchor, not a missing one', () => {
+    expect(noteMomentSeconds({ recordingTime: 45, sourceStartMs: 0 })).toBe(0);
   });
 });

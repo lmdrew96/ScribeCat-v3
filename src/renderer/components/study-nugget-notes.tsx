@@ -1,6 +1,6 @@
 import type { Recording } from '@/components/study-view';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatRecordingTime } from '@/lib/format-time';
+import { formatRecordingTime, noteMomentSeconds } from '@/lib/format-time';
 import { Cat, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
@@ -81,10 +81,10 @@ export function StudyNuggetNotes({ notes, segments, onSeek }: StudyNuggetNotesPr
                 )}
                 <button
                   type="button"
-                  onClick={() => onSeek(note.recordingTime)}
+                  onClick={() => onSeek(noteMomentSeconds(note))}
                   className="shrink-0 text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
                 >
-                  @ {formatRecordingTime(note.recordingTime)}
+                  @ {formatRecordingTime(noteMomentSeconds(note))}
                 </button>
               </div>
 

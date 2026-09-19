@@ -6,7 +6,7 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { NuggetNote } from '@/hooks/use-nugget-notes';
-import { formatRecordingTime } from '@/lib/format-time';
+import { formatRecordingTime, noteMomentSeconds } from '@/lib/format-time';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -40,7 +40,7 @@ interface NuggetNotesPanelProps {
    * Opens the saved recording at a note's moment. Only passed once audio for
    * the session exists — while recording, timestamps stay plain text.
    */
-  onJumpToNote?: (recordingTime: number) => void;
+  onJumpToNote?: (seconds: number) => void;
   onToggleEnabled?: (enabled: boolean) => void;
 }
 
@@ -153,7 +153,7 @@ export function NuggetNotesPanel({
                     note={note}
                     onInsert={() => onInsertNote(note.text)}
                     onDismiss={onDismissNote ? () => onDismissNote(note.id) : undefined}
-                    onJump={onJumpToNote ? () => onJumpToNote(note.recordingTime) : undefined}
+                    onJump={onJumpToNote ? () => onJumpToNote(noteMomentSeconds(note)) : undefined}
                   />
                 ))}
                 {isProcessing && (
@@ -270,11 +270,11 @@ function NoteBubble({
             className="mt-0.5 text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
             title="Play the recording from here"
           >
-            @ {formatRecordingTime(note.recordingTime)}
+            @ {formatRecordingTime(noteMomentSeconds(note))}
           </button>
         ) : (
           <p className="text-xs text-muted-foreground mt-0.5">
-            @ {formatRecordingTime(note.recordingTime)}
+            @ {formatRecordingTime(noteMomentSeconds(note))}
           </p>
         )}
       </div>

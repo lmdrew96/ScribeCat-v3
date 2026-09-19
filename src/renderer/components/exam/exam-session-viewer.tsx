@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useExamRoomSessionContent } from '@/hooks/use-exam-room';
 import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
-import { formatRecordingTime } from '@/lib/format-time';
+import { formatRecordingTime, noteMomentSeconds } from '@/lib/format-time';
 import { renderMarkdown } from '@/lib/render-markdown';
 import { BookOpen, Clock, FileText, Loader2, Mic, Pause, Play, User } from 'lucide-react';
 import { useEffect } from 'react';
@@ -253,7 +253,7 @@ export function ExamSessionViewer({
                           className="rounded-lg p-3 glass-light border border-[var(--glass-border)]"
                         >
                           <div className="text-xs text-muted-foreground mb-1">
-                            {formatRecordingTime(note.recordingTime)}
+                            {formatRecordingTime(noteMomentSeconds(note))}
                           </div>
                           <div className="text-sm text-foreground">{renderMarkdown(note.text)}</div>
                         </div>

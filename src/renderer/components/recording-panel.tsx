@@ -155,11 +155,11 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
         }}
         onJumpToNote={
           !isRecording && currentSessionId
-            ? (recordingTime) =>
+            ? (seconds) =>
                 navigate({
                   to: '/study/$sessionId',
                   params: { sessionId: currentSessionId },
-                  search: { t: recordingTime },
+                  search: { t: seconds },
                 })
             : undefined
         }
