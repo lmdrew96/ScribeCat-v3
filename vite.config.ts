@@ -17,7 +17,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt', not 'autoUpdate': a new build waits for the user to apply it via
+      // the update toast. Auto-activating could reload or strand a tab mid-lecture.
+      registerType: 'prompt',
       includeAssets: ['trippy-nuggy-baby-boy.PNG', 'nuggy-baby-boy.png', 'pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'ScribeCat',

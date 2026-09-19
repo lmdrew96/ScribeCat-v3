@@ -5,6 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { ThemeProvider } from './components/theme-provider';
+import { initAppUpdate } from './lib/app-update';
 import './styles/globals.css';
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
@@ -26,6 +27,8 @@ if (!clerkPubKey) {
 }
 
 const convex = new ConvexReactClient(convexUrl);
+
+initAppUpdate();
 
 const root = document.getElementById('root');
 

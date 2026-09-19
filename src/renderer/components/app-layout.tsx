@@ -6,6 +6,7 @@ import { RecordingNavigationGuard } from '@/components/recording-navigation-guar
 import { StudyQuestWidget } from '@/components/study-quest/study-quest-widget';
 import { TopBar } from '@/components/top-bar';
 import { TosAcceptanceModal } from '@/components/tos-acceptance-modal';
+import { UpdateAvailableToast } from '@/components/update-available-toast';
 import { RecordingProvider } from '@/contexts/recording-context';
 import { useSessionContext } from '@/contexts/session-context';
 import { useNotificationWatcher } from '@/hooks/use-notification-watcher';
@@ -50,6 +51,7 @@ export function AppLayout() {
         <RecordingNavigationGuard />
         <TosAcceptanceModal />
         <FirstRunOnboarding />
+        <UpdateAvailableToast />
       </div>
     </RecordingProvider>
   );
