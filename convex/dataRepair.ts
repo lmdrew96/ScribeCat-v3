@@ -25,10 +25,22 @@ import { internalMutation } from './_generated/server';
  * are reported as skipped.
  */
 export const repairDurations = internalMutation({
-  args: { dryRun: v.optional(v.boolean()) },
+  args: {
+    dryRun: v.optional(v.boolean()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+    /**
+     * Sessions per run. Deliberately small: a session document holds its whole
+     * transcript (one is already 871 KB against the 1 MiB cap), and a single
+     * function execution may only read 16 MiB. Reading them all at once fails.
+     */
+    batchSize: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     const dryRun = args.dryRun ?? true;
-    const sessions = await ctx.db.query('sessions').collect();
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 8 });
+    const sessions = page.page;
 
     const repaired: {
       id: string;
@@ -76,6 +88,8 @@ export const repairDurations = internalMutation({
       skippedCount: skipped.length,
       repaired,
       skipped,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
     };
   },
 });
@@ -86,17 +100,25 @@ export const repairDurations = internalMutation({
  * repair above closes the books on it.
  */
 export const findNegativeDurations = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const sessions = await ctx.db.query('sessions').collect();
-    return sessions
-      .filter((s) => s.duration < 0)
-      .map((s) => ({
-        id: s._id,
-        title: s.title,
-        createdAt: new Date(s.createdAt).toISOString(),
-        duration: s.duration,
-      }))
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  args: { cursor: v.optional(v.union(v.string(), v.null())), batchSize: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    // Paginated for the same reason as the repair above — reading every
+    // session's transcript in one execution exceeds the 16 MiB read limit.
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 8 });
+
+    return {
+      found: page.page
+        .filter((s) => s.duration < 0)
+        .map((s) => ({
+          id: s._id,
+          title: s.title,
+          createdAt: new Date(s.createdAt).toISOString(),
+          duration: s.duration,
+        })),
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
   },
 });
