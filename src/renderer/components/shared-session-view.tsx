@@ -109,7 +109,7 @@ export function SharedSessionView() {
       {/* Content */}
       <div className="flex-1 overflow-hidden rounded-xl glass flex flex-col min-h-0">
         <div className="flex-1 overflow-auto p-5">
-          <StudyContent recording={recording} />
+          <StudyContent recording={recording} readOnly />
         </div>
         <div className="border-t border-[var(--glass-border)]">
           <StudyTools sessionId={session._id} />

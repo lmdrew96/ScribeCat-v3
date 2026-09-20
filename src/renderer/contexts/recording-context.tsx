@@ -337,18 +337,24 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       if (fullTranscript === lastSavedTranscriptRef.current) return;
       lastSavedTranscriptRef.current = fullTranscript;
 
+      // Duration rides along with every periodic save. It used to be written
+      // only by the final save at stop, so anything that stopped that call from
+      // landing (a closed tab, a rejected mutation) left the session at 0.
+      const elapsedMs = getElapsedSeconds() * 1000;
+
       try {
         await updateSession({
           id: currentSessionIdRef.current,
           transcriptSegments: segments,
           transcript: fullTranscript,
+          ...(elapsedMs > 0 && { duration: elapsedMs }),
         });
       } catch (error) {
         console.error('Error saving transcript:', error);
       }
     };
     saveTranscript();
-  }, [segments, scrubVersion, updateSession]);
+  }, [segments, scrubVersion, updateSession, getElapsedSeconds]);
 
   // ─── Progressive audio upload effect ────────────────────────────────────
   // Every ~30s during recording, flush any accumulated audio chunks to
@@ -607,14 +613,20 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       clearRecoveryData(capturedSessionId).catch(console.warn);
     }
 
-    // Save session metadata.
+    // Save session metadata. Split in two: the transcript and its segments are
+    // by far the largest payload (Convex caps a document at 1 MiB / 8192 array
+    // elements), and when that write is rejected it used to take the duration
+    // and Nugget notes down with it.
     if (capturedSessionId) {
+      const lastSegmentMs = segments.length > 0 ? segments[segments.length - 1].timestamp : 0;
+      // The clock can read 0 if it never started cleanly; the transcript's own
+      // last timestamp is then the best duration available.
+      const durationMs = capturedRecordingTime > 0 ? capturedRecordingTime * 1000 : lastSegmentMs;
+
       try {
         await updateSession({
           id: capturedSessionId,
-          duration: capturedRecordingTime * 1000,
-          transcript: finalTranscript,
-          transcriptSegments: segments,
+          duration: durationMs,
           nuggetNotes: nuggetNotes.getLatestNotes().map((n) => ({
             text: n.text,
             recordingTime: n.recordingTime,
@@ -624,6 +636,22 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
         });
       } catch (error) {
         console.error('Error saving final session metadata:', error);
+      }
+
+      try {
+        await updateSession({
+          id: capturedSessionId,
+          transcript: finalTranscript,
+          transcriptSegments: segments,
+        });
+      } catch (error) {
+        // Silence here is how a transcript silently stopped at its last
+        // periodic save. Say so — the recording and notes are still safe.
+        console.error('Error saving final transcript:', error);
+        toast.error('The end of this transcript may not have saved', {
+          description: 'Your audio and notes are saved. Check the transcript in Study.',
+          duration: 10000,
+        });
       }
     }
 

@@ -33,8 +33,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.30.3',
-    label: '5.28.0 \u2013 5.30.3',
+    version: '5.31.0',
+    label: '5.28.0 \u2013 5.31.0',
     date: '2026-09-19',
     title: 'Jump back to the moment',
     changes: [
@@ -53,6 +53,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         kind: 'added',
         text: 'ScribeCat now tells you when a new version is ready, so a tab left open for days doesn\u2019t quietly run old code. It never shows up while you\u2019re recording, and it never refreshes on its own.',
+      },
+      {
+        kind: 'fixed',
+        text: 'A recording\u2019s length is now saved as you record instead of only when you stop, so a session can no longer end up listed as 0:00 if something goes wrong at the end.',
+      },
+      {
+        kind: 'fixed',
+        text: 'If the end of a transcript fails to save, ScribeCat now tells you instead of leaving you to notice later. Your audio and notes are saved separately and are unaffected.',
+      },
+      {
+        kind: 'fixed',
+        text: 'Someone viewing a session you shared with them can no longer rename it or change its course.',
       },
       {
         kind: 'fixed',

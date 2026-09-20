@@ -57,9 +57,20 @@ interface StudyContentProps {
   sidebarCollapsed?: boolean;
   /** Seconds to seek to once the audio is ready — from the route's `?t=` param. */
   startAt?: number;
+  /**
+   * Someone else's session (shared link, study room). Title and course become
+   * plain text and speaker detection is hidden — those write to the session,
+   * and only its owner may do that.
+   */
+  readOnly?: boolean;
 }
 
-export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyContentProps) {
+export function StudyContent({
+  recording,
+  sidebarCollapsed,
+  startAt,
+  readOnly = false,
+}: StudyContentProps) {
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const notesContainerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -274,8 +285,8 @@ export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyCont
   return (
     <div className="h-full flex flex-col">
       <div className={`mb-2 ${sidebarCollapsed ? 'pl-8' : ''}`}>
-        {/* Editable title (desktop only) */}
-        {isMobile ? (
+        {/* Editable title (desktop only, owner only) */}
+        {isMobile || readOnly ? (
           <h1 className="text-base font-semibold text-foreground mb-0.5">{recording.title}</h1>
         ) : editingTitle ? (
           <div className="flex items-center gap-1 mb-0.5">
@@ -335,7 +346,7 @@ export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyCont
         </p>
 
         {/* Editable course */}
-        {isMobile ? (
+        {isMobile || readOnly ? (
           recording.course ? (
             <div className="flex items-center gap-1 mt-1">
               <BookOpen className="h-3 w-3 text-muted-foreground" />
@@ -513,7 +524,7 @@ export function StudyContent({ recording, sidebarCollapsed, startAt }: StudyCont
 
         {/* Transcript tab — from audio recordings */}
         <TabsContent value="transcript" className="h-[calc(100%-2rem)] mt-0 flex flex-col gap-2">
-          {hasTranscript && hasAudio && (
+          {hasTranscript && hasAudio && !readOnly && (
             <div className="flex items-center justify-between gap-2 rounded-xl glass-light px-3 py-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
                 <Users className="h-3.5 w-3.5 flex-shrink-0" />

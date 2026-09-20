@@ -285,7 +285,7 @@ export function RoomView({ roomId }: RoomViewProps) {
                     </div>
 
                     <div className="flex-1 overflow-auto p-4">
-                      <StudyContent recording={recording} />
+                      <StudyContent recording={recording} readOnly />
                     </div>
                     <div className="border-t border-[var(--glass-border)]">
                       <StudyTools sessionId={pinnedSession?._id as Id<'sessions'>} />

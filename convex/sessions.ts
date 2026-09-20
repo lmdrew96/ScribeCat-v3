@@ -139,6 +139,20 @@ export const update = mutation({
     const userId = await requireAuth(ctx);
     const { id, notes, notesPlainText, ...otherUpdates } = args;
 
+    // Being signed in is not enough — the session has to be yours.
+    const session = await ctx.db.get(id);
+    if (!session || session.userId !== userId || session.isDeleted) {
+      throw new Error('Session not found');
+    }
+
+    // A negative duration is never real; it meant a corrupted clock reading
+    // (fixed in v5.22.0) and left sessions showing nonsense lengths. Drop the
+    // bad value rather than the whole save — the rest of the payload is good.
+    if (otherUpdates.duration !== undefined && otherUpdates.duration < 0) {
+      console.warn(`Rejected negative duration ${otherUpdates.duration} for session ${id}`);
+      otherUpdates.duration = undefined;
+    }
+
     // Route notes to separate sessionNotes table
     if (notes !== undefined || notesPlainText !== undefined) {
       const existing = await ctx.db
