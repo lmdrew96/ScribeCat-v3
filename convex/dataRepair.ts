@@ -8,6 +8,7 @@
 
 import { v } from 'convex/values';
 import { internalMutation } from './_generated/server';
+import { CHUNK_SIZE, readSegments, replaceSegments } from './transcriptSegments';
 
 /**
  * Repairs session durations that were never written or were written negative.
@@ -55,7 +56,7 @@ export const repairDurations = internalMutation({
       if (session.duration > 0) continue;
       const kind = session.duration < 0 ? 'negative' : 'zero';
 
-      const segments = (session.transcriptSegments ?? []).filter((s) => s.isFinal);
+      const segments = (await readSegments(ctx, session)).filter((s) => s.isFinal);
       const lastMs = segments.length > 0 ? segments[segments.length - 1].timestamp : 0;
 
       if (lastMs <= 0) {
@@ -117,6 +118,75 @@ export const findNegativeDurations = internalMutation({
           createdAt: new Date(s.createdAt).toISOString(),
           duration: s.duration,
         })),
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
+  },
+});
+
+/**
+ * Moves legacy `session.transcriptSegments` arrays into the transcriptChunks
+ * table and clears the field, which is what actually shrinks the session row.
+ *
+ * Safe to re-run: a session that already has `segmentCount` is skipped. Readers
+ * fall back to the legacy field until a session is migrated, so the app works
+ * correctly at every point during the run.
+ */
+export const migrateTranscriptSegments = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+    /** Small by design — these are the very documents that are too big to read in bulk. */
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 5 });
+
+    const migrated: { id: string; title: string; segments: number; chunks: number }[] = [];
+    let alreadyDone = 0;
+    let nothingToMove = 0;
+
+    for (const session of page.page) {
+      if (session.segmentCount !== undefined) {
+        alreadyDone++;
+        continue;
+      }
+
+      const legacy = session.transcriptSegments ?? [];
+      const finals = legacy.filter((s) => s.isFinal);
+
+      if (legacy.length === 0) {
+        // Nothing to move, but mark it migrated so readers stop consulting the
+        // legacy field and a re-run skips it.
+        nothingToMove++;
+        if (!dryRun) {
+          await ctx.db.patch(session._id, { segmentCount: 0, transcriptSegments: undefined });
+        }
+        continue;
+      }
+
+      migrated.push({
+        id: session._id,
+        title: session.title,
+        segments: finals.length,
+        chunks: Math.ceil(finals.length / CHUNK_SIZE),
+      });
+
+      if (!dryRun) {
+        await replaceSegments(ctx, session, finals);
+      }
+    }
+
+    return {
+      dryRun,
+      scanned: page.page.length,
+      migratedCount: migrated.length,
+      alreadyDone,
+      nothingToMove,
+      migrated,
       isDone: page.isDone,
       continueCursor: page.continueCursor,
     };

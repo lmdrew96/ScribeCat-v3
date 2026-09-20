@@ -20,6 +20,11 @@ export default defineSchema({
         }),
       ),
     ),
+    /**
+     * How many final segments live in transcriptChunks. Undefined means this
+     * session predates the move and still reads from transcriptSegments above.
+     */
+    segmentCount: v.optional(v.number()),
     // User-flagged transcript words (for manual post-recording edit)
     flaggedWords: v.optional(
       v.array(
@@ -67,6 +72,27 @@ export default defineSchema({
     }),
 
   // Session notes (separated from sessions to avoid 1MB document limit)
+  /**
+   * Transcript segments, chunked. Kept out of the session document so a row
+   * can't grow past Convex's 1 MiB / 8192-element caps on a long lecture —
+   * see convex/transcriptSegments.ts.
+   */
+  transcriptChunks: defineTable({
+    sessionId: v.id('sessions'),
+    userId: v.string(),
+    /** Position of this chunk in the transcript, from 0. */
+    chunkIndex: v.number(),
+    segments: v.array(
+      v.object({
+        text: v.string(),
+        timestamp: v.number(),
+        isFinal: v.boolean(),
+      }),
+    ),
+  })
+    .index('by_session', ['sessionId', 'chunkIndex'])
+    .index('by_user', ['userId']),
+
   sessionNotes: defineTable({
     sessionId: v.id('sessions'),
     userId: v.string(),

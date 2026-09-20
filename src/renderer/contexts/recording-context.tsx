@@ -99,6 +99,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   } = useSessionContext();
 
   const { createSession, updateSession } = useSessions();
+  const appendTranscriptSegments = useMutation(api.sessions.appendTranscriptSegments);
   const logStudyTime = useLogStudyTime();
   const uploadFile = useUploadFile(api.r2);
   const appendAudioChunk = useMutation(api.sessions.appendAudioChunk);
@@ -343,9 +344,11 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       const elapsedMs = getElapsedSeconds() * 1000;
 
       try {
-        await updateSession({
+        // Appends only the segments that aren't stored yet — see
+        // convex/transcriptSegments.ts.
+        await appendTranscriptSegments({
           id: currentSessionIdRef.current,
-          transcriptSegments: segments,
+          segments,
           transcript: fullTranscript,
           ...(elapsedMs > 0 && { duration: elapsedMs }),
         });
@@ -354,7 +357,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       }
     };
     saveTranscript();
-  }, [segments, scrubVersion, updateSession, getElapsedSeconds]);
+  }, [segments, scrubVersion, appendTranscriptSegments, getElapsedSeconds]);
 
   // ─── Progressive audio upload effect ────────────────────────────────────
   // Every ~30s during recording, flush any accumulated audio chunks to
@@ -639,10 +642,10 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        await updateSession({
+        await appendTranscriptSegments({
           id: capturedSessionId,
+          segments,
           transcript: finalTranscript,
-          transcriptSegments: segments,
         });
       } catch (error) {
         // Silence here is how a transcript silently stopped at its last
@@ -733,6 +736,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     appendAudioChunk,
     nuggetNotes,
     updateSession,
+    appendTranscriptSegments,
     getElapsedSeconds,
     segments,
     logStudyTime,

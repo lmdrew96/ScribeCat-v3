@@ -2,6 +2,12 @@ import { v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import { internalMutation, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
+import {
+  appendSegments,
+  deleteSegments,
+  readSegments,
+  replaceSegments,
+} from './transcriptSegments';
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({
@@ -72,6 +78,8 @@ export const get = query({
 
     return {
       ...session,
+      // Segments live in transcriptChunks now; readers see one array either way.
+      transcriptSegments: await readSegments(ctx, session),
       notes,
       notesPlainText,
     };
@@ -153,6 +161,13 @@ export const update = mutation({
       otherUpdates.duration = undefined;
     }
 
+    // Route segments to their own table. Accepted here (rather than only via a
+    // dedicated mutation) so a client running older code keeps working.
+    const { transcriptSegments, ...restUpdates } = otherUpdates;
+    if (transcriptSegments !== undefined) {
+      await replaceSegments(ctx, session, transcriptSegments);
+    }
+
     // Route notes to separate sessionNotes table
     if (notes !== undefined || notesPlainText !== undefined) {
       const existing = await ctx.db
@@ -176,13 +191,49 @@ export const update = mutation({
       }
     }
 
-    // Patch session with non-notes fields only
+    // Patch session with non-notes, non-segment fields only
     const filteredUpdates = Object.fromEntries(
-      Object.entries(otherUpdates).filter(([_, value]) => value !== undefined),
+      Object.entries(restUpdates).filter(([_, value]) => value !== undefined),
     );
 
     return await ctx.db.patch(id, {
       ...filteredUpdates,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Saves transcript segments during a recording.
+ *
+ * Takes the full transcript so far and stores only what's new, so a save costs
+ * what was said since the last one instead of rewriting the whole transcript.
+ */
+export const appendTranscriptSegments = mutation({
+  args: {
+    id: v.id('sessions'),
+    segments: v.array(
+      v.object({
+        text: v.string(),
+        timestamp: v.number(),
+        isFinal: v.boolean(),
+      }),
+    ),
+    transcript: v.optional(v.string()),
+    duration: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const session = await ctx.db.get(args.id);
+    if (!session || session.userId !== userId || session.isDeleted) {
+      throw new Error('Session not found');
+    }
+
+    await appendSegments(ctx, session, args.segments);
+
+    await ctx.db.patch(args.id, {
+      ...(args.transcript !== undefined && { transcript: args.transcript }),
+      ...(args.duration !== undefined && args.duration >= 0 && { duration: args.duration }),
       updatedAt: Date.now(),
     });
   },
@@ -265,38 +316,16 @@ export const restore = mutation({
   },
 });
 
-// Append transcript segment (for real-time transcription)
-export const appendTranscriptSegment = mutation({
-  args: {
-    id: v.id('sessions'),
-    text: v.string(),
-    timestamp: v.number(),
-    isFinal: v.boolean(),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const session = await ctx.db.get(args.id);
-    if (!session) throw new Error('Session not found');
-
-    const segments = session.transcriptSegments || [];
-    segments.push({
-      text: args.text,
-      timestamp: args.timestamp,
-      isFinal: args.isFinal,
-    });
-
-    return await ctx.db.patch(args.id, {
-      transcriptSegments: segments,
-      updatedAt: Date.now(),
-    });
-  },
-});
-
 // Permanently delete a session (cascades to sessionNotes)
 export const permanentDelete = mutation({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const userId = await requireAuth(ctx);
+    const session = await ctx.db.get(args.id);
+    if (!session || session.userId !== userId) throw new Error('Session not found');
+
+    // Cascade-delete transcript chunks
+    await deleteSegments(ctx, args.id);
 
     // Cascade-delete associated sessionNotes
     const notesDoc = await ctx.db
@@ -469,7 +498,7 @@ export const mergeSessions = mutation({
 
       if (session.transcript) allTranscripts.push(session.transcript);
 
-      for (const seg of session.transcriptSegments ?? []) {
+      for (const seg of await readSegments(ctx, session)) {
         allSegments.push({ ...seg, timestamp: seg.timestamp + offset });
       }
 
@@ -562,7 +591,6 @@ export const mergeSessions = mutation({
     await ctx.db.patch(args.primaryId, {
       title: args.newTitle ?? primary.title,
       transcript: allTranscripts.length > 0 ? allTranscripts.join('\n\n---\n\n') : undefined,
-      transcriptSegments: allSegments.length > 0 ? allSegments : undefined,
       nuggetNotes: allNuggetNotes.length > 0 ? allNuggetNotes : undefined,
       audioStorageIds: allAudioIds.length > 0 ? allAudioIds : undefined,
       duration: cumulativeDuration,
@@ -570,6 +598,11 @@ export const mergeSessions = mutation({
       flaggedWords: allFlaggedWords.length > 0 ? allFlaggedWords : undefined,
       updatedAt: Date.now(),
     });
+
+    if (allSegments.length > 0) {
+      const merged = await ctx.db.get(args.primaryId);
+      if (merged) await replaceSegments(ctx, merged, allSegments);
+    }
 
     // Soft-delete secondary sessions
     const now = Date.now();

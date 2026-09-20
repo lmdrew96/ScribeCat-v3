@@ -35,14 +35,6 @@ export function useSession(sessionId: Id<'sessions'> | null) {
 }
 
 /**
- * Hook for appending transcript segments in real-time
- */
-export function useTranscriptAppend() {
-  const appendSegment = useMutation(api.sessions.appendTranscriptSegment);
-  return appendSegment;
-}
-
-/**
  * Hook for trash management.
  * userId is now derived from the JWT token on the backend.
  */

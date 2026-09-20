@@ -6,6 +6,7 @@ import { ConvexError, v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { checkNotBlocked, sortParticipantIds, verifyFriendship } from './messagingHelpers';
+import { copySegments, readSegments } from './transcriptSegments';
 
 // ─── Queries ─────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ export const getSharedSession = query({
 
     return {
       ...session,
+      transcriptSegments: await readSegments(ctx, session),
       notes,
       notesPlainText,
       owner: {
@@ -302,13 +304,16 @@ export const copyToLibrary = mutation({
       audioStorageId: original.audioStorageId, // Reference same audio file
       audioStorageIds: original.audioStorageIds, // Reference same chunk sequence
       transcript: original.transcript,
-      transcriptSegments: original.transcriptSegments,
       nuggetNotes: original.nuggetNotes,
       duration: original.duration,
       createdAt: now,
       updatedAt: now,
       isDeleted: false,
     });
+
+    // Copy transcript segments into the copy's own chunks
+    const newSession = await ctx.db.get(newSessionId);
+    if (newSession) await copySegments(ctx, original, newSession);
 
     // Copy sessionNotes if they exist
     const notesDoc = await ctx.db

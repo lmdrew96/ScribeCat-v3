@@ -8,6 +8,7 @@ import type { MutationCtx, QueryCtx } from './_generated/server';
 import { mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { verifyFriendship } from './messagingHelpers';
+import { readSegments } from './transcriptSegments';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -236,6 +237,7 @@ export const getRoomPinnedSession = query({
 
     return {
       ...session,
+      transcriptSegments: await readSegments(ctx, session),
       notes,
       notesPlainText,
       owner: {
