@@ -192,3 +192,54 @@ export const migrateTranscriptSegments = internalMutation({
     };
   },
 });
+
+/**
+ * Verifies the segment migration: for each session, compares the recorded
+ * `segmentCount` against the segments actually readable from transcriptChunks,
+ * and reports any session still holding a legacy array.
+ */
+export const verifyTranscriptMigration = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())), batchSize: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 5 });
+
+    const mismatches: { id: string; title: string; expected: number; actual: number }[] = [];
+    let legacyRemaining = 0;
+    let totalSegments = 0;
+    let largestChunkCount = 0;
+
+    for (const session of page.page) {
+      if (session.transcriptSegments !== undefined) legacyRemaining++;
+
+      const actual = await readSegments(ctx, session);
+      totalSegments += actual.length;
+
+      const chunks = await ctx.db
+        .query('transcriptChunks')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .collect();
+      largestChunkCount = Math.max(largestChunkCount, chunks.length);
+
+      if ((session.segmentCount ?? -1) !== actual.length) {
+        mismatches.push({
+          id: session._id,
+          title: session.title,
+          expected: session.segmentCount ?? -1,
+          actual: actual.length,
+        });
+      }
+    }
+
+    return {
+      scanned: page.page.length,
+      totalSegments,
+      legacyRemaining,
+      largestChunkCount,
+      mismatches,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
+  },
+});
