@@ -11,7 +11,7 @@ import { useSessionContext } from '@/contexts/session-context';
 import { type AudioDevice, useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { type UseNuggetNotesReturn, useNuggetNotes } from '@/hooks/use-nugget-notes';
 import { useBreakReminder, useLogStudyTime, useStudySettings } from '@/hooks/use-productivity';
-import { useSession, useSessions } from '@/hooks/use-sessions';
+import { useSession, useSessionMutations } from '@/hooks/use-sessions';
 import { type TranscriptSegment, useTranscription } from '@/hooks/use-transcription';
 import {
   clearChunksUpTo,
@@ -98,7 +98,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     setIsRecording: setContextIsRecording,
   } = useSessionContext();
 
-  const { createSession, updateSession } = useSessions();
+  const { createSession, updateSession } = useSessionMutations();
   const appendTranscriptSegments = useMutation(api.sessions.appendTranscriptSegments);
   const logStudyTime = useLogStudyTime();
   const uploadFile = useUploadFile(api.r2);

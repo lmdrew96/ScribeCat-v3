@@ -1,6 +1,6 @@
+import { HandwritingCanvas } from '@/components/handwriting-canvas';
 import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
 import { Button } from '@/components/ui/button';
-import { HandwritingCanvas } from '@/components/handwriting-canvas';
 import {
   Select,
   SelectContent,
@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDocumentUpload } from '@/hooks/use-document-upload';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessionList } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { FileImage, FileText, Loader2, Upload, X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
@@ -39,7 +39,7 @@ export function DocumentUpload({
   newSessionOnly,
 }: DocumentUploadProps) {
   const { upload, isProcessing, progress } = useDocumentUpload();
-  const { sessions } = useSessions();
+  const sessions = useSessionList();
 
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [lectureType, setLectureType] = useState<LectureType>('general');

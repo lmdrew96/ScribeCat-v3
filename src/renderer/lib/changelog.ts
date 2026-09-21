@@ -33,6 +33,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.32.2',
+    date: '2026-09-21',
+    title: 'A lighter touch while recording',
+    changes: [
+      {
+        kind: 'improved',
+        text: 'Recording is much lighter on the connection. ScribeCat was re-reading your whole transcript, and the details of every session you own, every time it saved \u2014 hundreds of times a lecture. Now it only loads what a screen is actually showing.',
+      },
+    ],
+  },
+  {
     version: '5.32.1',
     label: '5.28.0 \u2013 5.32.1',
     date: '2026-09-19',

@@ -46,7 +46,16 @@ export const listMetadata = query({
   },
 });
 
-// Get a single session by ID (joins notes from sessionNotes table)
+/**
+ * A single session, with its notes joined from sessionNotes.
+ *
+ * Deliberately does NOT include transcript segments. This query is subscribed
+ * app-wide (AppLayout, and the recording context for one string field), and
+ * every transcript save patches the session row — so joining segments here
+ * meant re-reading every transcriptChunk of a live recording ~900 times a
+ * lecture for callers that never looked at them. Views that render a
+ * transcript subscribe to transcriptSegments.list instead.
+ */
 export const get = query({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
@@ -76,13 +85,11 @@ export const get = query({
       notes = JSON.stringify(tiptapDoc);
     }
 
-    return {
-      ...session,
-      // Segments live in transcriptChunks now; readers see one array either way.
-      transcriptSegments: await readSegments(ctx, session),
-      notes,
-      notesPlainText,
-    };
+    // Drop the legacy array too — a caller wanting segments uses
+    // transcriptSegments.list, which handles both storage shapes.
+    const { transcriptSegments: _legacy, ...rest } = session;
+
+    return { ...rest, notes, notesPlainText };
   },
 });
 

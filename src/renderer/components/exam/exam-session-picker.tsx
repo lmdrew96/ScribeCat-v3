@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useExamRoomActions } from '@/hooks/use-exam-room';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessionList } from '@/hooks/use-sessions';
 import { Clock, FileText, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -25,7 +25,7 @@ export function ExamSessionPicker({
   examRoomId,
   existingSessionIds,
 }: ExamSessionPickerProps) {
-  const { sessions } = useSessions();
+  const sessions = useSessionList();
   const { addSession } = useExamRoomActions();
 
   const existingSet = new Set(existingSessionIds);

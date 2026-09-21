@@ -1,4 +1,4 @@
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessionMutations } from '@/hooks/use-sessions';
 import { useUploadFile } from '@convex-dev/r2/react';
 import { useAction } from 'convex/react';
 import { useCallback, useState } from 'react';
@@ -41,7 +41,7 @@ async function normalizeImageFile(file: File): Promise<File> {
 }
 
 export function useDocumentUpload(): DocumentUploadResult {
-  const { createSession, updateSession } = useSessions();
+  const { createSession, updateSession } = useSessionMutations();
   const uploadFile = useUploadFile(api.r2);
   const parseDocument = useAction(api.parseDocument.parseDocumentImages);
 

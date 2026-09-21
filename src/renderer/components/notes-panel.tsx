@@ -1,6 +1,6 @@
 import { EditorToolbar } from '@/components/editor-toolbar';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { useSession, useSessions } from '@/hooks/use-sessions';
+import { useSession, useSessionMutations } from '@/hooks/use-sessions';
 import { CitationMark } from '@/lib/citation-mark';
 import { DraggableImage } from '@/lib/draggable-image-extension';
 import { ExcalidrawNode } from '@/lib/excalidraw-extension';
@@ -23,7 +23,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useAction } from 'convex/react';
+import { useAction, useConvex } from 'convex/react';
 import {
   forwardRef,
   useCallback,
@@ -55,9 +55,13 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
   const [isEmpty, setIsEmpty] = useState(true);
   const loadedSessionId = useRef<string | null>(null);
 
-  const { updateSession } = useSessions();
+  const { updateSession } = useSessionMutations();
   const session = useSession(sessionId || null);
   const generateNotesAction = useAction(api.ai.generateNotesFromTranscript);
+  // Segments are fetched on demand rather than subscribed — generating notes is
+  // a one-shot action, and a subscription here would re-read the whole
+  // transcript on every save of a live recording.
+  const convex = useConvex();
 
   const saveToConvex = useCallback(
     async (json: string, plainText: string) => {
@@ -233,9 +237,13 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
     setIsGenerating(true);
 
     try {
+      const segments = session.transcript
+        ? await convex.query(api.transcriptSegments.list, { sessionId })
+        : undefined;
+
       const data = await generateNotesAction({
         transcript: sourceText,
-        transcriptSegments: session.transcript ? session.transcriptSegments : undefined,
+        transcriptSegments: segments,
         sessionId: sessionId as string,
         lectureType: session.lectureType,
         existingNotes: editor?.getText() || undefined,

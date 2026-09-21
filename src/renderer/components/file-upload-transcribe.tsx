@@ -1,7 +1,7 @@
 import { type LectureType, LectureTypeSelect } from '@/components/lecture-type-select';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessionMutations } from '@/hooks/use-sessions';
 import { useUploadFile } from '@convex-dev/r2/react';
 import { useMutation } from 'convex/react';
 import { FileAudio, Loader2, Upload, Users } from 'lucide-react';
@@ -22,7 +22,7 @@ interface TranscribeResult {
 }
 
 export function FileUploadTranscribe({ onSessionCreated }: FileUploadTranscribeProps) {
-  const { createSession, updateSession } = useSessions();
+  const { createSession, updateSession } = useSessionMutations();
   const uploadFile = useUploadFile(api.r2);
   const getAudioUrl = useMutation(api.audioStorage.getAudioUrlMutation);
 

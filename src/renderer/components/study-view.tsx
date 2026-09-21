@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/session-context';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
-import { useSession, useSessions, useTrash } from '@/hooks/use-sessions';
+import {
+  useSession,
+  useSessionList,
+  useSessionMutations,
+  useTranscriptSegments,
+  useTrash,
+} from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { PanelLeft } from 'lucide-react';
@@ -71,8 +77,9 @@ export function StudyView() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { setActiveSessionId, setNuggetNotes } = useSessionContext();
-  const { sessions, deleteSession, restoreSession, permanentDeleteSession, mergeSessions } =
-    useSessions();
+  const sessions = useSessionList();
+  const { deleteSession, restoreSession, permanentDeleteSession, mergeSessions } =
+    useSessionMutations();
   const trashedSessions = useTrash();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [shareSessionId, setShareSessionId] = useState<string | null>(null);
@@ -152,6 +159,8 @@ export function StudyView() {
   // Fetch full session data for the selected recording only
   // (sessions.get joins notes from the separate sessionNotes table)
   const fullSession = useSession(selectedId as SessionId | null);
+  // Segments come from their own query — sessions.get no longer carries them.
+  const transcriptSegments = useTranscriptSegments(selectedId as SessionId | null);
   const audioUrl = useSessionAudioUrl(fullSession);
 
   // Sidebar gets lightweight metadata only — no transcript/notes/segments
@@ -201,7 +210,7 @@ export function StudyView() {
         audioUrl: audioUrl,
         audioStorageId: fullSession.audioStorageId,
         audioStorageIds: fullSession.audioStorageIds,
-        transcriptSegments: fullSession.transcriptSegments,
+        transcriptSegments,
         lectureType: fullSession.lectureType,
         course: fullSession.course,
         nuggetNotes: fullSession.nuggetNotes,

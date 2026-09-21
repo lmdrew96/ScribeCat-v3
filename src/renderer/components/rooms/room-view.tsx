@@ -12,7 +12,7 @@ import type { Recording } from '@/components/study-view';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSessionAudioUrl } from '@/hooks/use-session-audio-url';
-import { useSessions } from '@/hooks/use-sessions';
+import { useSessionList } from '@/hooks/use-sessions';
 import { useActiveGame } from '@/hooks/use-study-games';
 import {
   useRoom,
@@ -49,7 +49,7 @@ export function RoomView({ roomId }: RoomViewProps) {
   const { messages, isLoading: messagesLoading, sendMessage } = useRoomMessages(roomId);
   const { pinnedSession } = useRoomPinnedSession(roomId);
   const { joinRoom, leaveRoom, closeRoom, pinSession } = useRoomActions();
-  const { sessions } = useSessions();
+  const sessions = useSessionList();
 
   // Active game state
   const { game: activeGame } = useActiveGame(roomId);

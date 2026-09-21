@@ -17,7 +17,8 @@
 
 import { v } from 'convex/values';
 import type { Doc, Id } from './_generated/dataModel';
-import type { MutationCtx, QueryCtx } from './_generated/server';
+import { type MutationCtx, type QueryCtx, query } from './_generated/server';
+import { requireAuth } from './authHelpers';
 
 export const segmentValidator = v.object({
   text: v.string(),
@@ -158,3 +159,21 @@ export async function copySegments(
   const segments = await readSegments(ctx, from);
   if (segments.length > 0) await replaceSegments(ctx, to, segments);
 }
+
+/**
+ * A session's segments, on their own subscription.
+ *
+ * Kept out of `sessions.get` deliberately. Every transcript save patches the
+ * session row, so anything joined onto `get` is re-read on every save of a live
+ * recording — and `get` is subscribed app-wide for a couple of small string
+ * fields. Only the views that actually render a transcript subscribe here.
+ */
+export const list = query({
+  args: { sessionId: v.id('sessions') },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.userId !== userId || session.isDeleted) return [];
+    return await readSegments(ctx, session);
+  },
+});
