@@ -12,3 +12,9 @@ interface ImportMeta {
 
 /** Injected by Vite from package.json — see `define` in vite.config.ts. */
 declare const __APP_VERSION__: string;
+
+/**
+ * Identifies this build (commit SHA on Vercel, package version locally).
+ * Compared against /version.json to detect a new deploy — see lib/app-update.ts.
+ */
+declare const __BUILD_ID__: string;

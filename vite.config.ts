@@ -8,14 +8,43 @@ const pkgVersion = (JSON.parse(readFileSync(path.resolve(__dirname, 'package.jso
   version: string;
 }).version;
 
+/**
+ * Identifies this specific build. The commit SHA rather than the package
+ * version, so it changes on every deploy even when the version wasn't bumped —
+ * the update check compares this against /version.json and a stamp that can
+ * repeat would leave a tab thinking it is current.
+ */
+const buildId = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? pkgVersion ?? 'dev';
+
+/**
+ * Writes the build stamp to dist/version.json so a running tab can detect a new
+ * deploy with one small fetch, instead of waiting for the service worker to
+ * finish precaching before it reports one.
+ *
+ * Note `workbox.globPatterns` below deliberately omits json — if this file were
+ * precached the fetch would be answered from the old cache and never change.
+ */
+const emitVersionJson = () => ({
+  name: 'scribecat-version-json',
+  generateBundle(this: { emitFile: (file: Record<string, string>) => void }) {
+    this.emitFile({
+      type: 'asset',
+      fileName: 'version.json',
+      source: `${JSON.stringify({ build: buildId, version: pkgVersion })}\n`,
+    });
+  },
+});
+
 export default defineConfig({
   // Bug reports quote this, so it has to track package.json automatically —
   // a hardcoded string silently misattributes every report to an old build.
   define: {
     __APP_VERSION__: JSON.stringify(pkgVersion),
+    __BUILD_ID__: JSON.stringify(buildId),
   },
   plugins: [
     react(),
+    emitVersionJson(),
     VitePWA({
       // 'prompt', not 'autoUpdate': a new build waits for the user to apply it via
       // the update toast. Auto-activating could reload or strand a tab mid-lecture.
