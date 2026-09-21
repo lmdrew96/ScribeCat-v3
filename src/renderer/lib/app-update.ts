@@ -12,7 +12,9 @@ import { registerSW } from 'virtual:pwa-register';
  * the authenticated layout, where recording state is known.
  */
 
-const UPDATE_CHECK_MS = 5 * 60_000;
+const UPDATE_CHECK_MS = 2 * 60_000;
+/** focus and visibilitychange both fire for one window switch — collapse the pair. */
+const MIN_CHECK_GAP_MS = 5_000;
 const DISMISS_KEY = 'update-toast-dismissed';
 const CHUNK_RELOAD_KEY = 'chunk-reload-attempted-at';
 /** A second chunk failure within this window means the build itself is broken — don't loop. */
@@ -76,15 +78,26 @@ const registerServiceWorker = (): void => {
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
       // Browsers only re-check the SW on navigation, and an SPA rarely
-      // navigates — so poll, and check immediately when a tab is refocused.
+      // navigates — so poll, and check whenever the window comes back.
+      let lastCheck = 0;
       const check = (): void => {
-        if (document.visibilityState !== 'visible' || !navigator.onLine) return;
+        // No navigator.onLine guard: it reports false spuriously on some VPN
+        // and captive-network setups, and when it does the app stops checking
+        // for updates entirely. A failed update() is already caught below.
+        if (document.visibilityState !== 'visible') return;
+        if (Date.now() - lastCheck < MIN_CHECK_GAP_MS) return;
+        lastCheck = Date.now();
         registration.update().catch(() => {
           // Offline or CDN hiccup — try again next tick.
         });
       };
+      check();
       setInterval(check, UPDATE_CHECK_MS);
       document.addEventListener('visibilitychange', check);
+      // visibilitychange does NOT fire when another app takes focus over a
+      // still-visible window — the "deployed from the terminal, clicked back"
+      // case, which is most of them. Window focus does.
+      window.addEventListener('focus', check);
     },
     onRegisterError(error: unknown) {
       console.error('Service worker registration failed:', error);
