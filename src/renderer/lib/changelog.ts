@@ -33,13 +33,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.32.2',
+    version: '5.32.4',
+    label: '5.32.2 \u2013 5.32.4',
     date: '2026-09-21',
-    title: 'A lighter touch while recording',
+    title: 'Lighter while recording, quicker to update',
     changes: [
       {
         kind: 'improved',
         text: 'Recording is much lighter on the connection. ScribeCat was re-reading your whole transcript, and the details of every session you own, every time it saved \u2014 hundreds of times a lecture. Now it only loads what a screen is actually showing.',
+      },
+      {
+        kind: 'fixed',
+        text: 'The \u201cnew version available\u201d notice now turns up within a couple of minutes of an update instead of sitting on a stale page \u2014 including when you click back to ScribeCat from another app, which used to leave a tab waiting indefinitely. It still stays out of the way while you\u2019re recording, and still never refreshes on its own.',
       },
     ],
   },
