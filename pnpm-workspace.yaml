@@ -1,3 +1,10 @@
+# Not a monorepo — this file exists only to carry onlyBuiltDependencies.
+# `packages` is nonetheless required: pnpm 9 rejects a workspace file without it
+# ("packages field missing or empty") while pnpm 10 tolerates its absence, and
+# the Cloudflare Workers Builds container runs a pnpm 9 despite reporting 10.
+# An empty list keeps the root from becoming a workspace package.
+packages: []
+
 onlyBuiltDependencies:
   - electron
   - electron-winstaller
