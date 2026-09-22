@@ -141,14 +141,14 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-4 py-2.5">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--glass-border)] px-4 py-2.5">
+        <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--glass-bg)] shrink-0">
             <BookOpenCheck className="h-4 w-4 text-foreground" />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">{room.name}</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="truncate text-[10px] text-muted-foreground">
               {sessions.length} session{sessions.length !== 1 ? 's' : ''}
               {' · '}
               {onlineCount} online
@@ -161,7 +161,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
           {!isArchived && (
             <>
               <Button

@@ -445,33 +445,33 @@
   --card-foreground: #4a4458;
   --popover: #e7d1ff;
   --popover-foreground: #4a4458;
-  --primary: #d4a5d2;
-  --primary-foreground: #4a4458;
+  --primary: #7d4a7a;
+  --primary-foreground: #ffffff;
   --secondary: #cff6ff;
   --secondary-foreground: #4a4458;
   --muted: #e7d1ff;
-  --muted-foreground: #7d6b8a;
-  --accent: #e4ffde;
-  --accent-foreground: #4a4458;
-  --destructive: #e57373;
+  --muted-foreground: #695a74;
+  --accent: #2a6b4c;
+  --accent-foreground: #ffffff;
+  --destructive: #a82c26;
   --destructive-foreground: #ffffff;
-  --success: #81c784;
-  --success-foreground: #1a3338;
+  --success: #2f6b36;
+  --success-foreground: #ffffff;
   --border: #d4c4e8;
   --input: #e7d1ff;
-  --ring: #d4a5d2;
+  --ring: #7d4a7a;
   --record: #d4a5d2;
   --record-glow: rgba(212, 165, 210, 0.4);
   --waveform: #a5d6a7;
   --transcript-bg: #e7d1ff;
   --sidebar: #e7d1ff;
   --sidebar-foreground: #4a4458;
-  --sidebar-primary: #d4a5d2;
-  --sidebar-primary-foreground: #4a4458;
+  --sidebar-primary: #7d4a7a;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #cff6ff;
   --sidebar-accent-foreground: #4a4458;
   --sidebar-border: #d4c4e8;
-  --sidebar-ring: #d4a5d2;
+  --sidebar-ring: #7d4a7a;
 
   /* Glassmorphism - light theme glass */
   --glass-bg: rgba(231, 209, 255, 0.5);
@@ -835,7 +835,7 @@
   --card-foreground: #330033;
   --popover: #ffe0ff;
   --popover-foreground: #330033;
-  --primary: #ff00aa;
+  --primary: #cc0088;
   --primary-foreground: #ffffff;
   --secondary: #ffe0ff;
   --secondary-foreground: #330033;
@@ -849,19 +849,19 @@
   --success-foreground: #ffffff;
   --border: #f2c4ff;
   --input: #ffe0ff;
-  --ring: #ff00aa;
+  --ring: #cc0088;
   --record: #ff00aa;
   --record-glow: rgba(255, 0, 170, 0.4);
   --waveform: #7b00ff;
   --transcript-bg: #ffe0ff;
   --sidebar: #ffe0ff;
   --sidebar-foreground: #330033;
-  --sidebar-primary: #ff00aa;
+  --sidebar-primary: #cc0088;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #7b00ff;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #f2c4ff;
-  --sidebar-ring: #ff00aa;
+  --sidebar-ring: #cc0088;
 
   /* Glassmorphism - sparkly pink light */
   --glass-bg: rgba(255, 224, 255, 0.72);

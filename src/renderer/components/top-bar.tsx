@@ -92,16 +92,16 @@ export function TopBar() {
 
   return (
     <>
-      <header className="glass relative z-40 flex h-[4.5rem] items-center justify-between border-b border-[var(--glass-border)] px-3 sm:px-6">
+      <header className="glass relative z-40 grid h-[4.5rem] grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-[var(--glass-border)] px-3 sm:px-6">
         {/* Left side - Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2 select-none" data-easter-egg-trigger>
             <img
               src="/nuggy-baby-boy.png"
               alt="ScribeCat logo"
               className="h-10 w-10 rounded-lg object-cover"
             />
-            <span className="hidden sm:inline text-lg font-semibold text-foreground">
+            <span className="hidden truncate text-lg font-semibold text-foreground sm:inline">
               ScribeCat
             </span>
           </div>
@@ -109,7 +109,7 @@ export function TopBar() {
 
         {/* Center - Navigation (desktop) */}
         {!isMobile && (
-          <nav className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1">
+          <nav className="flex min-w-0 items-center justify-center gap-1 overflow-x-auto">
             {navItems.map((item) => (
               <Button
                 key={item.to}
@@ -137,8 +137,9 @@ export function TopBar() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative h-8 w-8"
+            className="relative h-8 w-8 justify-self-start"
             onClick={() => setSheetOpen(true)}
+            title="Navigation menu"
           >
             <Menu className="h-5 w-5" />
             {totalBadgeCount > 0 && (
@@ -151,7 +152,7 @@ export function TopBar() {
         )}
 
         {/* Right side - Settings */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-self-end">
           <Button
             variant="ghost"
             size="icon"
@@ -166,6 +167,7 @@ export function TopBar() {
             variant="ghost"
             size="icon"
             className="relative h-8 w-8"
+            title={hasUnseenChanges ? 'Settings — new updates to read' : 'Settings'}
             onClick={() => setSettingsOpen(true)}
           >
             <Settings className="h-4 w-4" />

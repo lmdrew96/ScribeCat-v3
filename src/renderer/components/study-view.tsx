@@ -264,8 +264,10 @@ export function StudyView() {
             size="icon"
             className="absolute left-5 top-[1.6rem] z-10 h-7 w-7"
             onClick={() => setSidebarOpen(true)}
+            title="Show recordings"
           >
             <PanelLeft className="h-4 w-4" />
+            <span className="sr-only">Show recordings</span>
           </Button>
         )}
 

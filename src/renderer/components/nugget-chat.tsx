@@ -327,14 +327,17 @@ export function NuggetChat({
                   title="Report a bug"
                 >
                   <Bug className="h-4 w-4" />
+                  <span className="sr-only">Report a bug</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => onOpenChange(false)}
+                  title="Close"
                 >
                   <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
                 </Button>
               </div>
             </div>
@@ -508,8 +511,10 @@ export function NuggetChat({
                     className="h-10 w-10 shrink-0"
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
+                    title="Send message"
                   >
                     <Send className="h-4 w-4" />
+                    <span className="sr-only">Send message</span>
                   </Button>
                 </div>
               </>

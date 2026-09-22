@@ -174,6 +174,7 @@ export function StudyQuestWidget() {
             title="Play StudyQuest"
           >
             <Gamepad2 className="h-3 w-3" />
+            <span className="sr-only">Open Study Quest</span>
           </Button>
           <Button
             variant="ghost"
@@ -183,6 +184,7 @@ export function StudyQuestWidget() {
             title="Change cat style"
           >
             <Palette className="h-3 w-3" />
+            <span className="sr-only">Customise your cat</span>
           </Button>
           <Button
             variant="ghost"
@@ -192,8 +194,10 @@ export function StudyQuestWidget() {
               setExpanded(false);
               setShowVariants(false);
             }}
+            title="Collapse Study Quest"
           >
             <ChevronDown className="h-3.5 w-3.5" />
+            <span className="sr-only">Collapse Study Quest</span>
           </Button>
         </div>
       </div>

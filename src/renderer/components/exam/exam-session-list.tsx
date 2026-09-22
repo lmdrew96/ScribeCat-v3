@@ -90,11 +90,19 @@ export function ExamSessionList({
       ) : (
         <div className="space-y-2">
           {sessions.map((session) => (
-            <button
-              type="button"
+            // biome-ignore lint/a11y/useSemanticElements: row holds its own remove <Button>; nested buttons are invalid HTML
+            <div
+              role="button"
+              tabIndex={0}
               key={session.linkId}
-              className="flex w-full items-center gap-3 rounded-lg p-3 glass-light border border-[var(--glass-border)] cursor-pointer hover:bg-[var(--glass-bg)] transition-colors text-left"
+              className="flex w-full items-center gap-3 rounded-lg p-3 glass-light border border-[var(--glass-border)] cursor-pointer hover:bg-[var(--glass-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors text-left"
               onClick={() => setViewingSessionId(session.sessionId)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setViewingSessionId(session.sessionId);
+                }
+              }}
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--glass-bg)] shrink-0">
                 <FileText className="h-4 w-4 text-foreground" />
@@ -102,13 +110,13 @@ export function ExamSessionList({
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{session.title}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {session.course && <span>{session.course}</span>}
-                  <span className="flex items-center gap-0.5">
+                <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                  {session.course && <span className="truncate">{session.course}</span>}
+                  <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap">
                     <Clock className="h-3 w-3" />
                     {formatDuration(session.duration)}
                   </span>
-                  <span>Added by {session.addedBy}</span>
+                  <span className="truncate">Added by {session.addedBy}</span>
                 </div>
               </div>
 
@@ -130,15 +138,17 @@ export function ExamSessionList({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  title={`Remove ${session.title}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     void handleRemove(session.sessionId);
                   }}
                 >
                   <Trash2 className="h-3 w-3" />
+                  <span className="sr-only">Remove {session.title}</span>
                 </Button>
               )}
-            </button>
+            </div>
           ))}
         </div>
       )}

@@ -117,8 +117,10 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
           const pct = Math.round(topic.accuracy * 100);
           return (
             <div key={i} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground truncate">{topic.topic}</span>
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-xs font-medium text-foreground">
+                  {topic.topic}
+                </span>
                 <span
                   className={cn(
                     'text-xs font-medium',

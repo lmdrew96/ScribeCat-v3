@@ -37,8 +37,15 @@ export function MiniRecordingIndicator() {
         <span className="text-xs text-muted-foreground">{isPaused ? 'Paused' : 'Recording'}</span>
 
         {/* Pause/Resume */}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePauseResume}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          title={isPaused ? 'Resume recording' : 'Pause recording'}
+          onClick={handlePauseResume}
+        >
           {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+          <span className="sr-only">{isPaused ? 'Resume recording' : 'Pause recording'}</span>
         </Button>
 
         {/* Stop */}
@@ -47,8 +54,10 @@ export function MiniRecordingIndicator() {
           size="icon"
           className="h-7 w-7 text-destructive hover:text-destructive"
           onClick={handleStop}
+          title="Stop recording"
         >
           <Square className="h-3.5 w-3.5" fill="currentColor" />
+          <span className="sr-only">Stop recording</span>
         </Button>
 
         {/* Back to recording view */}
@@ -57,8 +66,10 @@ export function MiniRecordingIndicator() {
           size="icon"
           className="h-7 w-7"
           onClick={() => navigate({ to: '/' })}
+          title="Back to the recording view"
         >
           <Mic className="h-3.5 w-3.5" />
+          <span className="sr-only">Back to the recording view</span>
         </Button>
       </div>
     </div>

@@ -212,8 +212,15 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
 
       {/* Card display */}
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={handlePrev} className="h-7 w-7 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePrev}
+          className="h-7 w-7 shrink-0"
+          title="Previous card"
+        >
           <ChevronLeft className="h-4 w-4" />
+          <span className="sr-only">Previous card</span>
         </Button>
 
         <Card
@@ -261,8 +268,15 @@ export function FlashcardTool({ sessionId }: FlashcardToolProps) {
           )}
         </Card>
 
-        <Button variant="ghost" size="icon" onClick={handleNext} className="h-7 w-7 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleNext}
+          className="h-7 w-7 shrink-0"
+          title="Next card"
+        >
           <ChevronRight className="h-4 w-4" />
+          <span className="sr-only">Next card</span>
         </Button>
       </div>
 

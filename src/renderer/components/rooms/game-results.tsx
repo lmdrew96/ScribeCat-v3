@@ -67,7 +67,9 @@ export function GameResults({ game, currentUserId, isHost }: GameResultsProps) {
               className="flex items-center gap-2 rounded-lg px-3 py-1.5 glass-light border border-[var(--glass-border)]"
             >
               <span className="text-[10px] text-muted-foreground w-4">{i + 4}.</span>
-              <span className="flex-1 text-xs text-foreground truncate">{player.displayName}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-foreground">
+                {player.displayName}
+              </span>
               <span className="text-xs font-medium text-foreground">{player.score}</span>
             </div>
           ))}

@@ -309,8 +309,10 @@ export function StudyContent({
                 e.preventDefault();
                 saveTitle();
               }}
+              title="Save"
             >
               <Check className="h-3.5 w-3.5 text-primary" />
+              <span className="sr-only">Save</span>
             </Button>
             <Button
               size="icon"
@@ -320,8 +322,10 @@ export function StudyContent({
                 e.preventDefault();
                 cancelTitle();
               }}
+              title="Cancel"
             >
               <X className="h-3.5 w-3.5" />
+              <span className="sr-only">Cancel</span>
             </Button>
           </div>
         ) : (
@@ -430,8 +434,10 @@ export function StudyContent({
                       e.preventDefault();
                       saveNewCourse();
                     }}
+                    title="Save"
                   >
                     <Check className="h-3 w-3 text-primary" />
+                    <span className="sr-only">Save</span>
                   </Button>
                   <Button
                     size="icon"
@@ -441,8 +447,10 @@ export function StudyContent({
                       e.preventDefault();
                       closeCoursePopover();
                     }}
+                    title="Cancel"
                   >
                     <X className="h-3 w-3" />
+                    <span className="sr-only">Cancel</span>
                   </Button>
                 </div>
               ) : (

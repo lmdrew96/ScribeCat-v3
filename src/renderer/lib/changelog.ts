@@ -33,6 +33,41 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.34.0',
+    date: '2026-09-22',
+    title: 'A tidier, more readable app',
+    changes: [
+      {
+        kind: 'fixed',
+        text: 'The ScribeCat wordmark no longer sits underneath the navigation on narrower windows.',
+      },
+      {
+        kind: 'fixed',
+        text: 'Exam room headers and session rows now wrap cleanly instead of stacking one word per line over the buttons.',
+      },
+      {
+        kind: 'fixed',
+        text: 'The document upload card keeps its file-limit hint inside the card, and "Draw handwriting" now looks like the button it is.',
+      },
+      {
+        kind: 'fixed',
+        text: 'The editor\u2019s font-size picker shows the whole size again instead of clipping it.',
+      },
+      {
+        kind: 'improved',
+        text: 'Purring Pastels got a contrast pass \u2014 links, highlights, warnings and secondary text are legible now instead of washing into the background.',
+      },
+      {
+        kind: 'improved',
+        text: 'Every icon-only button has a tooltip and a screen-reader label, so the editor toolbar is finally readable at a glance.',
+      },
+      {
+        kind: 'improved',
+        text: 'Long course names, topic names and display names ellipsis properly instead of shoving the rest of the row off-screen.',
+      },
+    ],
+  },
+  {
     version: '5.32.5',
     label: '5.32.2 \u2013 5.32.5',
     date: '2026-09-21',

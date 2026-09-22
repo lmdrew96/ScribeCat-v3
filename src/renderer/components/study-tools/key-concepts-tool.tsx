@@ -56,7 +56,9 @@ export function KeyConceptsTool({ sessionId }: KeyConceptsToolProps) {
                 ) : (
                   <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                 )}
-                <span className="text-xs font-medium text-foreground truncate">{concept.term}</span>
+                <span className="min-w-0 truncate text-xs font-medium text-foreground">
+                  {concept.term}
+                </span>
               </button>
 
               {isExpanded && (

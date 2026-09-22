@@ -129,21 +129,31 @@ function SessionItem({
               size="icon"
               className="h-6 w-6"
               onClick={(e) => e.stopPropagation()}
+              title="Session options"
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
+              <span className="sr-only">Session options</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {viewingTrash ? (
               <>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteRequest('delete'); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteRequest('delete');
+                  }}
+                >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Restore
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={(e) => { e.stopPropagation(); onDeleteRequest('permanent-delete'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteRequest('permanent-delete');
+                  }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete forever
@@ -152,13 +162,23 @@ function SessionItem({
             ) : (
               <>
                 {onShare && (
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onShare(recording.id); }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShare(recording.id);
+                    }}
+                  >
                     <Share2 className="h-3.5 w-3.5" />
                     Share
                   </DropdownMenuItem>
                 )}
                 {onMerge && showMerge && (
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMerge(recording.id); }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMerge(recording.id);
+                    }}
+                  >
                     <Merge className="h-3.5 w-3.5" />
                     Merge sessions…
                   </DropdownMenuItem>
@@ -166,7 +186,10 @@ function SessionItem({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={(e) => { e.stopPropagation(); onDeleteRequest('delete'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteRequest('delete');
+                  }}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete
@@ -195,8 +218,17 @@ export function RecordingsSidebar({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [viewingTrash, setViewingTrash] = useState(false);
 
-  const { searchQuery, setSearchQuery, sortOrder, setSortOrder, isSearching, flatResults, groups, toggleCourse, isCourseCollapsed } =
-    useSessionList(recordings);
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortOrder,
+    setSortOrder,
+    isSearching,
+    flatResults,
+    groups,
+    toggleCourse,
+    isCourseCollapsed,
+  } = useSessionList(recordings);
 
   return (
     <>
@@ -216,8 +248,15 @@ export function RecordingsSidebar({
             <h2 className="text-xs font-medium text-muted-foreground">Recordings</h2>
           )}
           {onCollapse && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCollapse}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={onCollapse}
+              title="Hide recordings"
+            >
               <PanelLeftClose className="h-3.5 w-3.5" />
+              <span className="sr-only">Hide recordings</span>
             </Button>
           )}
         </div>
@@ -245,8 +284,14 @@ export function RecordingsSidebar({
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={SORT_LABELS[sortOrder]}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  title={SORT_LABELS[sortOrder]}
+                >
                   <SortIcon order={sortOrder} />
+                  <span className="sr-only">Sort recordings: {SORT_LABELS[sortOrder]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -264,12 +309,14 @@ export function RecordingsSidebar({
           </div>
         )}
 
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="flex-1 min-h-0 pb-16">
           {/* Trash view — flat list */}
           {viewingTrash && (
             <div className="space-y-1">
               {trashedRecordings.length === 0 && (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">Trash is empty</p>
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  Trash is empty
+                </p>
               )}
               {trashedRecordings.map((recording) => (
                 <SessionItem
@@ -297,10 +344,14 @@ export function RecordingsSidebar({
           {!viewingTrash && isSearching && (
             <div className="space-y-1">
               {flatResults.length === 0 ? (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">No sessions match "{searchQuery}"</p>
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No sessions match "{searchQuery}"
+                </p>
               ) : (
                 <>
-                  <p className="px-2 pb-1 text-[10px] text-muted-foreground">{flatResults.length} result{flatResults.length !== 1 ? 's' : ''}</p>
+                  <p className="px-2 pb-1 text-[10px] text-muted-foreground">
+                    {flatResults.length} result{flatResults.length !== 1 ? 's' : ''}
+                  </p>
                   {flatResults.map((recording) => (
                     <SessionItem
                       key={recording.id}
@@ -323,7 +374,9 @@ export function RecordingsSidebar({
           {!viewingTrash && !isSearching && (
             <div className="space-y-1">
               {recordings.length === 0 && (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">No recordings yet</p>
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No recordings yet
+                </p>
               )}
               {groups.map((group) => (
                 <div key={group.course}>
@@ -339,8 +392,10 @@ export function RecordingsSidebar({
                       ) : (
                         <ChevronDown className="h-3 w-3 shrink-0" />
                       )}
-                      <span className="truncate">{group.course}</span>
-                      <span className="ml-auto tabular-nums opacity-60">{group.sessions.length}</span>
+                      <span className="min-w-0 truncate">{group.course}</span>
+                      <span className="ml-auto tabular-nums opacity-60">
+                        {group.sessions.length}
+                      </span>
                     </button>
                   )}
                   {!isCourseCollapsed(group.course) && (
@@ -387,9 +442,15 @@ export function RecordingsSidebar({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === 'permanent-delete' ? (
-                <>&ldquo;{confirmAction.recording.title}&rdquo; will be permanently deleted. This cannot be undone.</>
+                <>
+                  &ldquo;{confirmAction.recording.title}&rdquo; will be permanently deleted. This
+                  cannot be undone.
+                </>
               ) : (
-                <>&ldquo;{confirmAction?.recording.title}&rdquo; will be moved to trash. You can restore it within 30 days.</>
+                <>
+                  &ldquo;{confirmAction?.recording.title}&rdquo; will be moved to trash. You can
+                  restore it within 30 days.
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

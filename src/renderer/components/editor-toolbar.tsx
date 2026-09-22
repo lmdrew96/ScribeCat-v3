@@ -213,8 +213,10 @@ export function EditorToolbar({
           onClick={() => editor.chain().focus().toggleBold().run()}
           data-active={editor.isActive('bold')}
           disabled={!editor.can().chain().focus().toggleBold().run()}
+          title="Bold"
         >
           <Bold className="h-3 w-3" />
+          <span className="sr-only">Bold</span>
         </Button>
         <Button
           variant="ghost"
@@ -223,8 +225,10 @@ export function EditorToolbar({
           onClick={() => editor.chain().focus().toggleItalic().run()}
           data-active={editor.isActive('italic')}
           disabled={!editor.can().chain().focus().toggleItalic().run()}
+          title="Italic"
         >
           <Italic className="h-3 w-3" />
+          <span className="sr-only">Italic</span>
         </Button>
         <Button
           variant="ghost"
@@ -232,8 +236,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           data-active={editor.isActive('underline')}
+          title="Underline"
         >
           <Underline className="h-3 w-3" />
+          <span className="sr-only">Underline</span>
         </Button>
         <Button
           variant="ghost"
@@ -242,8 +248,10 @@ export function EditorToolbar({
           onClick={() => editor.chain().focus().toggleStrike().run()}
           data-active={editor.isActive('strike')}
           disabled={!editor.can().chain().focus().toggleStrike().run()}
+          title="Strikethrough"
         >
           <Strikethrough className="h-3 w-3" />
+          <span className="sr-only">Strikethrough</span>
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
@@ -255,8 +263,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           data-active={editor.isActive('heading', { level: 1 })}
+          title="Heading 1"
         >
           <Heading1 className="h-3 w-3" />
+          <span className="sr-only">Heading 1</span>
         </Button>
         <Button
           variant="ghost"
@@ -264,8 +274,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           data-active={editor.isActive('heading', { level: 2 })}
+          title="Heading 2"
         >
           <Heading2 className="h-3 w-3" />
+          <span className="sr-only">Heading 2</span>
         </Button>
         <Button
           variant="ghost"
@@ -273,8 +285,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           data-active={editor.isActive('heading', { level: 3 })}
+          title="Heading 3"
         >
           <Heading3 className="h-3 w-3" />
+          <span className="sr-only">Heading 3</span>
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
@@ -286,8 +300,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           data-active={editor.isActive('bulletList')}
+          title="Bullet list"
         >
           <List className="h-3 w-3" />
+          <span className="sr-only">Bullet list</span>
         </Button>
         <Button
           variant="ghost"
@@ -295,8 +311,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           data-active={editor.isActive('orderedList')}
+          title="Numbered list"
         >
           <ListOrdered className="h-3 w-3" />
+          <span className="sr-only">Numbered list</span>
         </Button>
         <Button
           variant="ghost"
@@ -304,8 +322,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           data-active={editor.isActive('blockquote')}
+          title="Blockquote"
         >
           <Quote className="h-3 w-3" />
+          <span className="sr-only">Blockquote</span>
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
@@ -317,8 +337,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
           data-active={editor.isActive({ textAlign: 'left' })}
+          title="Align left"
         >
           <AlignLeft className="h-3 w-3" />
+          <span className="sr-only">Align left</span>
         </Button>
         <Button
           variant="ghost"
@@ -326,8 +348,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
           data-active={editor.isActive({ textAlign: 'center' })}
+          title="Align centre"
         >
           <AlignCenter className="h-3 w-3" />
+          <span className="sr-only">Align centre</span>
         </Button>
         <Button
           variant="ghost"
@@ -335,8 +359,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
           data-active={editor.isActive({ textAlign: 'right' })}
+          title="Align right"
         >
           <AlignRight className="h-3 w-3" />
+          <span className="sr-only">Align right</span>
         </Button>
         <Button
           variant="ghost"
@@ -344,8 +370,10 @@ export function EditorToolbar({
           className="h-6 w-6"
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
           data-active={editor.isActive({ textAlign: 'justify' })}
+          title="Justify"
         >
           <AlignJustify className="h-3 w-3" />
+          <span className="sr-only">Justify</span>
         </Button>
       </div>
 
@@ -360,7 +388,7 @@ export function EditorToolbar({
           }
         }}
       >
-        <SelectTrigger className="h-7 w-20 text-xs shrink-0">
+        <SelectTrigger className="h-7 w-20 shrink-0 px-2 text-xs" title="Font size">
           <SelectValue placeholder="Size" />
         </SelectTrigger>
         <SelectContent>
@@ -433,7 +461,7 @@ export function EditorToolbar({
           }
         }}
       >
-        <SelectTrigger className="h-7 w-28 text-xs shrink-0">
+        <SelectTrigger className="h-7 w-28 shrink-0 px-2 text-xs" title="Highlight colour">
           <div className="flex items-center gap-1.5">
             <Highlighter
               className="h-3 w-3"
@@ -475,6 +503,7 @@ export function EditorToolbar({
           title="Insert Table"
         >
           <Table className="h-3 w-3" />
+          <span className="sr-only">Insert table</span>
         </Button>
 
         <input
@@ -492,6 +521,7 @@ export function EditorToolbar({
           title="Insert Image"
         >
           <ImageIcon className="h-3 w-3" />
+          <span className="sr-only">Insert image</span>
         </Button>
 
         <Button
@@ -502,6 +532,7 @@ export function EditorToolbar({
           title="Insert Text Box"
         >
           <Type className="h-3 w-3" />
+          <span className="sr-only">Insert Text Box</span>
         </Button>
 
         <Button
@@ -512,6 +543,7 @@ export function EditorToolbar({
           title="Insert Diagram"
         >
           <PenTool className="h-3 w-3" />
+          <span className="sr-only">Insert Diagram</span>
         </Button>
 
         <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
@@ -524,6 +556,7 @@ export function EditorToolbar({
               title="Insert Link"
             >
               <LinkIcon className="h-3 w-3" />
+              <span className="sr-only">Insert Link</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
@@ -566,6 +599,7 @@ export function EditorToolbar({
           title="Code Block"
         >
           <Code2 className="h-3 w-3" />
+          <span className="sr-only">Code block</span>
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
@@ -580,6 +614,7 @@ export function EditorToolbar({
           title="Superscript"
         >
           <SuperscriptIcon className="h-3 w-3" />
+          <span className="sr-only">Superscript</span>
         </Button>
         <Button
           variant="ghost"
@@ -590,6 +625,7 @@ export function EditorToolbar({
           title="Subscript"
         >
           <SubscriptIcon className="h-3 w-3" />
+          <span className="sr-only">Subscript</span>
         </Button>
 
         <div className="mx-1 h-4 w-px bg-[var(--glass-border)]" />
@@ -604,6 +640,7 @@ export function EditorToolbar({
           title="Undo"
         >
           <Undo className="h-3 w-3" />
+          <span className="sr-only">Undo</span>
         </Button>
         <Button
           variant="ghost"
@@ -614,6 +651,7 @@ export function EditorToolbar({
           title="Redo"
         >
           <Redo className="h-3 w-3" />
+          <span className="sr-only">Redo</span>
         </Button>
       </div>
 

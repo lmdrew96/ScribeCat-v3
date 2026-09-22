@@ -54,6 +54,7 @@ export function FriendRequests() {
                       }
                     >
                       <Check className="h-4 w-4" />
+                      <span className="sr-only">Accept</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -67,6 +68,7 @@ export function FriendRequests() {
                       }
                     >
                       <X className="h-4 w-4" />
+                      <span className="sr-only">Decline</span>
                     </Button>
                   </div>
                 }

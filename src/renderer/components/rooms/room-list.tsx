@@ -42,6 +42,7 @@ export function RoomList({ rooms, selectedId, onSelect, onCollapse }: RoomListPr
             title="Create room"
           >
             <Plus className="h-4 w-4" />
+            <span className="sr-only">New study room</span>
           </Button>
           {onCollapse && (
             <Button
@@ -52,6 +53,7 @@ export function RoomList({ rooms, selectedId, onSelect, onCollapse }: RoomListPr
               title="Collapse sidebar"
             >
               <PanelLeftClose className="h-4 w-4" />
+              <span className="sr-only">Collapse sidebar</span>
             </Button>
           )}
         </div>

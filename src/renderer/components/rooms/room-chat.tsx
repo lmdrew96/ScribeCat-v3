@@ -143,8 +143,10 @@ export function RoomChat({ messages, isLoading, currentUserId, onSend, roomId }:
             className="h-[32px] w-[32px] shrink-0"
             disabled={!input.trim() || sending}
             onClick={() => void handleSend()}
+            title="Send message"
           >
             <Send className="h-3.5 w-3.5" />
+            <span className="sr-only">Send message</span>
           </Button>
         </div>
       </div>

@@ -11,7 +11,7 @@ import {
 import { useDocumentUpload } from '@/hooks/use-document-upload';
 import { useSessionList } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
-import { FileImage, FileText, Loader2, Upload, X } from 'lucide-react';
+import { FileImage, FileText, Loader2, PenLine, Upload, X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -160,22 +160,26 @@ export function DocumentUpload({
       )}
 
       {/* Controls row */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <LectureTypeSelect
-            value={lectureType}
-            onChange={setLectureType}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-[8rem] flex-1">
+            <LectureTypeSelect
+              value={lectureType}
+              onChange={setLectureType}
+              disabled={isProcessing}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+            onClick={() => setShowHandwritingModal(true)}
             disabled={isProcessing}
-          />
+          >
+            <PenLine className="h-3.5 w-3.5" />
+            Draw handwriting
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowHandwritingModal(true)}
-          disabled={isProcessing}
-        >
-          Draw handwriting
-        </Button>
         <p className="text-[10px] text-muted-foreground">Max {MAX_FILES} files, 20MB each</p>
       </div>
 

@@ -53,7 +53,7 @@ const themes = [
   {
     id: 'soft-focus',
     name: 'Purring Pastels',
-    colors: ['#F8F4FF', '#E7D1FF', '#E4FFDE', '#D4A5D2'],
+    colors: ['#F8F4FF', '#E7D1FF', '#2A6B4C', '#7D4A7A'],
   },
   { id: 'blackout', name: 'Void Kitty', colors: ['#000000', '#0D1A14', '#B580FF', '#00F2FF'] },
   { id: 'chaos-cat', name: 'Chaos Cat', colors: ['#1A0A1F', '#2D1235', '#FF5EE0', '#1FE1FD'] },
@@ -76,7 +76,7 @@ const themes = [
   {
     id: 'nyan-cat-light',
     name: 'Nyan Cat Light 🌈',
-    colors: ['#fff0ff', '#ffe0ff', '#ff00aa', '#330033'],
+    colors: ['#fff0ff', '#ffe0ff', '#cc0088', '#330033'],
     secret: true,
   },
 ];

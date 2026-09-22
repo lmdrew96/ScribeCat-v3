@@ -29,7 +29,7 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
 
   // Auto-trigger re-indexing when brain context comes back with empty topic indexes
   useEffect(() => {
-    if (brainData && brainData.brainContext.startsWith('SESSION CONTENT') && !hasTriggeredReindexRef.current) {
+    if (brainData?.brainContext.startsWith('SESSION CONTENT') && !hasTriggeredReindexRef.current) {
       hasTriggeredReindexRef.current = true;
       reindexEmptySessions({ examRoomId }).catch(console.error);
     }
@@ -209,8 +209,10 @@ export function ExamChat({ examRoomId, examDate }: ExamChatProps) {
             size="icon"
             onClick={() => void handleSend()}
             disabled={isLoading || !input.trim()}
+            title="Send message"
           >
             <Send className="h-4 w-4" />
+            <span className="sr-only">Send message</span>
           </Button>
         </div>
       </div>

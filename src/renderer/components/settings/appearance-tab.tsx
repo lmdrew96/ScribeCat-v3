@@ -27,15 +27,15 @@ export function AppearanceTab({ visibleThemes, activeTheme, onSelectTheme }: App
               key={themeOption.id}
               onClick={() => onSelectTheme(themeOption.id as Theme)}
               className={cn(
-                'relative flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
+                'relative flex min-w-0 flex-col items-center gap-2 rounded-lg border p-3 transition-all',
                 activeTheme === themeOption.id
                   ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[0_0_12px_var(--glass-glow)]'
                   : 'border-[var(--glass-border)] glass-light hover:bg-[var(--glass-bg)]',
               )}
             >
               {activeTheme === themeOption.id && (
-                <div className="absolute right-2 top-2">
-                  <Check className="h-3.5 w-3.5 text-accent" />
+                <div className="absolute right-2 top-2 rounded-full bg-accent p-0.5">
+                  <Check className="h-3 w-3 text-accent-foreground" />
                 </div>
               )}
               <div className="flex gap-1">
@@ -47,7 +47,9 @@ export function AppearanceTab({ visibleThemes, activeTheme, onSelectTheme }: App
                   />
                 ))}
               </div>
-              <span className="text-xs text-foreground">{themeOption.name}</span>
+              <span className="w-full truncate text-center text-xs text-foreground">
+                {themeOption.name}
+              </span>
             </button>
           ))}
         </div>

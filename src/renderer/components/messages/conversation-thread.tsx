@@ -100,8 +100,10 @@ export function ConversationThread({
             size="icon"
             className="h-8 w-8 shrink-0"
             onClick={onBack}
+            title="Back to conversations"
           >
             <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back to conversations</span>
           </Button>
         )}
         <div>
@@ -214,8 +216,10 @@ export function ConversationThread({
             className="h-[38px] w-[38px] shrink-0"
             disabled={!input.trim() || sending}
             onClick={() => void handleSend()}
+            title="Send message"
           >
             <Send className="h-4 w-4" />
+            <span className="sr-only">Send message</span>
           </Button>
         </div>
       </div>

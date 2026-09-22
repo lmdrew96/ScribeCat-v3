@@ -57,6 +57,7 @@ export function ExamRoomList({ rooms, selectedId, onSelect }: ExamRoomListProps)
           title="Create exam room"
         >
           <Plus className="h-4 w-4" />
+          <span className="sr-only">New exam room</span>
         </Button>
       </div>
 
