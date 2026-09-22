@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "scribecat",
+  "compatibility_date": "2026-09-22",
+
+  // ScribeCat is a pure client-side SPA: Vite builds everything into dist/ and
+  // there is no server code here at all. Convex, Clerk, AssemblyAI and R2 are
+  // reached directly from the browser, so this Worker has no `main` — it only
+  // serves static assets. Nothing is bundled by wrangler, which is why the
+  // esbuild `keep_names` and `nodejs_compat` settings that the migration
+  // playbook calls for do not apply to this project.
+  "assets": {
+    "directory": "./dist",
+
+    // Replaces the catch-all rewrite that vercel.json used to do. TanStack
+    // Router owns every path below /, so any request that does not match a
+    // built file has to be answered with index.html rather than a 404.
+    "not_found_handling": "single-page-application"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+
+  // CUSTOM DOMAIN — deliberately not declared yet.
+  //
+  // `wrangler deploy` replaces the Worker's remote config with whatever is in
+  // this file, so once scribecat.adhdesigns.dev is attached it MUST be listed
+  // here or the next git-triggered build silently drops it.
+  //
+  // It is left out for now because adding it here is itself the cutover: the
+  // deploy would repoint the DNS record away from Vercel immediately. Verify
+  // the build on the workers.dev URL first, then add this block and push:
+  //
+  //   "routes": [
+  //     { "pattern": "scribecat.adhdesigns.dev", "custom_domain": true }
+  //   ]
+}
