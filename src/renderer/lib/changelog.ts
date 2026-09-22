@@ -33,7 +33,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.34.1',
+    version: '5.34.2',
+    label: '5.33.0 \u2013 5.34.2',
     date: '2026-09-22',
     title: 'A tidier, more readable app',
     changes: [
@@ -68,6 +69,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         kind: 'improved',
         text: 'Long course names, topic names and display names ellipsis properly instead of shoving the rest of the row off-screen.',
+      },
+      {
+        kind: 'fixed',
+        text: 'The theme swatches in Settings stay inside their cards on smaller windows \u2014 the picker now reflows to fewer columns instead of squeezing the cards narrower than the colours they hold.',
       },
     ],
   },
