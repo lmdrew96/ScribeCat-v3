@@ -209,9 +209,11 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                   variant="ghost"
                   size="sm"
                   className="h-7 text-xs gap-1"
+                  title="Archive exam room"
                   onClick={() => void handleArchive()}
                 >
                   <Archive className="h-3 w-3" />
+                  <span className="sr-only">Archive exam room</span>
                 </Button>
               )}
             </>

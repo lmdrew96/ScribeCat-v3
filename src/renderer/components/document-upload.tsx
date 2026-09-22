@@ -133,6 +133,8 @@ export function DocumentUpload({
               <button
                 type="button"
                 onClick={() => removeFile(i)}
+                title={`Remove ${f.file.name}`}
+                aria-label={`Remove ${f.file.name}`}
                 className="absolute top-0.5 right-0.5 rounded-full bg-black/60 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="h-3 w-3 text-white" />
@@ -154,6 +156,7 @@ export function DocumentUpload({
               )}
             >
               <Upload className="h-4 w-4" />
+              <span className="sr-only">Add more files</span>
             </button>
           )}
         </div>

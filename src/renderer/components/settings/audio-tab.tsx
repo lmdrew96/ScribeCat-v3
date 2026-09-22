@@ -38,7 +38,10 @@ export function AudioTab({
       <div className="space-y-2">
         <Label className="text-sm text-foreground">Input Device</Label>
         <Select defaultValue="macbook">
-          <SelectTrigger className="bg-background border-border">
+          <SelectTrigger
+            className="bg-background border-border"
+            aria-label="Audio retention period"
+          >
             <SelectValue placeholder="Select microphone" />
           </SelectTrigger>
           <SelectContent>

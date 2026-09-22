@@ -35,9 +35,11 @@ export function AudioDeletionWarning() {
       <button
         type="button"
         className="text-muted-foreground hover:text-foreground transition-colors"
+        title="Dismiss"
         onClick={() => setDismissed(true)}
       >
         <X className="h-3.5 w-3.5" />
+        <span className="sr-only">Dismiss</span>
       </button>
     </div>
   );

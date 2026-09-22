@@ -33,7 +33,7 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.34.0',
+    version: '5.34.1',
     date: '2026-09-22',
     title: 'A tidier, more readable app',
     changes: [
@@ -59,7 +59,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         kind: 'improved',
-        text: 'Every icon-only button has a tooltip and a screen-reader label, so the editor toolbar is finally readable at a glance.',
+        text: 'Every icon-only control has a tooltip and a screen-reader label \u2014 including the record button, which had no name at all.',
+      },
+      {
+        kind: 'fixed',
+        text: 'On narrower windows the navigation no longer clips \u201cExam\u201d; the wordmark steps aside instead.',
       },
       {
         kind: 'improved',

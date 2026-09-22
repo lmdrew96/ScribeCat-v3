@@ -112,6 +112,9 @@ export function CreateRoomModal({ open, onOpenChange }: CreateRoomModalProps) {
                           <button
                             type="button"
                             onClick={() => toggleFriend(friend.userId)}
+                            title={`${isSelected ? 'Remove' : 'Invite'} ${friend.displayName}`}
+                            aria-label={`${isSelected ? 'Remove' : 'Invite'} ${friend.displayName}`}
+                            aria-pressed={isSelected}
                             className={cn(
                               'flex h-6 w-6 items-center justify-center rounded-md border transition-colors',
                               isSelected

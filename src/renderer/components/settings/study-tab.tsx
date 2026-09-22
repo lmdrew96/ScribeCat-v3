@@ -93,7 +93,7 @@ export function StudyTab({
           Used for daily study stats, streaks, and AI time awareness
         </p>
         <Select value={timezone} onValueChange={onTimezoneChange}>
-          <SelectTrigger className="w-56 bg-background border-border">
+          <SelectTrigger className="w-56 bg-background border-border" aria-label="Timezone">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export function StudyTab({
         <div className="space-y-2">
           <Label className="text-sm text-foreground">Break Interval</Label>
           <Select value={breakInterval} onValueChange={onBreakIntervalChange}>
-            <SelectTrigger className="w-40 bg-background border-border">
+            <SelectTrigger className="w-40 bg-background border-border" aria-label="Break interval">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -196,7 +196,7 @@ export function StudyTab({
           onValueChange={(value) => onNuggetNoteDensityChange(resolveNuggetDensity(value))}
           disabled={!nuggetNotesEnabled}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-label="Nugget note density">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

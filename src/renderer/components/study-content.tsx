@@ -472,8 +472,15 @@ export function StudyContent({
       {recording.audioUrl && (
         <div className="mb-4 rounded-xl glass p-3">
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={togglePlay}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              title={isPlaying ? 'Pause' : 'Play'}
+              onClick={togglePlay}
+            >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              <span className="sr-only">{isPlaying ? 'Pause' : 'Play'}</span>
             </Button>
 
             <span className="text-xs font-mono text-muted-foreground">

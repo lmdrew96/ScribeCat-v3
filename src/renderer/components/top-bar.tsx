@@ -101,7 +101,7 @@ export function TopBar() {
               alt="ScribeCat logo"
               className="h-10 w-10 rounded-lg object-cover"
             />
-            <span className="hidden truncate text-lg font-semibold text-foreground sm:inline">
+            <span className="hidden truncate text-lg font-semibold text-foreground min-[880px]:inline">
               ScribeCat
             </span>
           </div>

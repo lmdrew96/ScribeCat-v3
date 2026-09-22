@@ -175,7 +175,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
         {!isRecording && (
           <div className="flex-1 min-w-0 overflow-hidden flex flex-col gap-2">
             <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
-              <SelectTrigger className="w-full h-8 text-xs">
+              <SelectTrigger className="w-full h-8 text-xs" aria-label="Microphone">
                 <SelectValue placeholder="Select microphone" />
               </SelectTrigger>
               <SelectContent>
@@ -190,7 +190,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
               <LectureTypeSelect value={lectureType} onChange={setLectureType} />
               {courses.length > 0 && (
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                  <SelectTrigger className="w-full h-8 text-xs">
+                  <SelectTrigger className="w-full h-8 text-xs" aria-label="Course">
                     <SelectValue placeholder="Select course (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,6 +232,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           type="button"
           onClick={isRecording ? handleStop : requestRecord}
           disabled={false}
+          title={isRecording ? 'Stop recording' : 'Start recording'}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             isRecording
               ? 'recording-pulse bg-[var(--record)]'
@@ -243,6 +244,7 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           ) : (
             <Mic className="h-6 w-6 text-white" />
           )}
+          <span className="sr-only">{isRecording ? 'Stop recording' : 'Start recording'}</span>
         </button>
 
         {/* Pause/Resume button */}

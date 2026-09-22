@@ -408,7 +408,7 @@ export function EditorToolbar({
       {/* Font Color Swatches */}
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" title="Font colour">
             <Type
               className="h-3.5 w-3.5"
               style={{
@@ -417,6 +417,7 @@ export function EditorToolbar({
                   'var(--foreground)',
               }}
             />
+            <span className="sr-only">Font colour</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-2" align="start">

@@ -210,6 +210,8 @@ export function ExamSessionViewer({
                           variant="secondary"
                           size="lg"
                           className="h-16 w-16 rounded-full"
+                          title={isPlaying ? 'Pause' : 'Play'}
+                          aria-label={isPlaying ? 'Pause' : 'Play'}
                           onClick={() => void togglePlay()}
                         >
                           {isPlaying ? (

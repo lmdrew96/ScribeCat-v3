@@ -159,8 +159,10 @@ export function AccountTab({
                 void navigator.clipboard.writeText('https://scribecat-mcp.lmdrew.workers.dev/mcp');
                 toast.success('Copied!');
               }}
+              title="Copy the MCP server URL"
             >
               <Copy className="h-3.5 w-3.5" />
+              <span className="sr-only">Copy the MCP server URL</span>
             </Button>
           </div>
           <ol className="space-y-2 text-xs text-muted-foreground list-none" start={2}>
@@ -214,8 +216,10 @@ export function AccountTab({
                   void navigator.clipboard.writeText(generatedKey);
                   toast.success('Copied!');
                 }}
+                title="Copy API key"
               >
                 <Copy className="h-3.5 w-3.5" />
+                <span className="sr-only">Copy API key</span>
               </Button>
             </div>
             <Button
