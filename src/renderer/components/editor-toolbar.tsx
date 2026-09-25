@@ -203,7 +203,7 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div data-touch-toolbar className="flex items-center gap-1 flex-wrap">
       <div className="flex items-center gap-1 rounded-lg glass-light p-1 shrink-0">
         {/* Basic formatting */}
         <Button

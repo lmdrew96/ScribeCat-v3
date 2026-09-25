@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.2',
-    label: '5.34.3 \u2013 5.35.2',
+    version: '5.35.3',
+    label: '5.34.3 \u2013 5.35.3',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
+      {
+        kind: 'improved',
+        text: 'Small icon buttons are much easier to tap on a phone or tablet, and the editor toolbar\u2019s buttons grow to finger size on touch screens.',
+      },
       {
         kind: 'fixed',
         text: 'Study room and exam room headers now fit their buttons to the room\u2019s own width, not the whole window \u2014 so a narrow room on a big monitor shows compact icons instead of a pile-up.',

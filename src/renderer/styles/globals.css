@@ -1172,3 +1172,42 @@ button[data-active="true"] {
     animation: none;
   }
 }
+
+/*
+ * Touch targets. Icon buttons are drawn at 24–28px (h-6 / h-7), which is fine
+ * for a mouse and hard to hit with a finger. On touch screens they get an
+ * invisible 44px hit area centred on the button, so nothing moves visually.
+ *
+ * Unlayered on purpose: it has to beat Tailwind's utilities layer. Buttons
+ * that are already positioned (absolute/fixed/sticky) keep their positioning —
+ * ::after works against those just as well.
+ *
+ * The editor toolbar is the exception. Its buttons sit 4px apart, so expanded
+ * hit areas would overlap and a tap near the edge of one would land on its
+ * neighbour. There the buttons themselves grow to 44px on touch; the toolbar
+ * already wraps.
+ */
+@media (pointer: coarse) {
+  :is(button, [role='button']):is(.h-6, .h-7, .size-6, .size-7):not(.absolute, .fixed, .sticky) {
+    position: relative;
+  }
+
+  :is(button, [role='button']):is(.h-6, .h-7, .size-6, .size-7)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  [data-touch-toolbar] :is(button, [role='button']) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  [data-touch-toolbar] :is(button, [role='button'])::after {
+    content: none;
+  }
+}
