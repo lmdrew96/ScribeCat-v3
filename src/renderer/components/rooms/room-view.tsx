@@ -141,7 +141,7 @@ export function RoomView({ roomId }: RoomViewProps) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-4 py-2.5">
+      <div className="@container flex items-center justify-between border-b border-[var(--glass-border)] px-4 py-2.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--glass-bg)] shrink-0">
             <DoorOpen className="h-4 w-4 text-foreground" />
@@ -205,7 +205,7 @@ export function RoomView({ roomId }: RoomViewProps) {
                 onClick={() => setPinModalOpen(true)}
               >
                 <Pin className="h-3 w-3" />
-                <span className="hidden sm:inline">Pin Session</span>
+                <span className="sr-only @2xl:not-sr-only">Pin Session</span>
               </Button>
               <Button
                 variant="ghost"
@@ -214,7 +214,7 @@ export function RoomView({ roomId }: RoomViewProps) {
                 onClick={() => setUploadModalOpen(true)}
               >
                 <Upload className="h-3 w-3" />
-                <span className="hidden sm:inline">Upload Doc</span>
+                <span className="sr-only @2xl:not-sr-only">Upload Doc</span>
               </Button>
             </>
           )}
@@ -225,7 +225,7 @@ export function RoomView({ roomId }: RoomViewProps) {
             onClick={() => void handleLeave()}
           >
             {isHost ? <X className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
-            <span className="hidden sm:inline">{isHost ? 'Close' : 'Leave'}</span>
+            <span className="sr-only @2xl:not-sr-only">{isHost ? 'Close' : 'Leave'}</span>
           </Button>
         </div>
       </div>

@@ -37,7 +37,7 @@ export function GameLauncher({ roomId, hasPinnedSession }: GameLauncherProps) {
           disabled={!hasPinnedSession}
         >
           <Gamepad2 className="h-3 w-3" />
-          <span className="hidden sm:inline">Games</span>
+          <span className="sr-only @2xl:not-sr-only">Games</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.1',
-    label: '5.34.3 \u2013 5.35.1',
+    version: '5.35.2',
+    label: '5.34.3 \u2013 5.35.2',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
+      {
+        kind: 'fixed',
+        text: 'Study room and exam room headers now fit their buttons to the room\u2019s own width, not the whole window \u2014 so a narrow room on a big monitor shows compact icons instead of a pile-up.',
+      },
       {
         kind: 'improved',
         text: 'Recording is lighter again. Saving the transcript no longer rewrites your session every few seconds, so your session list stops reloading in the background while you record.',

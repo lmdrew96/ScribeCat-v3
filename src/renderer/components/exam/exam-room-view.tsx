@@ -141,7 +141,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
       )}
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--glass-border)] px-4 py-2.5">
+      <div className="@container flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--glass-border)] px-4 py-2.5">
         <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--glass-bg)] shrink-0">
             <BookOpenCheck className="h-4 w-4 text-foreground" />
@@ -171,7 +171,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                 onClick={() => setSessionPickerOpen(true)}
               >
                 <Plus className="h-3 w-3" />
-                <span className="hidden sm:inline">Add Session</span>
+                <span className="sr-only @2xl:not-sr-only">Add Session</span>
               </Button>
               <Button
                 variant="ghost"
@@ -180,7 +180,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                 onClick={() => setUploadModalOpen(true)}
               >
                 <Upload className="h-3 w-3" />
-                <span className="hidden sm:inline">Upload Doc</span>
+                <span className="sr-only @2xl:not-sr-only">Upload Doc</span>
               </Button>
               {isHost && (
                 <Button
@@ -190,7 +190,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                   onClick={() => setEditModalOpen(true)}
                 >
                   <Pencil className="h-3 w-3" />
-                  <span className="hidden sm:inline">Edit</span>
+                  <span className="sr-only @2xl:not-sr-only">Edit</span>
                 </Button>
               )}
               {isHost && (
@@ -201,7 +201,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
                   onClick={() => setInviteModalOpen(true)}
                 >
                   <UserPlus className="h-3 w-3" />
-                  <span className="hidden sm:inline">Invite</span>
+                  <span className="sr-only @2xl:not-sr-only">Invite</span>
                 </Button>
               )}
               {isHost && (
@@ -225,7 +225,7 @@ export function ExamRoomView({ examRoomId }: ExamRoomViewProps) {
             onClick={() => void handleLeave()}
           >
             {isHost ? <X className="h-3 w-3" /> : <LogOut className="h-3 w-3" />}
-            <span className="hidden sm:inline">{isHost ? 'Close' : 'Leave'}</span>
+            <span className="sr-only @2xl:not-sr-only">{isHost ? 'Close' : 'Leave'}</span>
           </Button>
         </div>
       </div>
