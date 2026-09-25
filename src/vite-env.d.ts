@@ -14,7 +14,7 @@ interface ImportMeta {
 declare const __APP_VERSION__: string;
 
 /**
- * Identifies this build (commit SHA on Vercel, package version locally).
+ * Identifies this build (the commit SHA — from Workers Builds in CI, from git locally).
  * Compared against /version.json to detect a new deploy — see lib/app-update.ts.
  */
 declare const __BUILD_ID__: string;

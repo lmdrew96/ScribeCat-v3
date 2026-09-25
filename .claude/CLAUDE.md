@@ -6,7 +6,7 @@
 
 Vite + React + Convex + TypeScript, using **pnpm**. After modifying dependencies or moving packages between deps/devDeps, always run `pnpm install` to regenerate the lockfile before committing.
 
-ScribeCat v3 is the ADHD-friendly lecture companion — a **pure web app** on Vercel.
+ScribeCat v3 is the ADHD-friendly lecture companion — a **pure web app** served as static assets from Cloudflare Workers.
 Recording + transcription → AI notes → Study tools → Collaborative studying
 
 **Current phase:** 4 (Connect) complete, plus substantial post-Phase-4 expansion. See `docs/PHASES.md` for version history and scope — always check it before starting work.

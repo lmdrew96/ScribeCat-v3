@@ -10,7 +10,7 @@ This is a Vite + React + Convex + TypeScript project using pnpm. After modifying
 
 ## About This Project
 
-ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** deployed on Vercel.
+ScribeCat v3 is the ADHD-friendly lecture companion app — a **pure web app** served as static assets from Cloudflare Workers.
 
 **What it does:** Recording + transcription -> AI notes -> Study tools -> Collaborative studying
 

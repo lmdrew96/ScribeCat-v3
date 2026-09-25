@@ -24,16 +24,13 @@ const gitSha = (): string | null => {
  * the update check compares this against /version.json and a stamp that can
  * repeat would leave a tab thinking it is current.
  *
- * Each CI provider names this differently and neither sets the other's, so both
- * are read: WORKERS_CI_COMMIT_SHA on Cloudflare Workers Builds,
- * VERCEL_GIT_COMMIT_SHA while Vercel is still standing as the rollback path.
- * Asking git directly covers local builds, where falling through to pkgVersion
- * would produce a stamp that repeats between two builds of the same version and
+ * WORKERS_CI_COMMIT_SHA is set by Cloudflare Workers Builds. Asking git
+ * directly covers local builds, where falling through to pkgVersion would
+ * produce a stamp that repeats between two builds of the same version and
  * quietly disable update detection.
  */
 const buildId =
   process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 7) ??
-  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
   gitSha() ??
   pkgVersion ??
   'dev';
