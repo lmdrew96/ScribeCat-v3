@@ -33,8 +33,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.7',
-    label: '5.34.3 \u2013 5.35.7',
+    version: '5.35.8',
+    label: '5.34.3 \u2013 5.35.8',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
@@ -45,6 +45,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         kind: 'fixed',
         text: 'In StudyQuest battles, pressing a number key twice quickly can no longer use two items at once.',
+      },
+      {
+        kind: 'improved',
+        text: 'The record button stands out properly in Purring Pastels \u2014 it was the palest thing on the page, and now it\u2019s a deeper pink, pulse included.',
       },
       {
         kind: 'improved',

@@ -460,8 +460,9 @@
   --border: #d4c4e8;
   --input: #e7d1ff;
   --ring: #7d4a7a;
-  --record: #d4a5d2;
-  --record-glow: rgba(212, 165, 210, 0.4);
+  /* Darkened from #d4a5d2 (1.92:1) to clear WCAG 1.4.11's 3:1 on --background. */
+  --record: #a85fa5;
+  --record-glow: rgba(168, 95, 165, 0.4);
   --waveform: #a5d6a7;
   --transcript-bg: #e7d1ff;
   --sidebar: #e7d1ff;
