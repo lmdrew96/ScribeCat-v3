@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { previewAllSounds } from '@/lib/notification-sounds';
 import { Bell, CheckCircle2, Volume2, VolumeX, XCircle } from 'lucide-react';
+import { useId } from 'react';
 import { toast } from 'sonner';
 
 interface NotificationsTabProps {
@@ -18,6 +19,7 @@ export function NotificationsTab({
   pushPermission,
   onEnablePushNotifications,
 }: NotificationsTabProps) {
+  const id = useId();
   return (
     <div className="space-y-6">
       {/* Sound Effects */}
@@ -26,7 +28,10 @@ export function NotificationsTab({
 
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label className="text-sm text-foreground flex items-center gap-2">
+            <Label
+              htmlFor={`${id}-sounds`}
+              className="text-sm text-foreground flex items-center gap-2"
+            >
               {soundEnabled ? (
                 <Volume2 className="h-4 w-4 text-accent" />
               ) : (
@@ -38,7 +43,11 @@ export function NotificationsTab({
               Play sounds for new messages, friend requests, and cat level-ups
             </p>
           </div>
-          <Switch checked={soundEnabled} onCheckedChange={onSoundEnabledChange} />
+          <Switch
+            id={`${id}-sounds`}
+            checked={soundEnabled}
+            onCheckedChange={onSoundEnabledChange}
+          />
         </div>
 
         {soundEnabled && (

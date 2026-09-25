@@ -96,7 +96,7 @@ export function MergeSessionsModal({
         <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           {/* Primary session (the one being kept) */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1.5 block">Keeping this session</Label>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Keeping this session</p>
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
               <FileAudio className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
               <div className="min-w-0">
@@ -117,9 +117,9 @@ export function MergeSessionsModal({
 
           {/* Session picker */}
           <div>
-            <Label className="text-xs text-muted-foreground mb-1.5 block">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">
               Merge these fragments into it
-            </Label>
+            </p>
             {otherSessions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No other sessions to merge with.
@@ -142,9 +142,7 @@ export function MergeSessionsModal({
                       >
                         <div
                           className={`mt-0.5 h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors ${
-                            isSelected
-                              ? 'bg-primary border-primary'
-                              : 'border-muted-foreground/40'
+                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
                           }`}
                         >
                           {isSelected && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
@@ -197,12 +195,10 @@ export function MergeSessionsModal({
           <Button variant="outline" size="sm" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            size="sm"
-            onClick={handleMerge}
-            disabled={selectedIds.size === 0 || merging}
-          >
-            {merging ? 'Merging…' : `Merge ${selectedIds.size > 0 ? `(${selectedIds.size + 1} sessions)` : ''}`}
+          <Button size="sm" onClick={handleMerge} disabled={selectedIds.size === 0 || merging}>
+            {merging
+              ? 'Merging…'
+              : `Merge ${selectedIds.size > 0 ? `(${selectedIds.size + 1} sessions)` : ''}`}
           </Button>
         </DialogFooter>
       </DialogContent>

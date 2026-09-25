@@ -12,7 +12,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { cn } from '@/lib/utils';
 import { useQuery } from 'convex/react';
 import { AtSign, Check, Loader2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { api } from '../../../../convex/_generated/api';
 
 interface UsernameSetupModalProps {
@@ -28,6 +28,7 @@ export function UsernameSetupModal({
   onOpenChange,
   dismissible = true,
 }: UsernameSetupModalProps) {
+  const id = useId();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
@@ -100,8 +101,11 @@ export function UsernameSetupModal({
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label className="text-sm text-foreground">Display name</Label>
+            <Label htmlFor={`${id}-name`} className="text-sm text-foreground">
+              Display name
+            </Label>
             <Input
+              id={`${id}-name`}
               value={displayName}
               onChange={(e) => {
                 setDisplayName(e.target.value);
@@ -121,10 +125,13 @@ export function UsernameSetupModal({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm text-foreground">Username</Label>
+            <Label htmlFor={`${id}-username`} className="text-sm text-foreground">
+              Username
+            </Label>
             <div className="relative">
               <AtSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                id={`${id}-username`}
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));

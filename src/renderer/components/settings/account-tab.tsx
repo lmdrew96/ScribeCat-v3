@@ -5,6 +5,7 @@ import type { useApiKeys } from '@/hooks/use-api-keys';
 import type { useUserProfile } from '@/hooks/use-user-profile';
 import type { useUser } from '@clerk/clerk-react';
 import { Copy, Key } from 'lucide-react';
+import { useId } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '../../../../convex/_generated/dataModel';
 
@@ -53,10 +54,11 @@ export function AccountTab({
   onRevokeKey,
   onSignOut,
 }: AccountTabProps) {
+  const id = useId();
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Username</Label>
+        <p className="text-sm leading-none font-medium text-foreground">Username</p>
         {profile ? (
           <p className="text-sm text-accent font-medium">@{profile.username}</p>
         ) : (
@@ -75,11 +77,14 @@ export function AccountTab({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Name</Label>
+        <Label htmlFor={profile ? `${id}-name` : undefined} className="text-sm text-foreground">
+          Name
+        </Label>
         {profile ? (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Input
+                id={`${id}-name`}
                 value={displayNameInput}
                 onChange={(e) => onDisplayNameInputChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -116,7 +121,7 @@ export function AccountTab({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Email</Label>
+        <p className="text-sm leading-none font-medium text-foreground">Email</p>
         <p className="text-sm text-muted-foreground">
           {user?.primaryEmailAddress?.emailAddress ?? 'No email'}
         </p>

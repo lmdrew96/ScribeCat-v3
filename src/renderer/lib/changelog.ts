@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.3',
-    label: '5.34.3 \u2013 5.35.3',
+    version: '5.35.4',
+    label: '5.34.3 \u2013 5.35.4',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
+      {
+        kind: 'improved',
+        text: 'Clicking a setting\u2019s name now focuses or toggles it, and screen readers announce every settings field by its proper name.',
+      },
       {
         kind: 'improved',
         text: 'Small icon buttons are much easier to tap on a phone or tablet, and the editor toolbar\u2019s buttons grow to finger size on touch screens.',

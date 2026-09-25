@@ -10,6 +10,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import type { useStudySettings } from '@/hooks/use-productivity';
 import { cn } from '@/lib/utils';
+import { useId } from 'react';
 
 type Settings = ReturnType<typeof useStudySettings>['settings'];
 type UpdateSettings = ReturnType<typeof useStudySettings>['updateSettings'];
@@ -33,15 +34,15 @@ export function AudioTab({
   isTesting,
   testMicrophone,
 }: AudioTabProps) {
+  const id = useId();
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Input Device</Label>
+        <Label htmlFor={`${id}-device`} className="text-sm text-foreground">
+          Input Device
+        </Label>
         <Select defaultValue="macbook">
-          <SelectTrigger
-            className="bg-background border-border"
-            aria-label="Audio retention period"
-          >
+          <SelectTrigger id={`${id}-device`} className="bg-background border-border">
             <SelectValue placeholder="Select microphone" />
           </SelectTrigger>
           <SelectContent>
@@ -53,7 +54,7 @@ export function AudioTab({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Test Microphone</Label>
+        <p className="text-sm leading-none font-medium text-foreground">Test Microphone</p>
         <div className="flex items-center gap-3">
           <Button variant="secondary" size="sm" onClick={testMicrophone} disabled={isTesting}>
             {isTesting ? 'Listening...' : 'Test Mic'}
@@ -76,17 +77,21 @@ export function AudioTab({
       </div>
 
       <div className="flex items-center justify-between">
-        <Label className="text-sm text-foreground">Show waveform while recording</Label>
-        <Switch checked={showWaveform} onCheckedChange={setShowWaveform} />
+        <Label htmlFor={`${id}-waveform`} className="text-sm text-foreground">
+          Show waveform while recording
+        </Label>
+        <Switch id={`${id}-waveform`} checked={showWaveform} onCheckedChange={setShowWaveform} />
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Audio Retention Period</Label>
+        <Label htmlFor={`${id}-retention`} className="text-sm text-foreground">
+          Audio Retention Period
+        </Label>
         <Select
           value={String(settings && '_id' in settings ? (settings.audioRetentionMonths ?? 6) : 6)}
           onValueChange={(val) => updateSettings({ audioRetentionMonths: Number(val) })}
         >
-          <SelectTrigger className="bg-background border-border">
+          <SelectTrigger id={`${id}-retention`} className="bg-background border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

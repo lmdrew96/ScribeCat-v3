@@ -19,6 +19,7 @@ import {
 } from '@/lib/nugget-density';
 import { cn } from '@/lib/utils';
 import { Award, Check, Clock, Lock } from 'lucide-react';
+import { useId } from 'react';
 import { ACHIEVEMENT_DEFINITIONS } from '../../../shared/achievements';
 
 type Settings = ReturnType<typeof useStudySettings>['settings'];
@@ -81,6 +82,7 @@ export function StudyTab({
   onAddCourse,
   onRemoveCourse,
 }: StudyTabProps) {
+  const id = useId();
   const unlockedIds = new Set(achievements?.map((a) => a.achievementId) ?? []);
   const courses = (settings && '_id' in settings ? settings.courses : undefined) ?? [];
 
@@ -88,12 +90,14 @@ export function StudyTab({
     <div className="space-y-5">
       {/* Timezone */}
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Timezone</Label>
+        <Label htmlFor={`${id}-timezone`} className="text-sm text-foreground">
+          Timezone
+        </Label>
         <p className="text-xs text-muted-foreground">
           Used for daily study stats, streaks, and AI time awareness
         </p>
         <Select value={timezone} onValueChange={onTimezoneChange}>
-          <SelectTrigger className="w-56 bg-background border-border" aria-label="Timezone">
+          <SelectTrigger id={`${id}-timezone`} className="w-56 bg-background border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -111,17 +115,25 @@ export function StudyTab({
       {/* Break Reminders */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
-          <Label className="text-sm text-foreground">Break Reminders</Label>
+          <Label htmlFor={`${id}-breaks`} className="text-sm text-foreground">
+            Break Reminders
+          </Label>
           <p className="text-xs text-muted-foreground">Get reminded to take breaks</p>
         </div>
-        <Switch checked={breakReminders} onCheckedChange={onBreakRemindersChange} />
+        <Switch
+          id={`${id}-breaks`}
+          checked={breakReminders}
+          onCheckedChange={onBreakRemindersChange}
+        />
       </div>
 
       {breakReminders && (
         <div className="space-y-2">
-          <Label className="text-sm text-foreground">Break Interval</Label>
+          <Label htmlFor={`${id}-break-interval`} className="text-sm text-foreground">
+            Break Interval
+          </Label>
           <Select value={breakInterval} onValueChange={onBreakIntervalChange}>
-            <SelectTrigger className="w-40 bg-background border-border" aria-label="Break interval">
+            <SelectTrigger id={`${id}-break-interval`} className="w-40 bg-background border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -137,12 +149,15 @@ export function StudyTab({
 
       {/* Goals */}
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Daily Study Goal</Label>
+        <Label htmlFor={`${id}-daily-hours`} className="text-sm text-foreground">
+          Daily Study Goal
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
             min="0"
             max="24"
+            id={`${id}-daily-hours`}
             value={dailyGoalHours}
             onChange={(e) => onDailyGoalChange(e.target.value, dailyGoalMinutes)}
             className="w-20 bg-background border-border"
@@ -152,6 +167,7 @@ export function StudyTab({
             type="number"
             min="0"
             max="59"
+            aria-label="Daily study goal, minutes"
             value={dailyGoalMinutes}
             onChange={(e) => onDailyGoalChange(dailyGoalHours, e.target.value)}
             className="w-20 bg-background border-border"
@@ -161,12 +177,15 @@ export function StudyTab({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Weekly Study Goal</Label>
+        <Label htmlFor={`${id}-weekly`} className="text-sm text-foreground">
+          Weekly Study Goal
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
             min="0"
             max="168"
+            id={`${id}-weekly`}
             value={weeklyGoal}
             onChange={(e) => onWeeklyGoalChange(e.target.value)}
             className="w-20 bg-background border-border"
@@ -178,15 +197,22 @@ export function StudyTab({
       {/* Nugget's Notes */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
-          <Label className="text-sm text-foreground">Nugget&apos;s Notes</Label>
+          <Label htmlFor={`${id}-nugget`} className="text-sm text-foreground">
+            Nugget&apos;s Notes
+          </Label>
           <p className="text-xs text-muted-foreground">Auto-generate AI notes during recording</p>
         </div>
-        <Switch checked={nuggetNotesEnabled} onCheckedChange={onNuggetNotesEnabledChange} />
+        <Switch
+          id={`${id}-nugget`}
+          checked={nuggetNotesEnabled}
+          onCheckedChange={onNuggetNotesEnabledChange}
+        />
       </div>
 
       {/* Note density — only meaningful while Nugget's Notes are on */}
       <div className="space-y-2">
         <Label
+          htmlFor={`${id}-density`}
           className={cn('text-sm text-foreground', !nuggetNotesEnabled && 'text-muted-foreground')}
         >
           How much Nugget writes
@@ -196,7 +222,7 @@ export function StudyTab({
           onValueChange={(value) => onNuggetNoteDensityChange(resolveNuggetDensity(value))}
           disabled={!nuggetNotesEnabled}
         >
-          <SelectTrigger className="w-full" aria-label="Nugget note density">
+          <SelectTrigger id={`${id}-density`} className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -214,12 +240,15 @@ export function StudyTab({
 
       {/* Courses */}
       <div className="space-y-2">
-        <Label className="text-sm text-foreground">Courses</Label>
+        <Label htmlFor={`${id}-course`} className="text-sm text-foreground">
+          Courses
+        </Label>
         <p className="text-xs text-muted-foreground">
           Add your courses to quickly label recordings
         </p>
         <div className="flex gap-2">
           <Input
+            id={`${id}-course`}
             value={newCourse}
             onChange={(e) => onNewCourseChange(e.target.value)}
             placeholder="e.g. CISC 108"
