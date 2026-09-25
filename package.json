@@ -1,6 +1,6 @@
 {
   "name": "scribecat-v3",
-  "version": "5.35.0",
+  "version": "5.35.1",
   "description": "ADHD-friendly study companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {
@@ -15,7 +15,8 @@
     "format": "biome format --write .",
     "clean": "rm -rf dist",
     "prepare": "husky",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:changelog": "node --no-warnings scripts/check-changelog.mts"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
