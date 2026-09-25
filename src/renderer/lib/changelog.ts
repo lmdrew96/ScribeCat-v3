@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.8',
-    label: '5.34.3 \u2013 5.35.8',
+    version: '5.36.0',
+    label: '5.34.3 \u2013 5.36.0',
     date: '2026-09-24',
-    title: 'Tighter locks, lighter recordings',
+    title: 'Study tools that see the whole lecture',
     changes: [
+      {
+        kind: 'improved',
+        text: 'Summaries, flashcards, quizzes, concept maps and the rest now read about three times more of your lecture \u2014 most of a typical class instead of just the last stretch \u2014 so they cover what was said at the start too.',
+      },
       {
         kind: 'improved',
         text: 'Clicking a setting\u2019s name now focuses or toggles it, and screen readers announce every settings field by its proper name.',

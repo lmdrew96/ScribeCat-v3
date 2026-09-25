@@ -20,8 +20,8 @@ import { buildExamInput } from './examToolPrompts';
 import type { LectureType } from './prompts';
 import { awardXpHelper } from './studyQuest';
 import { postSystemMessage, requireRoomHost, requireRoomMember } from './studyRooms';
-import { getJeopardyPrompt, getQuizPrompt } from './studyToolPrompts';
-import { callClaude, extractJson } from './studyTools';
+import { buildInput, getJeopardyPrompt, getQuizPrompt } from './studyToolPrompts';
+import { callClaude, callClaudeWithLecture, extractJson } from './studyTools';
 import { readTranscript } from './transcriptSegments';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -674,6 +674,9 @@ export const generateQuestions = internalAction({
     const { gameType } = game;
     let prompt: string;
     let maxTokens: number;
+    // Set for study-room games, which work from one session and can share the
+    // cached lecture prefix with that session's study tools.
+    let lecture: string | null = null;
 
     if (game.isExamRoom && game.examRoomId) {
       // Exam room: use brain context + multi-session content
@@ -706,17 +709,20 @@ export const generateQuestions = internalAction({
       if (!transcript) throw new Error('Pinned session has no transcript');
 
       const lt = (lectureType || 'general') as LectureType;
+      lecture = buildInput(transcript, notesPlainText ?? undefined);
 
       if (gameType === 'quiz_battle') {
-        prompt = getQuizPrompt(transcript, notesPlainText ?? undefined, lt, 10);
+        prompt = getQuizPrompt(lt, 10);
         maxTokens = 4096;
       } else {
-        prompt = getJeopardyPrompt(transcript, notesPlainText ?? undefined, lt);
+        prompt = getJeopardyPrompt(lt);
         maxTokens = 8192;
       }
     }
 
-    const response = await callClaude(prompt, maxTokens, 0.4);
+    const response = lecture
+      ? await callClaudeWithLecture(lecture, prompt, maxTokens, 0.4)
+      : await callClaude(prompt, maxTokens, 0.4);
     const parsed = JSON.parse(extractJson(response));
 
     await ctx.runMutation(internal.studyGames.saveQuestions, {

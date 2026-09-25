@@ -1,6 +1,9 @@
 /**
  * AI prompt templates for Study Tools
  * Each prompt is lecture-type-aware and returns strict JSON output.
+ *
+ * The prompts are instructions only. The lecture itself (buildInput) is sent
+ * separately, ahead of them, as a cached system block.
  */
 
 import type { LectureType } from './prompts';
@@ -22,25 +25,37 @@ export function truncateTranscript(transcript: string, maxChars = 8000): string 
   return `...${transcript.slice(-maxChars)}`;
 }
 
+/**
+ * How much of the transcript a study tool sees, from the end. Was 8000 chars —
+ * the last ~20% of a 50-minute lecture — which also kept the prompt under
+ * Haiku 4.5's 4096-token minimum for caching, so the tools re-sent it at full
+ * price every time. 24k chars (~6000 tokens) covers most of a typical lecture
+ * and clears the minimum, so a second tool on the same session reads it from
+ * cache.
+ */
+export const STUDY_TOOL_TRANSCRIPT_CHARS = 24_000;
+
+/**
+ * The lecture material every study tool works from: transcript, then notes.
+ * Byte-identical across tools for the same session, which is what lets it be
+ * cached — see callClaudeWithLecture in studyTools.ts. Anything tool-specific
+ * belongs in the instruction, never in here.
+ */
 export function buildInput(transcript: string, notes: string | undefined): string {
-  let input = `TRANSCRIPT:\n${truncateTranscript(transcript)}`;
+  let input = `TRANSCRIPT:\n${truncateTranscript(transcript, STUDY_TOOL_TRANSCRIPT_CHARS)}`;
   if (notes?.trim()) {
     input += `\n\nSTUDENT'S NOTES:\n${notes.slice(0, 3000)}`;
   }
   return input;
 }
 
-export function getSummaryPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-): string {
+export function getSummaryPrompt(lectureType: LectureType): string {
   return `You are an expert academic summarizer for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
 Create a comprehensive summary of this lecture content.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -52,17 +67,13 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 Set wordCount to the actual word count of the summary text.`;
 }
 
-export function getKeyConceptsPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-): string {
+export function getKeyConceptsPrompt(lectureType: LectureType): string {
   return `You are an expert concept extractor for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
 Extract the 5-7 most important concepts from this lecture content. Each concept should have a clear, student-friendly definition.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -79,18 +90,13 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 importance must be "high", "medium", or "low". Include 5-7 concepts, ordered by importance.`;
 }
 
-export function getFlashcardPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-  count: number,
-): string {
+export function getFlashcardPrompt(lectureType: LectureType, count: number): string {
   return `You are an expert flashcard creator for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
 Create ${count} study flashcards from this lecture content. Each card should test one specific concept or fact. The front should be a clear question, and the back should be a concise but complete answer.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -107,18 +113,13 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 difficulty must be "easy", "medium", or "hard". Generate exactly ${count} cards. Vary difficulty levels. Cover the most important material first.`;
 }
 
-export function getQuizPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-  questionCount: number,
-): string {
+export function getQuizPrompt(lectureType: LectureType, questionCount: number): string {
   return `You are an expert quiz creator for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
 Create a ${questionCount}-question multiple choice quiz from this lecture content. Each question should have exactly 4 options with one clearly correct answer and three plausible but incorrect distractors.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -136,17 +137,13 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 correctIndex is 0-based (0-3). Generate exactly ${questionCount} questions. Vary difficulty. Cover different topics from the lecture.`;
 }
 
-export function getConceptMapPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-): string {
+export function getConceptMapPrompt(lectureType: LectureType): string {
   return `You are an expert concept mapper for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
 Create a hierarchical concept map from this lecture content. Identify the main topics, their subtopics, and supporting details, along with the relationships between them.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -164,17 +161,13 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 type must be "main", "sub", or "detail". Keep it to 8-15 nodes maximum. Use short, clear labels (max 4 words per label). Edge labels are optional but helpful.`;
 }
 
-export function getEli5Prompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-): string {
+export function getEli5Prompt(lectureType: LectureType): string {
   return `You are a friendly explainer for ScribeCat, an ADHD-friendly study app. Your job is to take complex lecture concepts and explain them so simply that a 5-year-old could understand.
 ${STUDY_FOCUS[lectureType]}
 
 Identify the 3-5 most complex concepts from this lecture and explain each one simply, with a relatable analogy and a real-world example.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON matching this exact schema (no markdown wrapping, no explanation outside the JSON):
 {
@@ -191,11 +184,7 @@ Return ONLY valid JSON matching this exact schema (no markdown wrapping, no expl
 Keep explanations under 3 sentences each. Make analogies fun and memorable. Include 3-5 concepts.`;
 }
 
-export function getJeopardyPrompt(
-  transcript: string,
-  notes: string | undefined,
-  lectureType: LectureType,
-): string {
+export function getJeopardyPrompt(lectureType: LectureType): string {
   return `You are a Jeopardy game creator for ScribeCat, an ADHD-friendly study app.
 ${STUDY_FOCUS[lectureType]}
 
@@ -203,7 +192,7 @@ Create a Jeopardy board with 5 categories and 5 questions per category from this
 Each category should cover a distinct topic area. Questions should increase in difficulty
 (100 = easy, 500 = hard). Each question has 4 multiple choice options.
 
-${buildInput(transcript, notes)}
+Work only from the lecture material provided.
 
 Return ONLY valid JSON:
 {
