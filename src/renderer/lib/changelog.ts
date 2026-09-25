@@ -33,6 +33,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.34.3',
+    date: '2026-09-24',
+    title: 'Tighter locks',
+    changes: [
+      {
+        kind: 'fixed',
+        text: 'A session can only be opened, or run through the study tools, by the account that recorded it. Sharing and study rooms work exactly as before.',
+      },
+    ],
+  },
+  {
     version: '5.34.2',
     label: '5.33.0 \u2013 5.34.2',
     date: '2026-09-22',

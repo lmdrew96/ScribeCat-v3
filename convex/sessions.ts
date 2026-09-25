@@ -59,8 +59,15 @@ export const listMetadata = query({
 export const get = query({
   args: { id: v.id('sessions') },
   handler: async (ctx, args) => {
+    // Owner-only. Shared sessions and study rooms read through
+    // sessionSharing.getSharedSession / studyRooms, which do their own checks.
+    // Returns null rather than throwing when signed out: this is subscribed
+    // app-wide, and a throw during a sign-out transition would crash the tree.
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
     const session = await ctx.db.get(args.id);
-    if (!session) return null;
+    if (!session || session.userId !== identity.subject) return null;
 
     // Join notes from separate table (fallback to legacy fields during migration)
     const notesDoc = await ctx.db
