@@ -33,8 +33,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.6',
-    label: '5.34.3 \u2013 5.35.6',
+    version: '5.35.7',
+    label: '5.34.3 \u2013 5.35.7',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
@@ -57,6 +57,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         kind: 'improved',
         text: 'Recording is lighter again. Saving the transcript no longer rewrites your session every few seconds, so your session list stops reloading in the background while you record.',
+      },
+      {
+        kind: 'fixed',
+        text: 'ScribeCat\u2019s server and the app you load now update together, so a new setting can\u2019t fail to save because one half shipped before the other.',
       },
       {
         kind: 'fixed',

@@ -367,8 +367,27 @@ pnpm lint:fix         # Auto-fix issues
 pnpm format           # Format all files
 
 # Deployment
-pnpm convex:deploy    # Deploy Convex functions to production
+pnpm build:release    # CI only: deploy Convex to production, then build the client against it
+pnpm convex:deploy    # Deploy Convex functions to production by hand
 ```
+
+### Release path
+
+Production ships from the Cloudflare Workers git connection, and its **build command
+is `pnpm build:release`**, not `pnpm build`. Every push to `main` deploys the Convex
+backend first and only then builds the client, so the two can't drift: if the Convex
+deploy fails (typecheck, schema validation), the build fails and the old client keeps
+serving.
+
+It needs one build variable in the Cloudflare dashboard, **`CONVEX_DEPLOY_KEY`**: a
+*production* deploy key from the Convex dashboard (Settings → Deploy Keys). The key
+decides which deployment is targeted, so a preview-branch build with it set would
+deploy to production too. Keep non-production branch builds off, or give them a
+different build command.
+
+Don't run `pnpm build:release` locally. Without a deploy key it targets the production
+deployment of your `CONVEX_DEPLOYMENT` project. Data migrations in `convex/dataRepair.ts`
+never run as part of a release; run them by hand after the deploy that ships them.
 
 ---
 

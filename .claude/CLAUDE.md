@@ -163,7 +163,8 @@ pnpm build            # Production build
 pnpm compile          # tsc --noEmit, type-check only
 pnpm clean            # Delete dist/
 pnpm lint / lint:fix / format   # Biome (also runs on commit via Husky)
-pnpm convex:deploy    # Deploy Convex to production
+pnpm build:release    # CI build command: Convex deploy, then client build (never run locally)
+pnpm convex:deploy    # Deploy Convex to production by hand
 ```
 
 **Run `pnpm clean` before building if something seems broken.**

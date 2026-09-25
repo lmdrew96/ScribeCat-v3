@@ -1,11 +1,12 @@
 {
   "name": "scribecat-v3",
-  "version": "5.35.6",
+  "version": "5.35.7",
   "description": "ADHD-friendly study companion - Record, transcribe, and study smarter",
   "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:release": "convex deploy --cmd 'pnpm build' --cmd-url-env-var-name VITE_CONVEX_URL",
     "preview": "vite preview",
     "compile": "tsc --noEmit",
     "convex:dev": "convex dev",
