@@ -15,9 +15,9 @@
 
 import * as ex from 'excalibur';
 import { type CatVariant, SPRITE_CONFIG } from '../../cat-sprites';
-import { gameBridge, PLAYER_MAX_HP } from '../bridge';
-import { applyDamage, applyHeal, isDead } from '../combat/hp';
+import { PLAYER_MAX_HP, gameBridge } from '../bridge';
 import { type EnemyTemplate, getEnemyTemplate } from '../combat/enemies';
+import { applyDamage, applyHeal, isDead } from '../combat/hp';
 import { pickQuestion } from '../combat/questions';
 import { getCatResources } from '../resources';
 import { type BattleAction, HpBar, MessageBanner } from '../systems/battle-hud';

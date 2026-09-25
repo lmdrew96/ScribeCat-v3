@@ -736,14 +736,15 @@ export const getGameForGeneration = internalQuery({
     // Study room games use pinned session
     if (game.roomId) {
       const room = await ctx.db.get(game.roomId);
-      if (!room?.pinnedSessionId) return null;
+      const pinnedSessionId = room?.pinnedSessionId;
+      if (!pinnedSessionId) return null;
 
-      const session = await ctx.db.get(room.pinnedSessionId);
+      const session = await ctx.db.get(pinnedSessionId);
       if (!session) return null;
 
       const notesDoc = await ctx.db
         .query('sessionNotes')
-        .withIndex('by_session', (q) => q.eq('sessionId', room.pinnedSessionId!))
+        .withIndex('by_session', (q) => q.eq('sessionId', pinnedSessionId))
         .unique();
 
       return {

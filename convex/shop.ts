@@ -8,7 +8,7 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query, type MutationCtx } from './_generated/server';
+import { type MutationCtx, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { ITEMS, getItem } from './items';
 import { adjustCoinsHelper } from './studyQuest';

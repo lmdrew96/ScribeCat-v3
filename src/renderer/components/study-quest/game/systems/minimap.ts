@@ -10,7 +10,7 @@
  */
 
 import * as ex from 'excalibur';
-import { type Floor, type RoomType } from '../world/dungeon-types';
+import type { Floor, RoomType } from '../world/dungeon-types';
 
 const CELL_SIZE = 10;
 const CELL_GAP = 2;

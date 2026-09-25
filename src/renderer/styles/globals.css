@@ -116,13 +116,13 @@
   /* Brand tokens (from @adhdesigns/ui themes/brand.css) */
   --olive: #849440;
   --deep-teal: #244952;
-  --amber: #DFA649;
-  --mauve-purple: #88739E;
-  --sage-teal: #8CBDB9;
-  --soft-green: #97D181;
-  --lavender-mist: #DBD5E2;
-  --off-white: #F7F5FA;
-  --deep-dark: #1E1830;
+  --amber: #dfa649;
+  --mauve-purple: #88739e;
+  --sage-teal: #8cbdb9;
+  --soft-green: #97d181;
+  --lavender-mist: #dbd5e2;
+  --off-white: #f7f5fa;
+  --deep-dark: #1e1830;
 
   --background: var(--off-white);
   --foreground: var(--deep-dark);
@@ -1188,12 +1188,12 @@ button[data-active="true"] {
  * already wraps.
  */
 @media (pointer: coarse) {
-  :is(button, [role='button']):is(.h-6, .h-7, .size-6, .size-7):not(.absolute, .fixed, .sticky) {
+  :is(button, [role="button"]):is(.h-6, .h-7, .size-6, .size-7):not(.absolute, .fixed, .sticky) {
     position: relative;
   }
 
-  :is(button, [role='button']):is(.h-6, .h-7, .size-6, .size-7)::after {
-    content: '';
+  :is(button, [role="button"]):is(.h-6, .h-7, .size-6, .size-7)::after {
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1202,12 +1202,12 @@ button[data-active="true"] {
     transform: translate(-50%, -50%);
   }
 
-  [data-touch-toolbar] :is(button, [role='button']) {
+  [data-touch-toolbar] :is(button, [role="button"]) {
     min-width: 44px;
     min-height: 44px;
   }
 
-  [data-touch-toolbar] :is(button, [role='button'])::after {
+  [data-touch-toolbar] :is(button, [role="button"])::after {
     content: none;
   }
 }

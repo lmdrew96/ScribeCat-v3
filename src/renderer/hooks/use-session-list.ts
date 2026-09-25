@@ -40,8 +40,9 @@ export function useSessionList(recordings: SessionSummary[]) {
     const map = new Map<string, SessionSummary[]>();
     for (const session of sorted) {
       const key = session.course ?? 'Uncategorized';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(session);
+      const group = map.get(key) ?? [];
+      group.push(session);
+      map.set(key, group);
     }
     // Named courses first (sorted), then Uncategorized at end
     const named = Array.from(map.entries())

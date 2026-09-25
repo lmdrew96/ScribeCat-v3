@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values';
+import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
-import { internal } from './_generated/api';
 import { requireAuth } from './authHelpers';
 
 async function sha256(input: string): Promise<string> {

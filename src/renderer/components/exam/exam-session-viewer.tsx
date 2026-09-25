@@ -185,7 +185,7 @@ export function ExamSessionViewer({
                 <TabsContent value="document" className="h-full m-0">
                   <ScrollArea className="h-[50vh]">
                     <div className="pr-4 text-sm text-foreground space-y-1">
-                      {renderMarkdown(content.documentText!)}
+                      {renderMarkdown(content.documentText ?? '')}
                     </div>
                   </ScrollArea>
                 </TabsContent>

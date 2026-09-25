@@ -7,15 +7,15 @@
  */
 
 import { ConvexError, v } from 'convex/values';
-import { mutation, query, type MutationCtx } from './_generated/server';
+import { type MutationCtx, mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
-import { isTier, rollDrop, type Tier } from './dropTables';
+import { type Tier, isTier, rollDrop } from './dropTables';
 import {
   EQUIPPABLE_SLOTS,
+  type ItemSlot,
   STARTER_EQUIPMENT,
   STARTER_INVENTORY,
   getItem,
-  type ItemSlot,
 } from './items';
 import { adjustCoinsHelper } from './studyQuest';
 

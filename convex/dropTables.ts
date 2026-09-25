@@ -65,8 +65,7 @@ export function rollDrop(
   rng: () => number = Math.random,
 ): { itemId: string; quantity: number } | null {
   const table = DROP_TABLES[tier];
-  const totalWeight =
-    table.entries.reduce((sum, e) => sum + e.weight, 0) + table.nothingWeight;
+  const totalWeight = table.entries.reduce((sum, e) => sum + e.weight, 0) + table.nothingWeight;
   let r = rng() * totalWeight;
   for (const entry of table.entries) {
     r -= entry.weight;

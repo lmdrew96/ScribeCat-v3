@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { getEvolutionVisuals } from './cat-evolution';
 import type { CatMood, CatVariant } from './cat-sprites';
 import { MOOD_TO_SPRITE, SPRITE_CONFIG, getSpriteUrl } from './cat-sprites';
-import { getEvolutionVisuals } from './cat-evolution';
 
 interface CatDisplayProps {
   mood: CatMood;

@@ -1,8 +1,8 @@
-import type { TranscriptSegment } from '@/hooks/use-transcription';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
 import { useRecordingContext } from '@/contexts/recording-context';
+import type { TranscriptSegment } from '@/hooks/use-transcription';
+import { useMutation } from 'convex/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../../../convex/_generated/api';
 
 interface LiveTranscriptProps {
   isRecording: boolean;

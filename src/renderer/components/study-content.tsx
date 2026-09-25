@@ -531,7 +531,7 @@ export function StudyContent({
           <TabsContent value="document" className="h-[calc(100%-2rem)] mt-0">
             <ScrollArea className="h-full rounded-xl glass p-4">
               <div className="text-xs text-foreground/90 leading-relaxed space-y-0.5">
-                {renderMarkdown(recording.documentText!)}
+                {renderMarkdown(recording.documentText ?? '')}
               </div>
             </ScrollArea>
           </TabsContent>

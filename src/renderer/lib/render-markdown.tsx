@@ -137,9 +137,7 @@ export function renderMarkdown(text: string): ReactNode[] {
 
     // Horizontal rule (---, ***, ___)
     if (line.match(/^(-{3,}|\*{3,}|_{3,})$/)) {
-      elements.push(
-        <hr key={`hr-${i}`} className="my-2 border-t border-[var(--glass-border)]" />,
-      );
+      elements.push(<hr key={`hr-${i}`} className="my-2 border-t border-[var(--glass-border)]" />);
       continue;
     }
 
@@ -239,7 +237,10 @@ export function renderMarkdown(text: string): ReactNode[] {
       }
 
       elements.push(
-        <div key={`table-${i}`} className="my-2 overflow-x-auto rounded-md border border-[var(--glass-border)]">
+        <div
+          key={`table-${i}`}
+          className="my-2 overflow-x-auto rounded-md border border-[var(--glass-border)]"
+        >
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[var(--glass-border)] bg-black/10">

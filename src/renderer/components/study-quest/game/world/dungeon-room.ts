@@ -10,7 +10,7 @@
  */
 
 import * as ex from 'excalibur';
-import { type DoorDir, type Room, ROOM_VISUALS } from './dungeon-types';
+import { type DoorDir, ROOM_VISUALS, type Room } from './dungeon-types';
 import { TILE_SIZE } from './tiles';
 
 export const ROOM_COLS = 15;

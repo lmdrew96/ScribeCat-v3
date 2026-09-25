@@ -68,7 +68,6 @@ function buildSpanningTree(roomCount: number, rng: Rng): GraphNode[] {
     const parent = pick(existing, rng);
 
     const dirs = shuffle(Object.keys(DIR_OFFSETS) as DoorDir[], rng);
-    let placed = false;
     for (const dir of dirs) {
       const off = DIR_OFFSETS[dir];
       const nx = parent.gx + off.dx;
@@ -81,15 +80,12 @@ function buildSpanningTree(roomCount: number, rng: Rng): GraphNode[] {
       parent.doors[dir] = id;
       child.doors[oppositeDir(dir)] = parent.id;
       nodes.set(nKey, child);
-      placed = true;
       break;
     }
-    if (!placed) {
-      // This parent has no open neighbors; loop picks another parent next iteration.
-      // The loop terminates because at least one node always has a free neighbor
-      // unless the tree fills a tight cluster — keep iterating until we hit roomCount.
-      continue;
-    }
+    // If nothing was placed, this parent has no open neighbors and the loop
+    // picks another parent next iteration. It terminates because at least one
+    // node always has a free neighbor unless the tree fills a tight cluster —
+    // keep iterating until we hit roomCount.
   }
 
   return Array.from(nodes.values());
@@ -116,11 +112,7 @@ function bfsDistances(nodes: GraphNode[], startId: string): Map<string, number> 
   return dist;
 }
 
-function tracePath(
-  nodes: GraphNode[],
-  startId: string,
-  endId: string,
-): Set<string> {
+function tracePath(nodes: GraphNode[], startId: string, endId: string): Set<string> {
   const byId = new Map(nodes.map((n) => [n.id, n] as const));
   const parent = new Map<string, string | null>();
   parent.set(startId, null);

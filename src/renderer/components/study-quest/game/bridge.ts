@@ -10,9 +10,9 @@
  */
 
 import type { CatMood } from '../cat-sprites';
-import type { BattleAction } from './systems/battle-hud';
 import type { EnemyTier } from './combat/enemies';
 import type { Question } from './combat/questions';
+import type { BattleAction } from './systems/battle-hud';
 
 export type GameEvent =
   | { type: 'xp-gained'; amount: number; source: string }

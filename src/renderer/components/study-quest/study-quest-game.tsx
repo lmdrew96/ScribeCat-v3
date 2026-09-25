@@ -12,7 +12,7 @@ import { api } from '../../../../convex/_generated/api';
 import { BattleOverlay } from './battle-overlay';
 import type { CatMood, CatVariant } from './cat-sprites';
 import { gameBridge } from './game/bridge';
-import { createGameEngine, type GameHandle } from './game/engine';
+import { type GameHandle, createGameEngine } from './game/engine';
 
 interface StudyQuestGameProps {
   variant: CatVariant;

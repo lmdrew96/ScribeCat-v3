@@ -33,14 +33,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.35.4',
-    label: '5.34.3 \u2013 5.35.4',
+    version: '5.35.5',
+    label: '5.34.3 \u2013 5.35.5',
     date: '2026-09-24',
     title: 'Tighter locks, lighter recordings',
     changes: [
       {
         kind: 'improved',
         text: 'Clicking a setting\u2019s name now focuses or toggles it, and screen readers announce every settings field by its proper name.',
+      },
+      {
+        kind: 'fixed',
+        text: 'In StudyQuest battles, pressing a number key twice quickly can no longer use two items at once.',
       },
       {
         kind: 'improved',

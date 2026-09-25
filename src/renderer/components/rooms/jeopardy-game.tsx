@@ -201,7 +201,7 @@ export function JeopardyGame({ game, currentUserId, isHost }: JeopardyGameProps)
               let icon = null;
 
               if (isRevealing) {
-                if (i === game.currentQuestion!.correctIndex) {
+                if (i === game.currentQuestion?.correctIndex) {
                   variant = 'default';
                   icon = <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />;
                 } else if (i === currentPlayer?.lastAnswerIndex) {

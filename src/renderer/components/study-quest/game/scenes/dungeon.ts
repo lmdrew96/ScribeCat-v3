@@ -13,19 +13,12 @@
  */
 
 import * as ex from 'excalibur';
-import { type CatVariant } from '../../cat-sprites';
+import type { CatVariant } from '../../cat-sprites';
 import { Enemy } from '../actors/enemy';
 import { Player } from '../actors/player';
-import { gameBridge, PLAYER_MAX_HP } from '../bridge';
+import { PLAYER_MAX_HP, gameBridge } from '../bridge';
 import { Minimap } from '../systems/minimap';
 import { generateFloor } from '../world/dungeon-gen';
-import {
-  type DoorDir,
-  type Floor,
-  type Room,
-  assertNever,
-  oppositeDir,
-} from '../world/dungeon-types';
 import {
   ROOM_COLS,
   ROOM_ROWS,
@@ -33,6 +26,13 @@ import {
   entrySpawnTile,
   tileToRoomWorld,
 } from '../world/dungeon-room';
+import {
+  type DoorDir,
+  type Floor,
+  type Room,
+  assertNever,
+  oppositeDir,
+} from '../world/dungeon-types';
 import { TILE_SIZE } from '../world/tiles';
 
 export interface DungeonSceneActivationData {

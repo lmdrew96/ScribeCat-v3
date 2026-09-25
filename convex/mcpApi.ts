@@ -115,10 +115,11 @@ export const listSessionsInternal = internalQuery({
   },
   handler: async (ctx, args) => {
     let sessions: Doc<'sessions'>[];
-    if (args.course) {
+    const course = args.course;
+    if (course) {
       sessions = await ctx.db
         .query('sessions')
-        .withIndex('by_user_course', (q) => q.eq('userId', args.userId).eq('course', args.course!))
+        .withIndex('by_user_course', (q) => q.eq('userId', args.userId).eq('course', course))
         .filter((q) => q.eq(q.field('isDeleted'), false))
         .order('desc')
         .take(args.limit);

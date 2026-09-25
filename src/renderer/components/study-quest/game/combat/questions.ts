@@ -100,7 +100,8 @@ const BOSS_POOL: Question[] = [
 ];
 
 export function pickQuestion(tier: EnemyTier): Question {
-  const pool = tier === 'easy' ? EASY : tier === 'medium' ? MEDIUM : tier === 'hard' ? HARD : BOSS_POOL;
+  const pool =
+    tier === 'easy' ? EASY : tier === 'medium' ? MEDIUM : tier === 'hard' ? HARD : BOSS_POOL;
   const idx = Math.floor(Math.random() * pool.length);
   return pool[idx];
 }

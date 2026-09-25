@@ -55,8 +55,9 @@ function layoutTree(data: ConceptMapResult): {
   for (const edge of data.edges) {
     if (!nodeInfo.has(edge.from) || !nodeInfo.has(edge.to)) continue;
     if (parentOf.has(edge.to)) continue; // already has a tree parent
-    if (!childrenOf.has(edge.from)) childrenOf.set(edge.from, []);
-    childrenOf.get(edge.from)!.push(edge.to);
+    const siblings = childrenOf.get(edge.from) ?? [];
+    siblings.push(edge.to);
+    childrenOf.set(edge.from, siblings);
     parentOf.set(edge.to, edge.from);
   }
 
@@ -67,7 +68,8 @@ function layoutTree(data: ConceptMapResult): {
   // Memoized subtree width computation
   const widthCache = new Map<string, number>();
   function getSubtreeWidth(nodeId: string): number {
-    if (widthCache.has(nodeId)) return widthCache.get(nodeId)!;
+    const cached = widthCache.get(nodeId);
+    if (cached !== undefined) return cached;
     const node = nodeInfo.get(nodeId);
     if (!node) return 0;
     const nodeW = measureWidth(node.label, node.type);

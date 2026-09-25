@@ -98,7 +98,11 @@ export function InventoryPanel({ open, onClose }: InventoryPanelProps) {
                             {SLOT_LABEL[slot]}
                           </div>
                           <div className="text-sm font-medium">
-                            {item ? item.name : <span className="text-muted-foreground">Empty</span>}
+                            {item ? (
+                              item.name
+                            ) : (
+                              <span className="text-muted-foreground">Empty</span>
+                            )}
                           </div>
                           {item && (
                             <div className="text-[11px] text-muted-foreground">
@@ -117,8 +121,8 @@ export function InventoryPanel({ open, onClose }: InventoryPanelProps) {
                 })}
               </div>
               <div className="mt-2 text-[11px] text-muted-foreground">
-                Total: <span className="font-medium text-foreground">+{equipment.attackBonus} ATK</span>{' '}
-                /{' '}
+                Total:{' '}
+                <span className="font-medium text-foreground">+{equipment.attackBonus} ATK</span> /{' '}
                 <span className="font-medium text-foreground">+{equipment.defenseBonus} DEF</span>
               </div>
             </section>
@@ -142,8 +146,7 @@ export function InventoryPanel({ open, onClose }: InventoryPanelProps) {
                     const equipped =
                       (entry.item.slot === 'weapon' && equipment.weapon?.id === entry.itemId) ||
                       (entry.item.slot === 'armor' && equipment.armor?.id === entry.itemId) ||
-                      (entry.item.slot === 'accessory' &&
-                        equipment.accessory?.id === entry.itemId);
+                      (entry.item.slot === 'accessory' && equipment.accessory?.id === entry.itemId);
                     return (
                       <div
                         key={entry.itemId}

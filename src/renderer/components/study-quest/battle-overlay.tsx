@@ -23,7 +23,7 @@
  */
 
 import { useMutation, useQuery } from 'convex/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../../../convex/_generated/api';
 import { gameBridge } from './game/bridge';
@@ -104,31 +104,34 @@ export function BattleOverlay() {
     gameBridge.emit({ type: 'battle-question-resolved', correct });
   };
 
+  // The keyboard listener calls through this ref so it always reaches the
+  // current handlers — they read `usingItem`, and a stale copy let a fast
+  // double key-press use two items.
+  const handlersRef = useRef({ pickAction, pickAnswer });
+  handlersRef.current = { pickAction, pickAnswer };
+
   useEffect(() => {
     if (!actionPrompt && !question) return;
     const onKey = (event: KeyboardEvent) => {
       if (actionPrompt) {
-        const idx = parseInt(event.key, 10) - 1;
+        const idx = Number.parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < BATTLE_ACTIONS.length) {
           // Skip Item via keyboard if we don't have any consumables —
           // matches the disabled-button state visually.
           if (BATTLE_ACTIONS[idx].action === 'item' && !itemAvailable) return;
           event.preventDefault();
-          pickAction(idx);
+          handlersRef.current.pickAction(idx);
         }
       } else if (question) {
-        const idx = parseInt(event.key, 10) - 1;
+        const idx = Number.parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < question.choices.length) {
           event.preventDefault();
-          pickAnswer(idx);
+          handlersRef.current.pickAnswer(idx);
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // pickAction/pickAnswer are stable enough — they read latest state via
-    // refs (none here, but dep on itemAvailable handles the gate).
-    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   }, [actionPrompt, question, itemAvailable]);
 
   if (!actionPrompt && !question) return null;

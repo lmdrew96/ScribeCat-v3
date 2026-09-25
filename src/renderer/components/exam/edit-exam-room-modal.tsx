@@ -52,9 +52,7 @@ export function EditExamRoomModal({
 
     setSaving(true);
     try {
-      const newExamDate = examDate
-        ? new Date(`${examDate}T00:00:00`).getTime()
-        : null;
+      const newExamDate = examDate ? new Date(`${examDate}T00:00:00`).getTime() : null;
 
       await updateExamRoom({
         examRoomId,

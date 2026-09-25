@@ -40,12 +40,15 @@ Lecture context (use this to identify and correct domain-specific terms, names, 
 ${JSON.stringify(lectureContext)}`;
 
   try {
-    const scrubbedWindow = (await callClaude({
-      maxTokens: 1024,
-      temperature: 0.1,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: rawWindow }],
-    })).trim() || rawWindow;
+    const scrubbedWindow =
+      (
+        await callClaude({
+          maxTokens: 1024,
+          temperature: 0.1,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: rawWindow }],
+        })
+      ).trim() || rawWindow;
 
     return new Response(
       JSON.stringify({

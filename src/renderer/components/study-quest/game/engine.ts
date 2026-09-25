@@ -46,11 +46,9 @@ export function createGameEngine(options: CreateGameOptions): GameHandle {
   engine.addScene('battle', new BattleScene({ variant }));
 
   const loader = buildLoader(variant);
-  const ready = engine
-    .start(loader)
-    .then(() => {
-      engine.goToScene('town');
-    });
+  const ready = engine.start(loader).then(() => {
+    engine.goToScene('town');
+  });
 
   const dispose = () => {
     try {

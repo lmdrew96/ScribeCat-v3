@@ -16,6 +16,7 @@ import type { CatVariant } from '../../cat-sprites';
 import { Npc } from '../actors/npc';
 import { Player } from '../actors/player';
 import { DialogueOverlay } from '../systems/dialogue';
+import { TILE_SIZE, isSolid, tileGraphic } from '../world/tiles';
 import {
   BUILDINGS,
   PLAYER_SPAWN_TILE,
@@ -26,7 +27,6 @@ import {
   buildTownGrid,
   tileToWorld,
 } from '../world/town-map';
-import { TILE_SIZE, isSolid, tileGraphic } from '../world/tiles';
 
 export interface TownSceneOptions {
   variant: CatVariant;
@@ -145,7 +145,7 @@ export class TownScene extends ex.Scene {
       lines: [
         'Hello, scholar!',
         'Every study session you finish makes your attacks stronger.',
-        'Come back here when the dungeon opens — I\'ll have tips for you.',
+        "Come back here when the dungeon opens — I'll have tips for you.",
       ],
     });
     const shopkeeper = new Npc({
@@ -153,8 +153,8 @@ export class TownScene extends ex.Scene {
       pos: tileToWorld(BUILDINGS.shop.npcSpawn.x, BUILDINGS.shop.npcSpawn.y),
       color: ex.Color.fromHex('#f7f5fa'),
       lines: [
-        'Shop\'s not open yet, friend.',
-        'Soon I\'ll have potions, gear, and accessories for your cat.',
+        "Shop's not open yet, friend.",
+        "Soon I'll have potions, gear, and accessories for your cat.",
       ],
     });
     const dungeonGuard = new Npc({

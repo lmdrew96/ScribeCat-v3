@@ -34,6 +34,7 @@
       "dist",
       "release",
       "convex/_generated",
+      ".ai",
       "*.config.js",
       "*.config.ts",
       "*.config.mjs"

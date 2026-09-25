@@ -18,8 +18,7 @@ export interface NotesPanelRef {
 
 export function HomeView() {
   const { currentSessionId } = useRecordingContext();
-  const { hasRecoveryData, isRecovering, recover, dismiss } =
-    useSessionRecovery(currentSessionId);
+  const { hasRecoveryData, isRecovering, recover, dismiss } = useSessionRecovery(currentSessionId);
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'notes' | 'recording'>('recording');
   const [leftWidth, setLeftWidth] = useState(50);

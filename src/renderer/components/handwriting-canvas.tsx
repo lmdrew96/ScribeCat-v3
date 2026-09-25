@@ -1,10 +1,5 @@
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCallback, useEffect, useRef } from 'react';
 
 interface HandwritingCanvasProps {
@@ -127,4 +122,3 @@ export function HandwritingCanvas({ open, onClose, onSave }: HandwritingCanvasPr
     </Dialog>
   );
 }
-

@@ -52,8 +52,7 @@ const uncovered = [...shipped]
 
 if (uncovered.length > 0) {
   console.error(
-    `✖ No What's New entry covers: ${uncovered.join(', ')}\n` +
-      '  Add an entry in src/renderer/lib/changelog.ts, or widen the newest entry\'s `label` range.',
+    `✖ No What's New entry covers: ${uncovered.join(', ')}\n  Add an entry in src/renderer/lib/changelog.ts, or widen the newest entry's \`label\` range.`,
   );
   process.exit(1);
 }
