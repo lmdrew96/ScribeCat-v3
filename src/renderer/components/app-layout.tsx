@@ -38,7 +38,6 @@ export function AppLayout() {
           <MiniRecordingIndicator />
         </main>
         <NuggetChat
-          transcript={session?.transcript}
           notes={session?.notes}
           sessionId={activeSessionId ?? undefined}
           lectureType={session?.lectureType}

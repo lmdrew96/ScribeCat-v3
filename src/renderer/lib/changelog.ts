@@ -33,10 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.34.3',
+    version: '5.35.0',
+    label: '5.34.3 \u2013 5.35.0',
     date: '2026-09-24',
-    title: 'Tighter locks',
+    title: 'Tighter locks, lighter recordings',
     changes: [
+      {
+        kind: 'improved',
+        text: 'Recording is lighter again. Saving the transcript no longer rewrites your session every few seconds, so your session list stops reloading in the background while you record.',
+      },
       {
         kind: 'fixed',
         text: 'A session can only be opened, or run through the study tools, by the account that recorded it. Sharing and study rooms work exactly as before.',

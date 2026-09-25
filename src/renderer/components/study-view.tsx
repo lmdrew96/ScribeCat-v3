@@ -14,6 +14,7 @@ import {
   useSessionList,
   useSessionMutations,
   useTranscriptSegments,
+  useTranscriptText,
   useTrash,
 } from '@/hooks/use-sessions';
 import { cn } from '@/lib/utils';
@@ -161,6 +162,7 @@ export function StudyView() {
   const fullSession = useSession(selectedId as SessionId | null);
   // Segments come from their own query — sessions.get no longer carries them.
   const transcriptSegments = useTranscriptSegments(selectedId as SessionId | null);
+  const transcriptText = useTranscriptText(selectedId as SessionId | null);
   const audioUrl = useSessionAudioUrl(fullSession);
 
   // Sidebar gets lightweight metadata only — no transcript/notes/segments
@@ -205,7 +207,7 @@ export function StudyView() {
           year: 'numeric',
         }),
         duration: formatDuration(fullSession.duration),
-        transcript: fullSession.transcript || '',
+        transcript: transcriptText || '',
         notes: fullSession.notes || '',
         audioUrl: audioUrl,
         audioStorageId: fullSession.audioStorageId,

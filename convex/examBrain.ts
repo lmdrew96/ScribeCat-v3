@@ -10,11 +10,18 @@
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { internalAction, internalMutation, internalQuery, mutation, query } from './_generated/server';
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { AI_MODEL_SONNET, callClaude } from './config';
 import { requireExamRoomMember } from './examRooms';
 import { extractJson } from './studyTools';
+import { readTranscript } from './transcriptSegments';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -47,7 +54,7 @@ export const getSessionForIndexing = internalQuery({
       .unique();
 
     const notesPlainText = sessionNotes?.plainText ?? session.notesPlainText ?? '';
-    const transcript = session.transcript ?? '';
+    const transcript = (await readTranscript(ctx, session)) ?? '';
 
     return {
       title: session.title,
@@ -154,7 +161,8 @@ export const getBrainContext = query({
     const sessions = await Promise.all(
       links.map(async (link) => {
         const session = await ctx.db.get(link.sessionId);
-        if (!session) return { title: 'Untitled', hasIndex: false, notesPreview: '', hasContent: false };
+        if (!session)
+          return { title: 'Untitled', hasIndex: false, notesPreview: '', hasContent: false };
 
         const sessionNotes = await ctx.db
           .query('sessionNotes')
@@ -162,7 +170,7 @@ export const getBrainContext = query({
           .unique();
 
         const plainText = sessionNotes?.plainText ?? session.notesPlainText ?? '';
-        const transcript = session.transcript ?? '';
+        const transcript = (await readTranscript(ctx, session)) ?? '';
 
         return {
           title: session.title ?? 'Untitled',
@@ -271,7 +279,7 @@ export const getSessionContentForTopics = internalQuery({
             .unique();
           relevantSessions.push({
             title: session.title,
-            transcript: session.transcript ?? '',
+            transcript: (await readTranscript(ctx, session)) ?? '',
             notes: sessionNotes?.plainText ?? session.notesPlainText ?? '',
           });
         }
@@ -311,7 +319,7 @@ export const getAllSessionContent = internalQuery({
         sessions.push({
           sessionId: link.sessionId,
           title: session.title,
-          transcript: session.transcript ?? '',
+          transcript: (await readTranscript(ctx, session)) ?? '',
           notes: sessionNotes?.plainText ?? session.notesPlainText ?? '',
           lectureType: session.lectureType ?? 'general',
         });

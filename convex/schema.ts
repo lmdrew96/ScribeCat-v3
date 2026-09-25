@@ -10,6 +10,7 @@ export default defineSchema({
     course: v.optional(v.string()),
     audioStorageId: v.optional(v.string()),
     audioStorageIds: v.optional(v.array(v.string())),
+    /** Legacy — the text now lives in sessionTranscripts. Cleared by dataRepair.migrateTranscriptText. */
     transcript: v.optional(v.string()),
     transcriptSegments: v.optional(
       v.array(
@@ -20,10 +21,7 @@ export default defineSchema({
         }),
       ),
     ),
-    /**
-     * How many final segments live in transcriptChunks. Undefined means this
-     * session predates the move and still reads from transcriptSegments above.
-     */
+    /** Legacy — the count is now read off transcriptChunks. Cleared by dataRepair.migrateTranscriptText. */
     segmentCount: v.optional(v.number()),
     // User-flagged transcript words (for manual post-recording edit)
     flaggedWords: v.optional(
@@ -92,6 +90,18 @@ export default defineSchema({
   })
     .index('by_session', ['sessionId', 'chunkIndex'])
     .index('by_user', ['userId']),
+
+  /**
+   * A session's transcript text, one row per session. Off the session document
+   * so the saves a recording makes every few seconds don't invalidate every
+   * query that lists sessions — see convex/transcriptSegments.ts.
+   */
+  sessionTranscripts: defineTable({
+    sessionId: v.id('sessions'),
+    userId: v.string(),
+    text: v.string(),
+    updatedAt: v.number(),
+  }).index('by_session', ['sessionId']),
 
   sessionNotes: defineTable({
     sessionId: v.id('sessions'),

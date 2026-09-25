@@ -224,8 +224,10 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
       return;
     }
 
-    // Use transcript if available, otherwise fall back to documentText
-    const sourceText = session.transcript?.trim() || session.documentText?.trim();
+    // Use transcript if available, otherwise fall back to documentText. Fetched
+    // here rather than subscribed: it changes on every save while recording.
+    const transcriptText = await convex.query(api.transcriptSegments.getText, { sessionId });
+    const sourceText = transcriptText?.trim() || session.documentText?.trim();
 
     if (!sourceText || sourceText.length === 0) {
       toast.error(
@@ -237,7 +239,7 @@ export const NotesPanel = forwardRef<NotesPanelRef, NotesPanelProps>(function No
     setIsGenerating(true);
 
     try {
-      const segments = session.transcript
+      const segments = transcriptText
         ? await convex.query(api.transcriptSegments.list, { sessionId })
         : undefined;
 

@@ -22,6 +22,7 @@ import { awardXpHelper } from './studyQuest';
 import { postSystemMessage, requireRoomHost, requireRoomMember } from './studyRooms';
 import { getJeopardyPrompt, getQuizPrompt } from './studyToolPrompts';
 import { callClaude, extractJson } from './studyTools';
+import { readTranscript } from './transcriptSegments';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -747,7 +748,7 @@ export const getGameForGeneration = internalQuery({
 
       return {
         gameType: game.gameType,
-        transcript: session.transcript ?? null,
+        transcript: (await readTranscript(ctx, session)) ?? null,
         notesPlainText: notesDoc?.plainText ?? session.notesPlainText ?? null,
         lectureType: session.lectureType ?? null,
         isExamRoom: false,

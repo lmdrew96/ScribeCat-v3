@@ -5,8 +5,9 @@
 
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { httpAction, internalQuery } from './_generated/server';
+import { readTranscript } from './transcriptSegments';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -113,36 +114,34 @@ export const listSessionsInternal = internalQuery({
     limit: v.number(),
   },
   handler: async (ctx, args) => {
-    let sessions;
+    let sessions: Doc<'sessions'>[];
     if (args.course) {
       sessions = await ctx.db
         .query('sessions')
-        .withIndex('by_user_course', (q) =>
-          q.eq('userId', args.userId).eq('course', args.course!),
-        )
+        .withIndex('by_user_course', (q) => q.eq('userId', args.userId).eq('course', args.course!))
         .filter((q) => q.eq(q.field('isDeleted'), false))
         .order('desc')
         .take(args.limit);
     } else {
       sessions = await ctx.db
         .query('sessions')
-        .withIndex('by_user_deleted', (q) =>
-          q.eq('userId', args.userId).eq('isDeleted', false),
-        )
+        .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', false))
         .order('desc')
         .take(args.limit);
     }
 
-    return sessions.map((s) => ({
-      id: s._id,
-      title: s.title,
-      course: s.course ?? null,
-      lectureType: s.lectureType ?? null,
-      durationSeconds: s.duration,
-      createdAt: new Date(s.createdAt).toISOString(),
-      hasTranscript: !!s.transcript,
-      hasNotes: !!(s.notesPlainText ?? s.notes),
-    }));
+    return Promise.all(
+      sessions.map(async (s) => ({
+        id: s._id,
+        title: s.title,
+        course: s.course ?? null,
+        lectureType: s.lectureType ?? null,
+        durationSeconds: s.duration,
+        createdAt: new Date(s.createdAt).toISOString(),
+        hasTranscript: !!(await readTranscript(ctx, s)),
+        hasNotes: !!(s.notesPlainText ?? s.notes),
+      })),
+    );
   },
 });
 
@@ -166,7 +165,7 @@ export const getSessionInternal = internalQuery({
       lectureType: session.lectureType ?? null,
       durationSeconds: session.duration,
       createdAt: new Date(session.createdAt).toISOString(),
-      transcript: session.transcript ?? null,
+      transcript: (await readTranscript(ctx, session)) ?? null,
       notes,
       nuggetNotes: (session.nuggetNotes ?? []).map((n) => n.text),
     };
@@ -191,9 +190,7 @@ export const searchSessionsInternal = internalQuery({
     // Title match (all user sessions, filtered in memory — users have bounded session counts)
     const allSessions = await ctx.db
       .query('sessions')
-      .withIndex('by_user_deleted', (q) =>
-        q.eq('userId', args.userId).eq('isDeleted', false),
-      )
+      .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', false))
       .collect();
 
     const lower = args.query.toLowerCase();
@@ -210,16 +207,18 @@ export const searchSessionsInternal = internalQuery({
 
     const filtered = args.course ? merged.filter((s) => s.course === args.course) : merged;
 
-    return filtered.slice(0, 20).map((s) => ({
-      id: s._id,
-      title: s.title,
-      course: s.course ?? null,
-      lectureType: s.lectureType ?? null,
-      durationSeconds: s.duration,
-      createdAt: new Date(s.createdAt).toISOString(),
-      hasTranscript: !!s.transcript,
-      hasNotes: !!(s.notesPlainText ?? s.notes),
-    }));
+    return Promise.all(
+      filtered.slice(0, 20).map(async (s) => ({
+        id: s._id,
+        title: s.title,
+        course: s.course ?? null,
+        lectureType: s.lectureType ?? null,
+        durationSeconds: s.duration,
+        createdAt: new Date(s.createdAt).toISOString(),
+        hasTranscript: !!(await readTranscript(ctx, s)),
+        hasNotes: !!(s.notesPlainText ?? s.notes),
+      })),
+    );
   },
 });
 
@@ -228,9 +227,7 @@ export const getCoursesInternal = internalQuery({
   handler: async (ctx, args) => {
     const sessions = await ctx.db
       .query('sessions')
-      .withIndex('by_user_deleted', (q) =>
-        q.eq('userId', args.userId).eq('isDeleted', false),
-      )
+      .withIndex('by_user_deleted', (q) => q.eq('userId', args.userId).eq('isDeleted', false))
       .collect();
 
     const courses = new Set<string>();

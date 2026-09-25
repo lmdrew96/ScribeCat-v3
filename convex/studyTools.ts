@@ -4,7 +4,8 @@
  */
 
 import { v } from 'convex/values';
-import { action, internalMutation, mutation, query } from './_generated/server';
+import type { Id } from './_generated/dataModel';
+import { type ActionCtx, action, internalMutation, mutation, query } from './_generated/server';
 import { callClaude as callClaudeShared } from './config';
 import {
   getConceptMapPrompt,
@@ -22,14 +23,20 @@ import { awardXpHelper } from './studyQuest';
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-/** Get the text content for a session — prefers transcript, falls back to documentText */
-export function getSessionContent(session: {
-  transcript?: string | null;
-  documentText?: string | null;
-}): string {
-  const content = session.transcript || session.documentText;
-  if (!content) throw new Error('No transcript or document text available');
-  return content;
+/**
+ * Loads a session and the text a study tool works from — the transcript,
+ * falling back to documentText. Both reads run as the caller, so a session
+ * that isn't theirs comes back as not found.
+ */
+async function loadToolSession(ctx: ActionCtx, sessionId: Id<'sessions'>) {
+  const [session, transcript] = await Promise.all([
+    ctx.runQuery(api.sessions.get, { id: sessionId }),
+    ctx.runQuery(api.transcriptSegments.getText, { sessionId }),
+  ]);
+  if (!session) throw new Error('Session not found');
+  const sessionContent = transcript || session.documentText;
+  if (!sessionContent) throw new Error('No transcript or document text available');
+  return { session, sessionContent };
 }
 
 /** Strip markdown code fences that Claude sometimes wraps JSON in */
@@ -297,9 +304,7 @@ export const saveChatHistory = mutation({
 export const generateSummary = action({
   args: { sessionId: v.id('sessions') },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
     const prompt = getSummaryPrompt(sessionContent, session.notesPlainText, lectureType);
@@ -322,9 +327,7 @@ export const generateSummary = action({
 export const generateKeyConcepts = action({
   args: { sessionId: v.id('sessions') },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
     const prompt = getKeyConceptsPrompt(sessionContent, session.notesPlainText, lectureType);
@@ -350,9 +353,7 @@ export const generateFlashcards = action({
     count: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const count = args.count ?? 10;
     const lectureType = (session.lectureType || 'general') as LectureType;
@@ -379,9 +380,7 @@ export const generateQuiz = action({
     questionCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const questionCount = args.questionCount ?? 10;
     const lectureType = (session.lectureType || 'general') as LectureType;
@@ -410,9 +409,7 @@ export const generateQuiz = action({
 export const generateConceptMap = action({
   args: { sessionId: v.id('sessions') },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
     const prompt = getConceptMapPrompt(sessionContent, session.notesPlainText, lectureType);
@@ -435,9 +432,7 @@ export const generateConceptMap = action({
 export const generateEli5 = action({
   args: { sessionId: v.id('sessions') },
   handler: async (ctx, args) => {
-    const session = await ctx.runQuery(api.sessions.get, { id: args.sessionId });
-    if (!session) throw new Error('Session not found');
-    const sessionContent = getSessionContent(session);
+    const { session, sessionContent } = await loadToolSession(ctx, args.sessionId);
 
     const lectureType = (session.lectureType || 'general') as LectureType;
     const prompt = getEli5Prompt(sessionContent, session.notesPlainText, lectureType);

@@ -5,9 +5,20 @@ import { requireAuth } from './authHelpers';
 import {
   appendSegments,
   deleteSegments,
+  deleteTranscript,
   readSegments,
+  readTranscript,
   replaceSegments,
+  writeTranscript,
 } from './transcriptSegments';
+
+/**
+ * How far a recording's duration has to advance before a transcript save
+ * writes it to the session row. Every session-row write invalidates every
+ * query listing sessions, so the duration is kept roughly current (in case the
+ * final save at stop never lands) rather than exact — the stop writes it exactly.
+ */
+const DURATION_WRITE_INTERVAL_MS = 30_000;
 
 // List all sessions for the authenticated user (excluding deleted)
 export const list = query({
@@ -92,9 +103,14 @@ export const get = query({
       notes = JSON.stringify(tiptapDoc);
     }
 
-    // Drop the legacy array too — a caller wanting segments uses
-    // transcriptSegments.list, which handles both storage shapes.
-    const { transcriptSegments: _legacy, ...rest } = session;
+    // Drop the transcript fields — a caller wanting them uses
+    // transcriptSegments.list / getText, which handle both storage shapes.
+    const {
+      transcriptSegments: _legacySegments,
+      transcript: _legacyText,
+      segmentCount: _legacyCount,
+      ...rest
+    } = session;
 
     return { ...rest, notes, notesPlainText };
   },
@@ -177,9 +193,12 @@ export const update = mutation({
 
     // Route segments to their own table. Accepted here (rather than only via a
     // dedicated mutation) so a client running older code keeps working.
-    const { transcriptSegments, ...restUpdates } = otherUpdates;
+    const { transcriptSegments, transcript, ...restUpdates } = otherUpdates;
     if (transcriptSegments !== undefined) {
       await replaceSegments(ctx, session, transcriptSegments);
+    }
+    if (transcript !== undefined) {
+      await writeTranscript(ctx, session, transcript);
     }
 
     // Route notes to separate sessionNotes table
@@ -244,12 +263,20 @@ export const appendTranscriptSegments = mutation({
     }
 
     await appendSegments(ctx, session, args.segments);
+    if (args.transcript !== undefined) {
+      await writeTranscript(ctx, session, args.transcript);
+    }
 
-    await ctx.db.patch(args.id, {
-      ...(args.transcript !== undefined && { transcript: args.transcript }),
-      ...(args.duration !== undefined && args.duration >= 0 && { duration: args.duration }),
-      updatedAt: Date.now(),
-    });
+    // The session row is only touched when the duration has moved on enough to
+    // matter — this runs every few seconds while recording, and a write here
+    // would re-run every query that lists sessions.
+    if (
+      args.duration !== undefined &&
+      args.duration >= 0 &&
+      args.duration - session.duration >= DURATION_WRITE_INTERVAL_MS
+    ) {
+      await ctx.db.patch(args.id, { duration: args.duration, updatedAt: Date.now() });
+    }
   },
 });
 
@@ -338,8 +365,9 @@ export const permanentDelete = mutation({
     const session = await ctx.db.get(args.id);
     if (!session || session.userId !== userId) throw new Error('Session not found');
 
-    // Cascade-delete transcript chunks
+    // Cascade-delete transcript chunks and text
     await deleteSegments(ctx, args.id);
+    await deleteTranscript(ctx, args.id);
 
     // Cascade-delete associated sessionNotes
     const notesDoc = await ctx.db
@@ -403,6 +431,9 @@ export const cleanupOldDeleted = internalMutation({
     let deletedCount = 0;
     for (const session of oldDeletedSessions) {
       if (session.deletedAt && session.deletedAt < thirtyDaysAgo) {
+        await deleteSegments(ctx, session._id);
+        await deleteTranscript(ctx, session._id);
+
         // Cascade-delete associated sessionNotes
         const notesDoc = await ctx.db
           .query('sessionNotes')
@@ -510,7 +541,8 @@ export const mergeSessions = mutation({
     for (const session of allSessions) {
       const offset = cumulativeDuration;
 
-      if (session.transcript) allTranscripts.push(session.transcript);
+      const transcript = await readTranscript(ctx, session);
+      if (transcript) allTranscripts.push(transcript);
 
       for (const seg of await readSegments(ctx, session)) {
         allSegments.push({ ...seg, timestamp: seg.timestamp + offset });
@@ -604,7 +636,6 @@ export const mergeSessions = mutation({
     // Update the primary session with combined data
     await ctx.db.patch(args.primaryId, {
       title: args.newTitle ?? primary.title,
-      transcript: allTranscripts.length > 0 ? allTranscripts.join('\n\n---\n\n') : undefined,
       nuggetNotes: allNuggetNotes.length > 0 ? allNuggetNotes : undefined,
       audioStorageIds: allAudioIds.length > 0 ? allAudioIds : undefined,
       duration: cumulativeDuration,
@@ -613,9 +644,10 @@ export const mergeSessions = mutation({
       updatedAt: Date.now(),
     });
 
-    if (allSegments.length > 0) {
-      const merged = await ctx.db.get(args.primaryId);
-      if (merged) await replaceSegments(ctx, merged, allSegments);
+    const merged = await ctx.db.get(args.primaryId);
+    if (merged && allSegments.length > 0) await replaceSegments(ctx, merged, allSegments);
+    if (merged && allTranscripts.length > 0) {
+      await writeTranscript(ctx, merged, allTranscripts.join('\n\n---\n\n'));
     }
 
     // Soft-delete secondary sessions

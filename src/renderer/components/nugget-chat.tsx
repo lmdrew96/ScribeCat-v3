@@ -6,7 +6,7 @@
 
 import { Button } from '@/components/ui/button';
 import { renderMarkdown } from '@/lib/render-markdown';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import { Bug, Cat, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
@@ -20,7 +20,6 @@ interface ChatMessage {
 }
 
 interface NuggetChatProps {
-  transcript?: string;
   notes?: string;
   sessionId?: string;
   convexUrl?: string;
@@ -32,7 +31,6 @@ interface NuggetChatProps {
 }
 
 export function NuggetChat({
-  transcript,
   notes,
   sessionId,
   convexUrl,
@@ -95,6 +93,23 @@ export function NuggetChat({
   }, [chatHistory, sessionId]);
 
   // Get the API base URL
+  // The saved transcript, read when a message is sent rather than subscribed to:
+  // it's rewritten on every save during a recording, and the chat only needs it
+  // at send time.
+  const convex = useConvex();
+  const fetchTranscript = useCallback(async (): Promise<string | undefined> => {
+    if (!sessionId) return undefined;
+    try {
+      const text = await convex.query(api.transcriptSegments.getText, {
+        sessionId: sessionId as Id<'sessions'>,
+      });
+      return text ?? undefined;
+    } catch (error) {
+      console.error('Could not load the transcript for chat:', error);
+      return undefined;
+    }
+  }, [convex, sessionId]);
+
   const getApiUrl = useCallback(() => {
     const baseUrl = (convexUrl || import.meta.env.VITE_CONVEX_URL || '').replace(
       '.convex.cloud',
@@ -178,7 +193,7 @@ export function NuggetChat({
               role: m.role,
               content: m.content,
             })),
-            transcript: includeTranscript ? transcript : undefined,
+            transcript: includeTranscript ? await fetchTranscript() : undefined,
             notes: includeNotes ? notes : undefined,
             lectureType,
             nuggetNotes: includeNotes ? nuggetNotes : undefined,
@@ -228,7 +243,7 @@ export function NuggetChat({
       input,
       isLoading,
       messages,
-      transcript,
+      fetchTranscript,
       notes,
       includeTranscript,
       includeNotes,

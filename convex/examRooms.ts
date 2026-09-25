@@ -12,7 +12,7 @@ import { mutation, query } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { verifyFriendship } from './messagingHelpers';
 import { awardXpHelper } from './studyQuest';
-import { readSegments } from './transcriptSegments';
+import { readSegments, readTranscript } from './transcriptSegments';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -263,7 +263,7 @@ export const getExamRoomSessionContent = query({
       title: session.title,
       notes,
       notesPlainText,
-      transcript: session.transcript,
+      transcript: await readTranscript(ctx, session),
       transcriptSegments: await readSegments(ctx, session),
       duration: session.duration,
       lectureType: session.lectureType,

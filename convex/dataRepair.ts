@@ -8,7 +8,7 @@
 
 import { v } from 'convex/values';
 import { internalMutation } from './_generated/server';
-import { CHUNK_SIZE, readSegments, replaceSegments } from './transcriptSegments';
+import { CHUNK_SIZE, readSegments, replaceSegments, writeTranscript } from './transcriptSegments';
 
 /**
  * Repairs session durations that were never written or were written negative.
@@ -128,7 +128,7 @@ export const findNegativeDurations = internalMutation({
  * Moves legacy `session.transcriptSegments` arrays into the transcriptChunks
  * table and clears the field, which is what actually shrinks the session row.
  *
- * Safe to re-run: a session that already has `segmentCount` is skipped. Readers
+ * Safe to re-run: a session with no legacy array left is skipped. Readers
  * fall back to the legacy field until a session is migrated, so the app works
  * correctly at every point during the run.
  */
@@ -150,20 +150,19 @@ export const migrateTranscriptSegments = internalMutation({
     let nothingToMove = 0;
 
     for (const session of page.page) {
-      if (session.segmentCount !== undefined) {
+      if (session.transcriptSegments === undefined) {
         alreadyDone++;
         continue;
       }
 
-      const legacy = session.transcriptSegments ?? [];
+      const legacy = session.transcriptSegments;
       const finals = legacy.filter((s) => s.isFinal);
 
       if (legacy.length === 0) {
-        // Nothing to move, but mark it migrated so readers stop consulting the
-        // legacy field and a re-run skips it.
+        // Nothing to move — just drop the empty array so a re-run skips it.
         nothingToMove++;
         if (!dryRun) {
-          await ctx.db.patch(session._id, { segmentCount: 0, transcriptSegments: undefined });
+          await ctx.db.patch(session._id, { transcriptSegments: undefined });
         }
         continue;
       }
@@ -194,9 +193,11 @@ export const migrateTranscriptSegments = internalMutation({
 });
 
 /**
- * Verifies the segment migration: for each session, compares the recorded
- * `segmentCount` against the segments actually readable from transcriptChunks,
- * and reports any session still holding a legacy array.
+ * Verifies segment storage: for each session, compares the count appendSegments
+ * derives from the last chunk against the segments actually readable, and
+ * reports any session still holding a legacy array. A mismatch means the
+ * "only the last chunk is partial" invariant broke, and appends would skip or
+ * duplicate segments.
  */
 export const verifyTranscriptMigration = internalMutation({
   args: { cursor: v.optional(v.union(v.string(), v.null())), batchSize: v.optional(v.number()) },
@@ -222,11 +223,13 @@ export const verifyTranscriptMigration = internalMutation({
         .collect();
       largestChunkCount = Math.max(largestChunkCount, chunks.length);
 
-      if ((session.segmentCount ?? -1) !== actual.length) {
+      const last = chunks[chunks.length - 1];
+      const derived = last ? last.chunkIndex * CHUNK_SIZE + last.segments.length : 0;
+      if (session.transcriptSegments === undefined && derived !== actual.length) {
         mismatches.push({
           id: session._id,
           title: session.title,
-          expected: session.segmentCount ?? -1,
+          expected: derived,
           actual: actual.length,
         });
       }
@@ -238,6 +241,124 @@ export const verifyTranscriptMigration = internalMutation({
       legacyRemaining,
       largestChunkCount,
       mismatches,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
+  },
+});
+
+/**
+ * Moves the legacy `session.transcript` string into sessionTranscripts and
+ * clears it, along with the now-unused `segmentCount`, from the session row.
+ *
+ * Safe to re-run: a session with neither field left is skipped. Readers fall
+ * back to the legacy field until a session is moved, so the app works
+ * correctly at every point during the run. If a sessionTranscripts row already
+ * exists (the session was saved to since the deploy) it is newer and wins.
+ */
+export const migrateTranscriptText = internalMutation({
+  args: {
+    dryRun: v.optional(v.boolean()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+    /** Small by design — the rows being slimmed are the large ones. */
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const dryRun = args.dryRun ?? true;
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 10 });
+
+    const moved: { id: string; title: string; chars: number }[] = [];
+    let keptNewerRow = 0;
+    let countOnly = 0;
+    let alreadyDone = 0;
+
+    for (const session of page.page) {
+      if (session.transcript === undefined && session.segmentCount === undefined) {
+        alreadyDone++;
+        continue;
+      }
+
+      if (session.transcript === undefined) {
+        countOnly++;
+        if (!dryRun) await ctx.db.patch(session._id, { segmentCount: undefined });
+        continue;
+      }
+
+      const existing = await ctx.db
+        .query('sessionTranscripts')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .unique();
+
+      if (existing) {
+        keptNewerRow++;
+        if (!dryRun) {
+          await ctx.db.patch(session._id, { transcript: undefined, segmentCount: undefined });
+        }
+        continue;
+      }
+
+      moved.push({ id: session._id, title: session.title, chars: session.transcript.length });
+      if (!dryRun) {
+        await writeTranscript(ctx, session, session.transcript);
+        if (session.segmentCount !== undefined) {
+          await ctx.db.patch(session._id, { segmentCount: undefined });
+        }
+      }
+    }
+
+    return {
+      dryRun,
+      scanned: page.page.length,
+      movedCount: moved.length,
+      keptNewerRow,
+      countOnly,
+      alreadyDone,
+      moved,
+      isDone: page.isDone,
+      continueCursor: page.continueCursor,
+    };
+  },
+});
+
+/**
+ * Verifies migrateTranscriptText: reports any session still carrying the legacy
+ * `transcript` or `segmentCount` field, and any sessionTranscripts row that
+ * doesn't belong to its session's owner.
+ */
+export const verifyTranscriptTextMigration = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())), batchSize: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query('sessions')
+      .paginate({ cursor: args.cursor ?? null, numItems: args.batchSize ?? 25 });
+
+    const legacyText: string[] = [];
+    const legacyCount: string[] = [];
+    const ownerMismatch: string[] = [];
+    let withText = 0;
+
+    for (const session of page.page) {
+      if (session.transcript !== undefined) legacyText.push(session._id);
+      if (session.segmentCount !== undefined) legacyCount.push(session._id);
+
+      const row = await ctx.db
+        .query('sessionTranscripts')
+        .withIndex('by_session', (q) => q.eq('sessionId', session._id))
+        .unique();
+      if (row) {
+        withText++;
+        if (row.userId !== session.userId) ownerMismatch.push(session._id);
+      }
+    }
+
+    return {
+      scanned: page.page.length,
+      withText,
+      legacyText,
+      legacyCount,
+      ownerMismatch,
       isDone: page.isDone,
       continueCursor: page.continueCursor,
     };

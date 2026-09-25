@@ -57,6 +57,11 @@ export function useTranscriptSegments(sessionId: Id<'sessions'> | null) {
   return useQuery(api.transcriptSegments.list, sessionId ? { sessionId } : 'skip');
 }
 
+/** A session's transcript text, on its own subscription for the same reason. */
+export function useTranscriptText(sessionId: Id<'sessions'> | null) {
+  return useQuery(api.transcriptSegments.getText, sessionId ? { sessionId } : 'skip');
+}
+
 /**
  * Hook for trash management.
  * userId is now derived from the JWT token on the backend.

@@ -12,7 +12,7 @@ import { internal } from './_generated/api';
 import { action, internalAction, internalMutation, internalQuery } from './_generated/server';
 import { requireAuth } from './authHelpers';
 import { r2 } from './r2';
-import { replaceSegments } from './transcriptSegments';
+import { replaceSegments, writeTranscript } from './transcriptSegments';
 
 const ASSEMBLYAI_BASE = 'https://api.assemblyai.com';
 const POLL_INTERVAL_MS = 30_000;
@@ -79,9 +79,9 @@ export const writeSpeakerResult = internalMutation({
 
     // Labelling rewrites every segment, so this is a replace, not an append.
     await replaceSegments(ctx, session, args.segments);
+    await writeTranscript(ctx, session, args.transcript);
 
     await ctx.db.patch(args.sessionId, {
-      transcript: args.transcript,
       speakerLabelsStatus: 'labeled',
       speakerLabelsError: undefined,
       updatedAt: Date.now(),

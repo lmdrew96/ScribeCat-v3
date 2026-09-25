@@ -13,6 +13,11 @@
  * Only FINAL segments are stored. The trailing partial is live UI state, and
  * leaving it out makes saves append-only: each one writes just the new
  * segments instead of rewriting the whole transcript.
+ *
+ * The transcript *string* lives here too, in sessionTranscripts. It is not
+ * derivable from the segments — the recorder saves Nugget's scrubbed text plus
+ * the raw tail — and keeping it off the session row means a save during a
+ * recording never touches a document the session lists read.
  */
 
 import { v } from 'convex/values';
@@ -45,14 +50,13 @@ const chunksFor = (ctx: QueryCtx | MutationCtx, sessionId: Id<'sessions'>) =>
 /**
  * Every stored segment for a session, in order.
  *
- * Falls back to the session's legacy array while it is still unmigrated —
- * `segmentCount` is what marks a session as moved.
+ * Falls back to the session's legacy array while one is still on the row.
  */
 export async function readSegments(
   ctx: QueryCtx | MutationCtx,
   session: Doc<'sessions'>,
 ): Promise<TranscriptSegment[]> {
-  if (session.segmentCount === undefined) return session.transcriptSegments ?? [];
+  if (session.transcriptSegments !== undefined) return session.transcriptSegments;
 
   const chunks = await chunksFor(ctx, session._id).order('asc').collect();
   return chunks.flatMap((chunk) => chunk.segments);
@@ -74,20 +78,23 @@ export async function appendSegments(
 
   // An unmigrated session carries its history in the legacy field — fold it in
   // and clear it, so the row shrinks the first time it is written to.
-  if (session.segmentCount === undefined) {
-    const legacy = session.transcriptSegments ?? [];
+  if (session.transcriptSegments !== undefined) {
+    const legacy = session.transcriptSegments;
     const combined = finals.length >= legacy.length ? finals : [...legacy, ...finals];
     return await replaceSegments(ctx, session, combined);
   }
 
-  const stored = session.segmentCount;
+  // The count is read off the chunks rather than kept on the session row, so
+  // an append never writes the session document. Only the last chunk can be
+  // partial — appends top it up before starting another, replaces fill in order.
+  const lastChunk = await chunksFor(ctx, session._id).order('desc').first();
+  const stored = lastChunk ? lastChunk.chunkIndex * CHUNK_SIZE + lastChunk.segments.length : 0;
   const incoming = finals.slice(stored);
   if (incoming.length === 0) return stored;
 
   let remaining = incoming;
 
   // Top up the last chunk before starting a new one.
-  const lastChunk = await chunksFor(ctx, session._id).order('desc').first();
   if (lastChunk && lastChunk.segments.length < CHUNK_SIZE) {
     const room = CHUNK_SIZE - lastChunk.segments.length;
     await ctx.db.patch(lastChunk._id, {
@@ -107,9 +114,7 @@ export async function appendSegments(
     nextIndex++;
   }
 
-  const total = stored + incoming.length;
-  await ctx.db.patch(session._id, { segmentCount: total });
-  return total;
+  return stored + incoming.length;
 }
 
 /**
@@ -133,12 +138,12 @@ export async function replaceSegments(
     });
   }
 
-  await ctx.db.patch(session._id, {
-    segmentCount: finals.length,
-    // The legacy array is dead once chunks exist — dropping it is what
-    // actually shrinks the session document.
-    transcriptSegments: undefined,
-  });
+  // The legacy array is dead once chunks exist — dropping it is what actually
+  // shrinks the session document. Skipped when there's nothing to drop, so a
+  // replace doesn't invalidate every query reading the session row.
+  if (session.transcriptSegments !== undefined || session.segmentCount !== undefined) {
+    await ctx.db.patch(session._id, { transcriptSegments: undefined, segmentCount: undefined });
+  }
   return finals.length;
 }
 
@@ -150,7 +155,7 @@ export async function deleteSegments(ctx: MutationCtx, sessionId: Id<'sessions'>
   }
 }
 
-/** Copies one session's segments onto another (a shared-session copy). */
+/** Copies one session's segments and transcript onto another (a shared-session copy). */
 export async function copySegments(
   ctx: MutationCtx,
   from: Doc<'sessions'>,
@@ -158,6 +163,59 @@ export async function copySegments(
 ): Promise<void> {
   const segments = await readSegments(ctx, from);
   if (segments.length > 0) await replaceSegments(ctx, to, segments);
+  const text = await readTranscript(ctx, from);
+  if (text !== undefined) await writeTranscript(ctx, to, text);
+}
+
+const transcriptRowFor = (ctx: QueryCtx | MutationCtx, sessionId: Id<'sessions'>) =>
+  ctx.db
+    .query('sessionTranscripts')
+    .withIndex('by_session', (q) => q.eq('sessionId', sessionId))
+    .unique();
+
+/**
+ * A session's transcript text, or undefined if it has none.
+ *
+ * Falls back to the legacy `transcript` field on the session row until
+ * dataRepair.migrateTranscriptText has moved it.
+ */
+export async function readTranscript(
+  ctx: QueryCtx | MutationCtx,
+  session: Doc<'sessions'>,
+): Promise<string | undefined> {
+  const row = await transcriptRowFor(ctx, session._id);
+  return row?.text ?? session.transcript;
+}
+
+/**
+ * Sets a session's transcript text. Clears the legacy field on the session row
+ * the first time, which is the only write this makes to the session document.
+ */
+export async function writeTranscript(
+  ctx: MutationCtx,
+  session: Doc<'sessions'>,
+  text: string,
+): Promise<void> {
+  const row = await transcriptRowFor(ctx, session._id);
+  if (row) {
+    if (row.text !== text) await ctx.db.patch(row._id, { text, updatedAt: Date.now() });
+  } else {
+    await ctx.db.insert('sessionTranscripts', {
+      sessionId: session._id,
+      userId: session.userId,
+      text,
+      updatedAt: Date.now(),
+    });
+  }
+  if (session.transcript !== undefined) {
+    await ctx.db.patch(session._id, { transcript: undefined });
+  }
+}
+
+/** Removes a session's transcript text. Call when the session is deleted for good. */
+export async function deleteTranscript(ctx: MutationCtx, sessionId: Id<'sessions'>): Promise<void> {
+  const row = await transcriptRowFor(ctx, sessionId);
+  if (row) await ctx.db.delete(row._id);
 }
 
 /**
@@ -175,5 +233,21 @@ export const list = query({
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.userId !== userId || session.isDeleted) return [];
     return await readSegments(ctx, session);
+  },
+});
+
+/**
+ * A session's transcript text, on its own subscription for the same reason as
+ * `list`: it changes on every save during a recording, so only views that show
+ * or send the transcript should be watching it.
+ */
+export const getText = query({
+  args: { sessionId: v.id('sessions') },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.userId !== identity.subject || session.isDeleted) return null;
+    return (await readTranscript(ctx, session)) ?? null;
   },
 });
