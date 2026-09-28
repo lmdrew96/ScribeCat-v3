@@ -33,10 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.1',
+    version: '5.36.2',
+    label: '5.36.1 – 5.36.2',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [
+      {
+        kind: 'improved',
+        text: 'The record button is a brighter gold in the default theme, and its mic icon is now dark so you can actually see it. The icon also got much clearer in the cyan and pink themes.',
+      },
       {
         kind: 'fixed',
         text: 'Refreshing for an update (or loading any page) no longer logs a security-policy error in the browser console. It came from a script our host was injecting, not from ScribeCat, and it was never allowed to run.',

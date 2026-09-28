@@ -240,9 +240,9 @@ export function RecordingPanel({ onInsertNote }: RecordingPanelProps) {
           }`}
         >
           {isRecording ? (
-            <Square className="h-5 w-5 text-white" fill="white" />
+            <Square className="h-5 w-5 text-[var(--record-foreground)]" fill="currentColor" />
           ) : (
-            <Mic className="h-6 w-6 text-white" />
+            <Mic className="h-6 w-6 text-[var(--record-foreground)]" />
           )}
           <span className="sr-only">{isRecording ? 'Stop recording' : 'Start recording'}</span>
         </button>

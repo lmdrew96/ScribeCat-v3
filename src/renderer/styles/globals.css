@@ -63,8 +63,12 @@
 
   /* Custom ScribeCat colors */
   /* CTA buttons use warm amber */
-  --record: #dea549;
-  --record-glow: rgba(222, 165, 73, 0.4);
+  /* Lightened from #dea549 (2.37:1) to clear WCAG 1.4.11's 3:1 on the glass card
+     the button sits on (#78658c). Light amber needs a dark icon: white was 2.19:1.
+     --record-foreground defaults dark here; themes where white reads better override it. */
+  --record: #f2c46d;
+  --record-glow: rgba(242, 196, 109, 0.4);
+  --record-foreground: #2e2438;
   --waveform: #8cbdb9;
   /* Transcript bg - darker purple */
   --transcript-bg: #6b5a7d;
@@ -463,6 +467,7 @@
   /* Darkened from #d4a5d2 (1.92:1) to clear WCAG 1.4.11's 3:1 on --background. */
   --record: #a85fa5;
   --record-glow: rgba(168, 95, 165, 0.4);
+  --record-foreground: #ffffff;
   --waveform: #a5d6a7;
   --transcript-bg: #e7d1ff;
   --sidebar: #e7d1ff;
@@ -723,6 +728,7 @@
   --ring: #0000cc;
   --record: #006600;
   --record-glow: rgba(0, 102, 0, 0.4);
+  --record-foreground: #ffffff;
   --waveform: #0000cc;
   --transcript-bg: #f0f0f0;
   --sidebar: #f0f0f0;
