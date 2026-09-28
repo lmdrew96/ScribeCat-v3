@@ -33,6 +33,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.37.0',
+    date: '2026-09-27',
+    title: 'Themes with more color',
+    changes: [
+      {
+        kind: 'improved',
+        text: 'Purring Pastels has a brand-new palette: lilac, cream, aquamarine, cobalt, and magenta.',
+      },
+      {
+        kind: 'improved',
+        text: "Nugg's Favorite, Void Kitty, Chaos Cat, and Nyan Cat Light now show off all of their colors instead of washing out into a single hue. Toolbars, panel edges, and the background each pick up a different color from the theme.",
+      },
+    ],
+  },
+  {
     version: '5.36.10',
     label: '5.36.1 – 5.36.10',
     date: '2026-09-27',

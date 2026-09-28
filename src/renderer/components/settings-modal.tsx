@@ -53,7 +53,7 @@ const themes = [
   {
     id: 'soft-focus',
     name: 'Purring Pastels',
-    colors: ['#F8F4FF', '#E7D1FF', '#2A6B4C', '#7D4A7A'],
+    colors: ['#EFCAF7', '#F4F1EC', '#B2D1C3', '#BF4598'],
   },
   { id: 'blackout', name: 'Void Kitty', colors: ['#000000', '#0D1A14', '#B580FF', '#00F2FF'] },
   { id: 'chaos-cat', name: 'Chaos Cat', colors: ['#1A0A1F', '#2D1235', '#FF5EE0', '#1FE1FD'] },

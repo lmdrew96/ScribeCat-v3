@@ -76,21 +76,23 @@
   /* === GLASSMORPHISM TOKENS === */
   --glass-bg: rgba(107, 90, 125, 0.55);
   --glass-bg-heavy: rgba(107, 90, 125, 0.72);
-  --glass-bg-light: rgba(107, 90, 125, 0.3);
+  /* Teal-tinted so toolbars, chips and outline buttons carry the theme's second hue. */
+  --glass-bg-light: rgba(36, 73, 82, 0.55);
   --glass-blur: 16px;
   --glass-blur-heavy: 24px;
   --glass-blur-light: 8px;
-  --glass-border: rgba(219, 213, 226, 0.12);
-  --glass-border-strong: rgba(219, 213, 226, 0.22);
+  --glass-border: rgba(222, 165, 73, 0.25);
+  --glass-border-strong: rgba(222, 165, 73, 0.45);
   --glass-shadow: 0 4px 24px rgba(26, 51, 56, 0.2), 0 1px 2px rgba(0, 0, 0, 0.08);
   --glass-shadow-lg: 0 8px 40px rgba(26, 51, 56, 0.28), 0 2px 4px rgba(0, 0, 0, 0.1);
   --glass-shadow-inset: inset 0 1px 0 rgba(219, 213, 226, 0.08);
   --glass-glow: rgba(222, 165, 73, 0.15);
   --glass-glow-strong: rgba(222, 165, 73, 0.3);
-  --app-bg-from: #5d4d6e;
-  --app-bg-via: #88739e;
+  /* Teal → purple → deep teal so panels pick up both hues instead of reading all-purple. */
+  --app-bg-from: #244952;
+  --app-bg-via: #443856;
   --app-bg-to: #1a3338;
-  --orb-opacity: 0.35;
+  --orb-opacity: 0.45;
 
   --radius: 0.875rem;
 
@@ -373,71 +375,78 @@
   color: var(--foreground);
 }
 
-/* Purring Pastels Theme */
+/* Purring Pastels Theme
+ * Palette: Lilac Wash #EFCAF7 (background), Soft Almond #F4F1EC (surfaces),
+ * Magenta Hush #BF4598, Soft Aquamarine #B2D1C3, Cobalt Gleam #AFBAC9, Almond Drift #BAA290.
+ * Text-carrying tokens are deepened from the palette to clear WCAG 4.5:1 on lilac and almond. */
 [data-theme="soft-focus"] {
-  --background: #f8f4ff;
-  --foreground: #4a4458;
-  --card: #e7d1ff;
-  --card-foreground: #4a4458;
-  --popover: #e7d1ff;
-  --popover-foreground: #4a4458;
-  --primary: #7d4a7a;
+  --background: #efcaf7;
+  --foreground: #3a2a40;
+  --card: #f4f1ec;
+  --card-foreground: #3a2a40;
+  --popover: #f4f1ec;
+  --popover-foreground: #3a2a40;
+  /* Magenta Hush deepened: #bf4598 is only 3.20:1 on lilac, too low for 56 text-primary uses. */
+  --primary: #9a2c78;
   --primary-foreground: #ffffff;
-  --secondary: #cff6ff;
-  --secondary-foreground: #4a4458;
-  --muted: #e7d1ff;
-  --muted-foreground: #695a74;
-  --accent: #2a6b4c;
+  --secondary: #b2d1c3;
+  --secondary-foreground: #3a2a40;
+  --muted: #f4f1ec;
+  --muted-foreground: #5e4f5e;
+  /* Cobalt Gleam deepened to text strength (5.12:1 on lilac). */
+  --accent: #44557a;
   --accent-foreground: #ffffff;
   --destructive: #a82c26;
   --destructive-foreground: #ffffff;
-  --success: #2f6b36;
+  --success: #285e2f;
   --success-foreground: #ffffff;
-  --border: #d4c4e8;
-  --input: #e7d1ff;
-  --ring: #7d4a7a;
-  /* Darkened from #d4a5d2 (1.92:1) to clear WCAG 1.4.11's 3:1 on --background. */
-  --record: #a85fa5;
-  --record-glow: rgba(168, 95, 165, 0.4);
+  --border: #baa290;
+  --input: #baa290;
+  /* Non-text UI only needs 3:1 (WCAG 1.4.11); Magenta Hush as-is clears it at 3.20:1. */
+  --ring: #bf4598;
+  --record: #bf4598;
+  --record-glow: rgba(191, 69, 152, 0.4);
   --record-foreground: #ffffff;
-  --waveform: #a5d6a7;
-  --transcript-bg: #e7d1ff;
-  --sidebar: #e7d1ff;
-  --sidebar-foreground: #4a4458;
-  --sidebar-primary: #7d4a7a;
+  --waveform: #3e7862;
+  --transcript-bg: #f4f1ec;
+  --sidebar: #f4f1ec;
+  --sidebar-foreground: #3a2a40;
+  --sidebar-primary: #9a2c78;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #cff6ff;
-  --sidebar-accent-foreground: #4a4458;
-  --sidebar-border: #d4c4e8;
-  --sidebar-ring: #7d4a7a;
+  --sidebar-accent: #afbac9;
+  --sidebar-accent-foreground: #3a2a40;
+  --sidebar-border: #baa290;
+  --sidebar-ring: #bf4598;
 
-  /* Glassmorphism - light theme glass */
-  --glass-bg: rgba(231, 209, 255, 0.5);
-  --glass-bg-heavy: rgba(231, 209, 255, 0.68);
-  --glass-bg-light: rgba(231, 209, 255, 0.28);
+  /* Glassmorphism - panels are translucent Soft Almond so each one picks up the
+   * pink → cobalt → aquamarine backdrop beneath it; glass-light (toolbars, chips,
+   * outline/secondary buttons) is tinted Soft Aquamarine and edges are Cobalt. */
+  --glass-bg: rgba(244, 241, 236, 0.55);
+  --glass-bg-heavy: rgba(244, 241, 236, 0.85);
+  --glass-bg-light: rgba(178, 209, 195, 0.6);
   --glass-blur: 16px;
   --glass-blur-heavy: 24px;
   --glass-blur-light: 8px;
-  --glass-border: rgba(74, 68, 88, 0.08);
-  --glass-border-strong: rgba(74, 68, 88, 0.15);
-  --glass-shadow: 0 4px 24px rgba(74, 68, 88, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --glass-shadow-lg: 0 8px 40px rgba(74, 68, 88, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --glass-border: rgba(68, 85, 122, 0.22);
+  --glass-border-strong: rgba(68, 85, 122, 0.4);
+  --glass-shadow: 0 4px 24px rgba(58, 42, 64, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --glass-shadow-lg: 0 8px 40px rgba(58, 42, 64, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
   --glass-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --glass-glow: rgba(212, 165, 210, 0.2);
-  --glass-glow-strong: rgba(212, 165, 210, 0.4);
-  --app-bg-from: #f0e6ff;
-  --app-bg-via: #f8f4ff;
-  --app-bg-to: #e4ffde;
-  --orb-opacity: 0.25;
+  --glass-glow: rgba(191, 69, 152, 0.2);
+  --glass-glow-strong: rgba(191, 69, 152, 0.4);
+  --app-bg-from: #efcaf7;
+  --app-bg-via: #c9d1e6;
+  --app-bg-to: #b2d1c3;
+  --orb-opacity: 0.45;
 
-  --font-color-1: #3d3450;
-  --font-color-2: #9b5e99;
-  --font-color-3: #2e7d32;
-  --font-color-4: #c62828;
-  --font-color-5: #00796b;
+  --font-color-1: #3a2a40;
+  --font-color-2: #9a2c78;
+  --font-color-3: #285e2f;
+  --font-color-4: #b02020;
+  --font-color-5: #00695c;
   --font-color-6: #6a1b9a;
-  --font-color-7: #ad1457;
-  --font-color-8: #e65100;
+  --font-color-7: #44557a;
+  --font-color-8: #9a3f00;
 }
 
 /* Void Kitty Theme */
@@ -479,12 +488,12 @@
   /* Glassmorphism - dark neon glass */
   --glass-bg: rgba(13, 26, 20, 0.65);
   --glass-bg-heavy: rgba(13, 26, 20, 0.8);
-  --glass-bg-light: rgba(13, 26, 20, 0.4);
+  --glass-bg-light: rgba(181, 128, 255, 0.14);
   --glass-blur: 20px;
   --glass-blur-heavy: 28px;
   --glass-blur-light: 10px;
-  --glass-border: rgba(0, 242, 255, 0.1);
-  --glass-border-strong: rgba(0, 242, 255, 0.22);
+  --glass-border: rgba(181, 128, 255, 0.25);
+  --glass-border-strong: rgba(181, 128, 255, 0.45);
   --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
   --glass-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.25);
   --glass-shadow-inset: inset 0 1px 0 rgba(0, 242, 255, 0.05);
@@ -492,8 +501,8 @@
   --glass-glow-strong: rgba(0, 242, 255, 0.28);
   --app-bg-from: #000000;
   --app-bg-via: #050f0b;
-  --app-bg-to: #0d1a14;
-  --orb-opacity: 0.2;
+  --app-bg-to: #1a0f2e;
+  --orb-opacity: 0.3;
 
   --font-color-1: #e0e0e0;
   --font-color-2: #00f2ff;
@@ -544,12 +553,12 @@
   /* Glassmorphism - vibrant dark glass */
   --glass-bg: rgba(45, 18, 53, 0.6);
   --glass-bg-heavy: rgba(45, 18, 53, 0.78);
-  --glass-bg-light: rgba(45, 18, 53, 0.35);
+  --glass-bg-light: rgba(255, 94, 224, 0.16);
   --glass-blur: 18px;
   --glass-blur-heavy: 26px;
   --glass-blur-light: 10px;
-  --glass-border: rgba(255, 94, 224, 0.12);
-  --glass-border-strong: rgba(255, 94, 224, 0.24);
+  --glass-border: rgba(255, 94, 224, 0.3);
+  --glass-border-strong: rgba(255, 94, 224, 0.5);
   --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.15);
   --glass-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.2);
   --glass-shadow-inset: inset 0 1px 0 rgba(255, 94, 224, 0.06);
@@ -557,8 +566,8 @@
   --glass-glow-strong: rgba(31, 225, 253, 0.28);
   --app-bg-from: #1a0a1f;
   --app-bg-via: #2d1235;
-  --app-bg-to: #0d0520;
-  --orb-opacity: 0.25;
+  --app-bg-to: #062a33;
+  --orb-opacity: 0.35;
 
   --font-color-1: #ffffff;
   --font-color-2: #1fe1fd;
@@ -805,21 +814,21 @@
   /* Glassmorphism - sparkly pink light */
   --glass-bg: rgba(255, 224, 255, 0.72);
   --glass-bg-heavy: rgba(255, 224, 255, 0.9);
-  --glass-bg-light: rgba(255, 224, 255, 0.5);
+  --glass-bg-light: rgba(123, 0, 255, 0.07);
   --glass-blur: 14px;
   --glass-blur-heavy: 22px;
   --glass-blur-light: 8px;
-  --glass-border: rgba(255, 0, 170, 0.14);
-  --glass-border-strong: rgba(255, 0, 170, 0.28);
+  --glass-border: rgba(123, 0, 255, 0.22);
+  --glass-border-strong: rgba(123, 0, 255, 0.4);
   --glass-shadow: 0 4px 24px rgba(123, 0, 255, 0.08), 0 1px 2px rgba(51, 0, 51, 0.04);
   --glass-shadow-lg: 0 8px 40px rgba(123, 0, 255, 0.14), 0 2px 4px rgba(51, 0, 51, 0.06);
   --glass-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   --glass-glow: rgba(255, 0, 170, 0.12);
   --glass-glow-strong: rgba(123, 0, 255, 0.22);
   --app-bg-from: #fff0ff;
-  --app-bg-via: #ffe0ff;
-  --app-bg-to: #ffd5f2;
-  --orb-opacity: 0.18;
+  --app-bg-via: #f6e6ff;
+  --app-bg-to: #eee0ff;
+  --orb-opacity: 0.25;
 
   --font-color-1: #330033;
   --font-color-2: #d50000;
