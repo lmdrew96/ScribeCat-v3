@@ -17,3 +17,19 @@
 # must stay revalidated, or a new build could never take over.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The HTML shell opts out of Cloudflare's Bot Fight Mode script injection.
+# Bot Fight Mode appends an inline <script> to every HTML page, and the CSP in
+# index.html (correctly) has no 'unsafe-inline', so every page load logged a
+# CSP violation and the injected script never ran anyway. Cloudflare can't
+# nonce it for a <meta> CSP, and a hash won't work because the script embeds a
+# per-request ray id. `no-transform` is Cloudflare's documented opt-out. The
+# rest of the value restates the platform default, since setting Cache-Control
+# here replaces it rather than appending. Scoped to the HTML only: no-transform
+# also disables edge compression, which the JS bundles need and a 2 KB shell
+# doesn't.
+/
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform

@@ -33,6 +33,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.36.1',
+    date: '2026-09-27',
+    title: 'Small fixes, cleaner console',
+    changes: [
+      {
+        kind: 'fixed',
+        text: 'Refreshing for an update (or loading any page) no longer logs a security-policy error in the browser console. It came from a script our host was injecting, not from ScribeCat, and it was never allowed to run.',
+      },
+    ],
+  },
+  {
     version: '5.36.0',
     label: '5.34.3 \u2013 5.36.0',
     date: '2026-09-24',
