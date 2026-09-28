@@ -20,19 +20,10 @@
 
   "observability": {
     "enabled": true
-  }
+  },
 
-  // CUSTOM DOMAIN — deliberately not declared yet.
-  //
-  // `wrangler deploy` replaces the Worker's remote config with whatever is in
-  // this file, so once scribecat.adhdesigns.dev is attached it MUST be listed
-  // here or the next git-triggered build silently drops it.
-  //
-  // It is left out for now because adding it here is itself the cutover: the
-  // deploy would repoint the DNS record away from Vercel immediately. Verify
-  // the build on the workers.dev URL first, then add this block and push:
-  //
-  //   "routes": [
-  //     { "pattern": "scribecat.adhdesigns.dev", "custom_domain": true }
-  //   ]
+  // The production domain. Declared here because `wrangler deploy` treats this
+  // file as the Worker's source of truth. Attached since the Vercel cutover
+  // (2026-09-22).
+  "routes": [{ "pattern": "scribecat.adhdesigns.dev", "custom_domain": true }]
 }
