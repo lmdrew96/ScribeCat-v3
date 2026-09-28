@@ -114,13 +114,7 @@ const seg = (i: number, isFinal = true) => ({
 });
 
 describe('readSegments', () => {
-  it('falls back to the legacy array until a session is migrated', async () => {
-    const { ctx, makeSession } = fakeCtx();
-    const session = makeSession({ transcriptSegments: [seg(0), seg(1)] });
-    expect(await readSegments(ctx, session)).toHaveLength(2);
-  });
-
-  it('reads chunks in order once migrated', async () => {
+  it('reads chunks in order', async () => {
     const { ctx, makeSession } = fakeCtx();
     const session = makeSession();
     const all = Array.from({ length: CHUNK_SIZE * 2 + 5 }, (_, i) => seg(i));
@@ -201,18 +195,7 @@ describe('appendSegments', () => {
     expect(await readSegments(ctx, session)).toHaveLength(2);
   });
 
-  it('migrates a legacy session on its first write', async () => {
-    const { ctx, makeSession } = fakeCtx();
-    let session = makeSession({ transcriptSegments: [seg(0), seg(1)] });
-
-    expect(await appendSegments(ctx, session, [seg(0), seg(1), seg(2)])).toBe(3);
-    session = await ctx.db.get(session._id);
-
-    expect(session.transcriptSegments).toBeUndefined();
-    expect(await readSegments(ctx, session)).toHaveLength(3);
-  });
-
-  it('never writes the session row once a session is migrated', async () => {
+  it('never writes the session row', async () => {
     const { ctx, makeSession, sessionPatches } = fakeCtx();
     let session = makeSession();
 
@@ -230,17 +213,6 @@ describe('appendSegments', () => {
 });
 
 describe('replaceSegments', () => {
-  it('drops the legacy array so the session row shrinks', async () => {
-    const { ctx, makeSession } = fakeCtx();
-    let session = makeSession({ transcriptSegments: [seg(0), seg(1), seg(2)] });
-
-    await replaceSegments(ctx, session, [seg(0), seg(1), seg(2)]);
-    session = await ctx.db.get(session._id);
-
-    expect(session.transcriptSegments).toBeUndefined();
-    expect(await readSegments(ctx, session)).toHaveLength(3);
-  });
-
   it('leaves no stale chunks when the new transcript is shorter', async () => {
     const { ctx, makeSession, chunks } = fakeCtx();
     let session = makeSession();
@@ -275,7 +247,9 @@ describe('deleteSegments and copySegments', () => {
 
   it('copies a transcript onto another session without touching the source', async () => {
     const { ctx, makeSession } = fakeCtx();
-    const source = makeSession({ transcriptSegments: [seg(0), seg(1)], transcript: 'w0 w1' });
+    const source = makeSession();
+    await replaceSegments(ctx, source, [seg(0), seg(1)]);
+    await writeTranscript(ctx, source, 'w0 w1');
     let target = makeSession();
 
     await copySegments(ctx, source, target);
@@ -283,30 +257,25 @@ describe('deleteSegments and copySegments', () => {
 
     expect(await readSegments(ctx, target)).toHaveLength(2);
     expect(await readTranscript(ctx, target)).toBe('w0 w1');
-    expect((await ctx.db.get(source._id)).transcriptSegments).toHaveLength(2);
+    expect(await readSegments(ctx, source)).toHaveLength(2);
+    expect(await readTranscript(ctx, source)).toBe('w0 w1');
   });
 });
 
 describe('transcript text', () => {
-  it('falls back to the legacy field until the text has its own row', async () => {
+  it('is undefined until written', async () => {
     const { ctx, makeSession } = fakeCtx();
-    const session = makeSession({ transcript: 'legacy text' });
-    expect(await readTranscript(ctx, session)).toBe('legacy text');
     expect(await readTranscript(ctx, makeSession())).toBeUndefined();
   });
 
-  it('moves the text off the session row on the first write, and only then', async () => {
+  it('keeps one row per session and never writes the session row', async () => {
     const { ctx, makeSession, transcripts, sessionPatches } = fakeCtx();
-    let session = makeSession({ transcript: 'old' });
+    const session = makeSession();
 
     await writeTranscript(ctx, session, 'first');
-    session = await ctx.db.get(session._id);
-    expect(session.transcript).toBeUndefined();
-    expect(sessionPatches).toHaveLength(1);
-
     await writeTranscript(ctx, session, 'second');
     await writeTranscript(ctx, session, 'second');
-    expect(sessionPatches).toHaveLength(1);
+    expect(sessionPatches).toHaveLength(0);
     expect(transcripts.size).toBe(1);
     expect(await readTranscript(ctx, session)).toBe('second');
   });

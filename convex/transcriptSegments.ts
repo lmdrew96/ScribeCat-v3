@@ -49,15 +49,11 @@ const chunksFor = (ctx: QueryCtx | MutationCtx, sessionId: Id<'sessions'>) =>
 
 /**
  * Every stored segment for a session, in order.
- *
- * Falls back to the session's legacy array while one is still on the row.
  */
 export async function readSegments(
   ctx: QueryCtx | MutationCtx,
   session: Doc<'sessions'>,
 ): Promise<TranscriptSegment[]> {
-  if (session.transcriptSegments !== undefined) return session.transcriptSegments;
-
   const chunks = await chunksFor(ctx, session._id).order('asc').collect();
   return chunks.flatMap((chunk) => chunk.segments);
 }
@@ -75,14 +71,6 @@ export async function appendSegments(
   segments: TranscriptSegment[],
 ): Promise<number> {
   const finals = segments.filter((s) => s.isFinal);
-
-  // An unmigrated session carries its history in the legacy field — fold it in
-  // and clear it, so the row shrinks the first time it is written to.
-  if (session.transcriptSegments !== undefined) {
-    const legacy = session.transcriptSegments;
-    const combined = finals.length >= legacy.length ? finals : [...legacy, ...finals];
-    return await replaceSegments(ctx, session, combined);
-  }
 
   // The count is read off the chunks rather than kept on the session row, so
   // an append never writes the session document. Only the last chunk can be
@@ -119,7 +107,7 @@ export async function appendSegments(
 
 /**
  * Replaces a session's segments wholesale. For rewrites rather than growth:
- * speaker labelling, a merge, an uploaded file, or migrating a legacy session.
+ * speaker labelling, a merge, or an uploaded file.
  */
 export async function replaceSegments(
   ctx: MutationCtx,
@@ -136,13 +124,6 @@ export async function replaceSegments(
       chunkIndex: i / CHUNK_SIZE,
       segments: finals.slice(i, i + CHUNK_SIZE),
     });
-  }
-
-  // The legacy array is dead once chunks exist — dropping it is what actually
-  // shrinks the session document. Skipped when there's nothing to drop, so a
-  // replace doesn't invalidate every query reading the session row.
-  if (session.transcriptSegments !== undefined || session.segmentCount !== undefined) {
-    await ctx.db.patch(session._id, { transcriptSegments: undefined, segmentCount: undefined });
   }
   return finals.length;
 }
@@ -175,21 +156,17 @@ const transcriptRowFor = (ctx: QueryCtx | MutationCtx, sessionId: Id<'sessions'>
 
 /**
  * A session's transcript text, or undefined if it has none.
- *
- * Falls back to the legacy `transcript` field on the session row until
- * dataRepair.migrateTranscriptText has moved it.
  */
 export async function readTranscript(
   ctx: QueryCtx | MutationCtx,
   session: Doc<'sessions'>,
 ): Promise<string | undefined> {
   const row = await transcriptRowFor(ctx, session._id);
-  return row?.text ?? session.transcript;
+  return row?.text;
 }
 
 /**
- * Sets a session's transcript text. Clears the legacy field on the session row
- * the first time, which is the only write this makes to the session document.
+ * Sets a session's transcript text. Never writes the session document.
  */
 export async function writeTranscript(
   ctx: MutationCtx,
@@ -206,9 +183,6 @@ export async function writeTranscript(
       text,
       updatedAt: Date.now(),
     });
-  }
-  if (session.transcript !== undefined) {
-    await ctx.db.patch(session._id, { transcript: undefined });
   }
 }
 

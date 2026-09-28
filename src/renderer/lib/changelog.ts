@@ -33,8 +33,8 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.4',
-    label: '5.36.1 – 5.36.4',
+    version: '5.36.5',
+    label: '5.36.1 – 5.36.5',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [

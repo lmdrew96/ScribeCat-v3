@@ -103,16 +103,8 @@ export const get = query({
       notes = JSON.stringify(tiptapDoc);
     }
 
-    // Drop the transcript fields — a caller wanting them uses
-    // transcriptSegments.list / getText, which handle both storage shapes.
-    const {
-      transcriptSegments: _legacySegments,
-      transcript: _legacyText,
-      segmentCount: _legacyCount,
-      ...rest
-    } = session;
-
-    return { ...rest, notes, notesPlainText };
+    // The transcript isn't on the row — callers use transcriptSegments.list / getText.
+    return { ...session, notes, notesPlainText };
   },
 });
 

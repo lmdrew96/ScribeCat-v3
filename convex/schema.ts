@@ -10,19 +10,8 @@ export default defineSchema({
     course: v.optional(v.string()),
     audioStorageId: v.optional(v.string()),
     audioStorageIds: v.optional(v.array(v.string())),
-    /** Legacy — the text now lives in sessionTranscripts. Cleared by dataRepair.migrateTranscriptText. */
-    transcript: v.optional(v.string()),
-    transcriptSegments: v.optional(
-      v.array(
-        v.object({
-          text: v.string(),
-          timestamp: v.number(),
-          isFinal: v.boolean(),
-        }),
-      ),
-    ),
-    /** Legacy — the count is now read off transcriptChunks. Cleared by dataRepair.migrateTranscriptText. */
-    segmentCount: v.optional(v.number()),
+    // Transcript text lives in sessionTranscripts and segments in transcriptChunks —
+    // see convex/transcriptSegments.ts. Neither is ever stored on the session row.
     // User-flagged transcript words (for manual post-recording edit)
     flaggedWords: v.optional(
       v.array(
