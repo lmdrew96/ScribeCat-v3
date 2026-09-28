@@ -19,6 +19,7 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
     isGeneratingReview,
     error,
     targetedReview,
+    targetedReviewCreatedAt,
   } = useWeakSpots(examRoomId);
 
   const [showReview, setShowReview] = useState(false);
@@ -37,8 +38,10 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
   }
 
   if (showReview && targetedReview) {
+    // Keyed by the result's createdAt so a regenerated review remounts every card and question
+    // rather than handing a flipped card's or answered question's state to its replacement.
     return (
-      <div className="p-4 space-y-4">
+      <div key={targetedReviewCreatedAt} className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-foreground">Targeted Review</h3>
           <Button
@@ -59,6 +62,7 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
             </h4>
             {targetedReview.cards.map(
               (card: { front: string; back: string; topic: string }, i: number) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: one review never reorders; a new one remounts via the parent key
                 <ReviewCard key={i} card={card} />
               ),
             )}
@@ -82,6 +86,7 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
                 },
                 i: number,
               ) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: one review never reorders; a new one remounts via the parent key
                 <ReviewQuestion key={i} question={q} index={i} />
               ),
             )}
@@ -113,10 +118,10 @@ export function WeakSpotsPanel({ examRoomId }: WeakSpotsPanelProps) {
 
       {/* Topic bars */}
       <div className="space-y-3">
-        {weakSpots.map((topic, i) => {
+        {weakSpots.map((topic) => {
           const pct = Math.round(topic.accuracy * 100);
           return (
-            <div key={i} className="space-y-1">
+            <div key={topic.topic} className="space-y-1">
               <div className="flex min-w-0 items-center justify-between gap-2">
                 <span className="min-w-0 truncate text-xs font-medium text-foreground">
                   {topic.topic}
@@ -240,6 +245,7 @@ function ReviewQuestion({
         {question.options.map((opt, j) => (
           <button
             type="button"
+            // biome-ignore lint/suspicious/noArrayIndexKey: option index is the answer identity (correctIndex)
             key={j}
             onClick={() => setSelected(j)}
             disabled={selected !== null}

@@ -95,14 +95,17 @@ function parseMarkdown(md: string): ReactNode[] {
             <thead>
               <tr>
                 {headerCells.map((cell, ci) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static document render, rows and cells never reorder
                   <th key={ci}>{parseInline(cell)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {bodyRows.map((row, ri) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static document render, rows and cells never reorder
                 <tr key={ri}>
                   {parseCells(row).map((cell, ci) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static document render, rows and cells never reorder
                     <td key={ci}>{parseInline(cell)}</td>
                   ))}
                 </tr>

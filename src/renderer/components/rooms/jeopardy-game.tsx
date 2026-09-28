@@ -161,6 +161,7 @@ export function JeopardyGame({ game, currentUserId, isHost }: JeopardyGameProps)
                 const isRevealed = isCellRevealed(catIdx, qIdx);
                 return (
                   <button
+                    // biome-ignore lint/suspicious/noArrayIndexKey: grid coordinates are the cell identity (isCellRevealed(cat, q))
                     key={`${catIdx}-${qIdx}`}
                     type="button"
                     className={cn(

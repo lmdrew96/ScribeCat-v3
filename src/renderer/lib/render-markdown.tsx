@@ -155,6 +155,7 @@ export function renderMarkdown(text: string): ReactNode[] {
           className="my-1.5 border-l-2 border-accent/50 pl-3 text-muted-foreground italic"
         >
           {quoteLines.map((ql, qi) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static markdown render, rows and cells never reorder
             <p key={qi}>{renderInline(ql)}</p>
           ))}
         </blockquote>,
@@ -245,6 +246,7 @@ export function renderMarkdown(text: string): ReactNode[] {
             <thead>
               <tr className="border-b border-[var(--glass-border)] bg-black/10">
                 {headers.map((h, hi) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static markdown render, rows and cells never reorder
                   <th key={hi} className="px-3 py-1.5 text-left font-semibold">
                     {renderInline(h)}
                   </th>
@@ -253,8 +255,10 @@ export function renderMarkdown(text: string): ReactNode[] {
             </thead>
             <tbody>
               {rows.map((row, ri) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static markdown render, rows and cells never reorder
                 <tr key={ri} className="border-b border-[var(--glass-border)] last:border-0">
                   {row.map((cell, ci) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static markdown render, rows and cells never reorder
                     <td key={ci} className="px-3 py-1.5">
                       {renderInline(cell)}
                     </td>

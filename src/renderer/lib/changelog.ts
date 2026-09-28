@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.2',
-    label: '5.36.1 – 5.36.2',
+    version: '5.36.3',
+    label: '5.36.1 – 5.36.3',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [
+      {
+        kind: 'fixed',
+        text: 'In exam rooms, if someone regenerates flashcards, a quiz or a targeted review while you have it open, the new set starts fresh. It no longer inherits flipped cards or answers from the old one.',
+      },
       {
         kind: 'improved',
         text: 'The record button is a brighter gold in the default theme, and its mic icon is now dark so you can actually see it. The icon also got much clearer in the cyan and pink themes.',

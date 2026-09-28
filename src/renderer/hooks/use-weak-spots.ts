@@ -60,5 +60,6 @@ export function useWeakSpots(examRoomId: Id<'examRooms'> | null) {
     isGeneratingReview,
     error,
     targetedReview: targetedReviewData,
+    targetedReviewCreatedAt: targetedReview?.createdAt,
   };
 }

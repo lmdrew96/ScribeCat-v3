@@ -106,7 +106,7 @@ function ExamToolContent({
   examRoomId: Id<'examRooms'>;
   toolType: ExamToolType;
 }) {
-  const { data, isGenerating, error, generate, regenerate, hasData } = useExamTool(
+  const { data, isGenerating, error, generate, regenerate, hasData, createdAt } = useExamTool(
     examRoomId,
     toolType,
   );
@@ -162,13 +162,15 @@ function ExamToolContent({
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
-      {/* Render based on tool type */}
-      {toolType === 'summary' && <SummaryView data={data} />}
-      {toolType === 'keyConcepts' && <KeyConceptsView data={data} />}
-      {toolType === 'flashcards' && <FlashcardsView data={data} />}
-      {toolType === 'quiz' && <QuizView data={data} />}
-      {toolType === 'conceptMap' && <ConceptMapView data={data} />}
-      {toolType === 'eli5' && <Eli5View data={data} />}
+      {/* Render based on tool type. Keyed by the result's createdAt: the query falls back to a
+          room-wide result, so another member regenerating can swap the data in while this view
+          is mounted, and per-index state (flipped cards, quiz answers) must not carry over. */}
+      {toolType === 'summary' && <SummaryView key={createdAt} data={data} />}
+      {toolType === 'keyConcepts' && <KeyConceptsView key={createdAt} data={data} />}
+      {toolType === 'flashcards' && <FlashcardsView key={createdAt} data={data} />}
+      {toolType === 'quiz' && <QuizView key={createdAt} data={data} />}
+      {toolType === 'conceptMap' && <ConceptMapView key={createdAt} data={data} />}
+      {toolType === 'eli5' && <Eli5View key={createdAt} data={data} />}
     </div>
   );
 }
@@ -190,6 +192,7 @@ function SummaryView({ data }: { data: unknown }) {
           </h4>
           <ul className="space-y-1">
             {d.keyTakeaways.map((t, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: one AI result never reorders; a new result remounts the view (key={createdAt})
               <li key={i} className="flex gap-2 text-sm text-foreground">
                 <span className="text-accent shrink-0">•</span>
                 <span>{renderInline(t)}</span>
@@ -215,6 +218,7 @@ function KeyConceptsView({ data }: { data: unknown }) {
   return (
     <div className="space-y-3">
       {d.concepts.map((c, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: one AI result never reorders; a new result remounts the view (key={createdAt})
         <div key={i} className="rounded-lg p-3 glass-light border border-[var(--glass-border)]">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-foreground">{c.term}</span>
@@ -265,6 +269,7 @@ function FlashcardsView({ data }: { data: unknown }) {
       {d.cards.map((card, i) => (
         <button
           type="button"
+          // biome-ignore lint/suspicious/noArrayIndexKey: one AI result never reorders; a new result remounts the view (key={createdAt})
           key={i}
           onClick={() => toggleFlip(i)}
           className="w-full text-left rounded-lg p-4 glass-light border border-[var(--glass-border)] transition-all hover:border-accent/30"
@@ -320,6 +325,7 @@ function QuizView({ data }: { data: unknown }) {
   return (
     <div className="space-y-4">
       {d.questions.map((q, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: one AI result never reorders; a new result remounts the view (key={createdAt})
         <div key={i} className="rounded-lg p-4 glass-light border border-[var(--glass-border)]">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] font-medium text-accent">Q{i + 1}</span>
@@ -330,6 +336,7 @@ function QuizView({ data }: { data: unknown }) {
             {q.options.map((opt, j) => (
               <button
                 type="button"
+                // biome-ignore lint/suspicious/noArrayIndexKey: option index is the answer identity (correctIndex)
                 key={j}
                 onClick={() => handleAnswer(i, j)}
                 className={cn(
@@ -418,6 +425,7 @@ function Eli5View({ data }: { data: unknown }) {
   return (
     <div className="space-y-4">
       {d.explanations.map((e, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: one AI result never reorders; a new result remounts the view (key={createdAt})
         <div key={i} className="rounded-lg p-4 glass-light border border-[var(--glass-border)]">
           <h4 className="text-sm font-medium text-foreground mb-2">{e.concept}</h4>
           <p className="text-xs text-foreground mb-2">{renderInline(e.explanation)}</p>

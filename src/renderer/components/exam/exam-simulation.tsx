@@ -85,6 +85,7 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
             return (
               <button
                 type="button"
+                // biome-ignore lint/suspicious/noArrayIndexKey: question number is the identity; the list is fixed per simulation
                 key={i}
                 onClick={() => sim.goToQuestion(i)}
                 className={cn(
@@ -130,6 +131,7 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
                 {question.options.map((opt, j) => (
                   <button
                     type="button"
+                    // biome-ignore lint/suspicious/noArrayIndexKey: option index is the submitted answer (selectedAnswer)
                     key={j}
                     onClick={() => sim.submitAnswer(j)}
                     disabled={!!answeredThis}
@@ -201,10 +203,10 @@ export function ExamSimulation({ examRoomId, sessionCount }: ExamSimulationProps
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Topic Breakdown
             </h4>
-            {latest.topicBreakdown.map((t, i) => {
+            {latest.topicBreakdown.map((t) => {
               const topicPct = t.total > 0 ? (t.correct / t.total) * 100 : 0;
               return (
-                <div key={i} className="flex items-center gap-3">
+                <div key={t.topic} className="flex items-center gap-3">
                   <span className="text-xs text-foreground w-32 truncate">{t.topic}</span>
                   <div className="flex-1 h-2 rounded-full bg-[var(--glass-bg)]">
                     <div

@@ -20,6 +20,8 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ACCEPTED_TYPES = 'image/*,.png,.jpg,.jpeg,.webp,.heic,application/pdf,.pdf';
 
 interface UploadedFile {
+  /** Assigned on add — name + index would shift every later preview when one is removed. */
+  id: string;
   file: File;
   preview: string;
 }
@@ -61,7 +63,7 @@ export function DocumentUpload({
           continue; // Skip oversized files silently (UI shows limit)
         }
         const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
-        newFiles.push({ file, preview });
+        newFiles.push({ id: crypto.randomUUID(), file, preview });
       }
 
       setFiles((prev) => [...prev, ...newFiles]);
@@ -120,7 +122,7 @@ export function DocumentUpload({
         <div className="flex flex-wrap gap-2">
           {files.map((f, i) => (
             <div
-              key={f.file.name + i}
+              key={f.id}
               className="relative group rounded-lg overflow-hidden border border-[var(--glass-border)] bg-[var(--glass-bg)]"
             >
               {isPdf(f.file) ? (
@@ -251,7 +253,11 @@ export function DocumentUpload({
         onClose={() => setShowHandwritingModal(false)}
         onSave={async (file) => {
           // Wrap as UploadedFile and reuse existing upload logic
-          const uploaded: UploadedFile = { file, preview: URL.createObjectURL(file) };
+          const uploaded: UploadedFile = {
+            id: crypto.randomUUID(),
+            file,
+            preview: URL.createObjectURL(file),
+          };
           await upload([uploaded], { targetSessionId: null, lectureType });
         }}
       />
