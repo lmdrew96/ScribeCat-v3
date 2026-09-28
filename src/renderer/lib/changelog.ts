@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.8',
-    label: '5.36.1 – 5.36.8',
+    version: '5.36.9',
+    label: '5.36.1 – 5.36.9',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [
+      {
+        kind: 'improved',
+        text: 'The bug report form now says up front that reports are posted publicly on GitHub, and it no longer sends the extra bits at the end of the page address.',
+      },
       {
         kind: 'improved',
         text: 'Updated Terms of Service and Privacy Policy. They now name Cloudflare as our host, say that uploaded documents are read by Claude to pull out their text, explain what a connected AI assistant can see, and note that bug reports are posted publicly on GitHub. You\u2019ll be asked to accept them once.',

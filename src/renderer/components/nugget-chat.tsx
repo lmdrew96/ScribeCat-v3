@@ -274,7 +274,9 @@ export function NuggetChat({
           userDisplayName: userProfile?.displayName,
           browserInfo: navigator.userAgent,
           appVersion: __APP_VERSION__,
-          pageUrl: window.location.href,
+          // Path only: the issue is public, and a query string or hash can carry
+          // redirect or auth parameters that don't belong there.
+          pageUrl: `${window.location.origin}${window.location.pathname}`,
         }),
       });
 
@@ -436,13 +438,15 @@ export function NuggetChat({
                         value={bugDescription}
                         onChange={(e) => setBugDescription(e.target.value)}
                         placeholder="What happened? What did you expect? Steps to reproduce..."
+                        aria-describedby="bug-public-notice"
                         className="flex-1 min-h-[120px] resize-none rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-light)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         disabled={bugSubmitting}
                       />
                     </div>
 
-                    <p className="text-[10px] text-muted-foreground">
-                      Browser info and app version will be attached automatically.
+                    <p id="bug-public-notice" className="text-[10px] text-muted-foreground">
+                      Reports are posted publicly on GitHub with your display name, browser, app
+                      version, and the page you were on. Don&rsquo;t include anything private.
                     </p>
 
                     <div className="flex gap-2">
