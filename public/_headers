@@ -33,3 +33,26 @@
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+# SPA deep links are answered with index.html by not_found_handling, but the
+# rules above match on the request path, not the file served. So every
+# top-level client route needs its own rule. Add one here when you add a route
+# to the router, or reloads on that route log the CSP error again (harmless,
+# but that's what this block is for).
+/exam*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/friends*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/messages*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/rooms*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/shared/*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+
+/study*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
