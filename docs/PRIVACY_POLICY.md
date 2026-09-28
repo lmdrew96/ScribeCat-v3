@@ -1,7 +1,7 @@
 # ScribeCat — Privacy Policy
 
-**Effective Date:** April 8, 2026
-**Version:** 1.0
+**Effective Date:** September 27, 2026
+**Version:** 1.1
 
 ---
 
@@ -19,12 +19,19 @@ ScribeCat ("the Service") is operated by ADHDesigns. This Privacy Policy explain
 - **Chat messages** — messages sent to the AI chat assistant and in study room chats
 - **Profile information** — display name, username, and avatar (via Clerk authentication)
 - **Course information** — course names you add to your account
+- **Uploaded documents** — photos, PDFs, and handwriting you upload for text extraction
+- **Bug reports** — the title and description you write, plus your display name, browser details, app version, and the page you were on
 
 ### Data Collected Automatically
 - **Account data** — email address and authentication tokens (managed by Clerk)
 - **Session metadata** — recording duration, timestamps, note type selections
 - **Study statistics** — study time, session counts, goal tracking, achievement progress
 - **Presence data** — online/offline status for social features
+- **Web traffic data** — your IP address and request details, seen by our hosting provider when your browser loads the app
+
+### Data Stored on Your Device
+- **Recording backup** — while you record, audio is kept temporarily in your browser's storage so it can be recovered if the tab crashes or closes. Each piece is cleared from your browser once it has been uploaded.
+- **Preferences** — things like your chosen microphone and which "What's New" entries you've seen are stored in your browser only and never sent to us.
 
 ## 3. Third-Party Services
 
@@ -33,15 +40,18 @@ ScribeCat uses the following third-party services that receive your data:
 | Service | Data Received | Purpose |
 |---------|--------------|---------|
 | **AssemblyAI** | Audio data (streamed or uploaded) | Real-time and batch transcription |
-| **Anthropic (Claude AI)** | Transcription text, notes, chat messages (no audio) | AI note generation, study tools, chat |
+| **Anthropic (Claude AI)** | Transcription text, notes, chat messages, uploaded documents and images (no audio) | AI note generation, study tools, chat, document text extraction |
 | **Clerk** | Email, authentication tokens | User authentication and session management |
 | **Convex** | All application data | Backend database, real-time sync |
-| **Cloudflare R2** | Audio recordings, uploaded documents/images | File storage |
-| **Vercel** | Web traffic | Application hosting and delivery |
+| **Cloudflare** | Audio recordings and uploaded documents/images (R2 storage); web traffic | File storage; application hosting, delivery, and bot protection |
+| **GitHub** | Bug reports you submit | Bug tracking |
+| **Google Fonts** | Your IP address and browser details, when fonts load | Serving the app's typefaces |
 
 Audio data is sent to AssemblyAI's servers for transcription processing. Only the resulting text transcript is retained in ScribeCat — AssemblyAI does not store your audio after processing.
 
-Anthropic receives only text data (transcripts and notes), never audio files.
+Anthropic never receives audio. It receives text (transcripts, notes, and chat messages), plus any documents or images you upload so their text can be extracted.
+
+**Bug reports are public.** A report you send from the app is filed as an issue in ScribeCat's public GitHub repository, where anyone can read it. It includes your display name, browser details, and the page you were on, so don't put anything private in the description.
 
 ## 4. How We Use Your Data
 
@@ -73,6 +83,8 @@ We use your data to:
 - We **do not share** your data for advertising purposes
 - Third-party services receive only the minimum data necessary for their function (see Section 3)
 - Study room content is visible to room participants
+- Sessions you share are visible to the people you share them with
+- **AI assistant connections.** If you create an API key in Settings and connect an AI assistant (such as Claude) to the ScribeCat MCP server, that assistant can read your sessions, transcripts, notes, and course list. What it does with that data is governed by that assistant's own privacy policy. You can revoke a key at any time in Settings, which cuts off access immediately.
 
 ## 8. Your Rights
 

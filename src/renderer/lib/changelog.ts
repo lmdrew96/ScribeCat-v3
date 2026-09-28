@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.5',
-    label: '5.36.1 – 5.36.5',
+    version: '5.36.6',
+    label: '5.36.1 – 5.36.6',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [
+      {
+        kind: 'improved',
+        text: 'Updated Terms of Service and Privacy Policy. They now name Cloudflare as our host, say that uploaded documents are read by Claude to pull out their text, explain what a connected AI assistant can see, and note that bug reports are posted publicly on GitHub. You\u2019ll be asked to accept them once.',
+      },
       {
         kind: 'fixed',
         text: 'The microphone picker in Settings \u2192 Audio now lists your real mics and actually switches the one you record with. ScribeCat remembers your choice on each device and falls back to the default mic if that one is unplugged. Test Mic now shows your real input level.',

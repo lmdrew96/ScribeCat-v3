@@ -14,7 +14,7 @@ import { useState } from 'react';
 import privacyContent from '../../../docs/PRIVACY_POLICY.md?raw';
 import tosContent from '../../../docs/TERMS_OF_SERVICE.md?raw';
 
-const CURRENT_TOS_VERSION = '1.1';
+const CURRENT_TOS_VERSION = '1.2';
 
 export function TosAcceptanceModal() {
   const { settings, updateSettings } = useStudySettings();
@@ -46,9 +46,13 @@ export function TosAcceptanceModal() {
       <Dialog open onOpenChange={() => {}}>
         <DialogContent showCloseButton={false} className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Welcome to ScribeCat</DialogTitle>
+            <DialogTitle>
+              {settings?.tosAcceptedAt ? 'We\u2019ve updated our terms' : 'Welcome to ScribeCat'}
+            </DialogTitle>
             <DialogDescription>
-              Please review and accept our terms before continuing.
+              {settings?.tosAcceptedAt
+                ? 'The Terms of Service and Privacy Policy changed. Please review and accept them to keep using ScribeCat.'
+                : 'Please review and accept our terms before continuing.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -69,7 +73,8 @@ export function TosAcceptanceModal() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-muted-foreground">•</span>
-                Acknowledge that audio data is processed by third-party AI services
+                Acknowledge that your recordings, notes, and uploaded documents are processed by
+                third-party AI services
               </li>
             </ul>
           </div>

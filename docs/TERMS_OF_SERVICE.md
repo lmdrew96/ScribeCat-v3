@@ -1,7 +1,7 @@
 # ScribeCat — Terms of Service
 
-**Effective Date:** August 31, 2026
-**Version:** 1.1
+**Effective Date:** September 27, 2026
+**Version:** 1.2
 
 ---
 
@@ -38,9 +38,11 @@ You may not:
 ScribeCat uses third-party AI services to provide its features:
 
 - **AssemblyAI** receives audio data for real-time and batch transcription
-- **Anthropic Claude** receives transcription text (not audio) for AI note generation, study tools, and chat features
+- **Anthropic Claude** receives transcription text, notes, and chat messages for AI note generation, study tools, and chat features, and receives documents and images you upload so their text can be extracted. It never receives audio.
 
 By using these features, you consent to your data being processed by these services in accordance with their respective privacy policies.
+
+If you create an API key and connect an outside AI assistant to your account, that assistant can read your sessions, transcripts, notes, and courses. You choose which assistants to connect and are responsible for them. You can revoke a key at any time in Settings.
 
 ## 6. Data Retention
 
