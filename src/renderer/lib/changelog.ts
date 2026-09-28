@@ -33,11 +33,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '5.36.3',
-    label: '5.36.1 – 5.36.3',
+    version: '5.36.4',
+    label: '5.36.1 – 5.36.4',
     date: '2026-09-27',
     title: 'Small fixes, cleaner console',
     changes: [
+      {
+        kind: 'fixed',
+        text: 'The microphone picker in Settings \u2192 Audio now lists your real mics and actually switches the one you record with. ScribeCat remembers your choice on each device and falls back to the default mic if that one is unplugged. Test Mic now shows your real input level.',
+      },
       {
         kind: 'fixed',
         text: 'In exam rooms, if someone regenerates flashcards, a quiz or a targeted review while you have it open, the new set starts fresh. It no longer inherits flipped cards or answers from the old one.',

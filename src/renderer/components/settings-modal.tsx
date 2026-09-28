@@ -193,8 +193,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   // Audio settings (local only)
   const [showWaveform, setShowWaveform] = useState(true);
-  const [micLevel, setMicLevel] = useState(0);
-  const [isTesting, setIsTesting] = useState(false);
 
   // Sync Convex settings → local state when loaded
   useEffect(() => {
@@ -287,18 +285,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }
   };
 
-  const testMicrophone = () => {
-    setIsTesting(true);
-    const interval = setInterval(() => {
-      setMicLevel(Math.random() * 100);
-    }, 100);
-    setTimeout(() => {
-      clearInterval(interval);
-      setIsTesting(false);
-      setMicLevel(0);
-    }, 3000);
-  };
-
   const handleAddCourse = () => {
     if (!newCourse.trim()) return;
     const current = settings && '_id' in settings ? (settings.courses ?? []) : [];
@@ -366,9 +352,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 updateSettings={updateSettings}
                 showWaveform={showWaveform}
                 setShowWaveform={setShowWaveform}
-                micLevel={micLevel}
-                isTesting={isTesting}
-                testMicrophone={testMicrophone}
               />
             )}
 

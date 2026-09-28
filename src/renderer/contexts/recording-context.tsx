@@ -52,6 +52,8 @@ interface RecordingContextValue {
   devices: AudioDevice[];
   selectedDeviceId: string;
   setSelectedDeviceId: (id: string) => void;
+  /** Re-reads the device list, e.g. once a mic test has granted permission and labels appear. */
+  loadDevices: () => Promise<void>;
 
   // Pre-record config
   lectureType: LectureType;
@@ -200,6 +202,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     stopRecording,
     togglePause,
     setSelectedDeviceId,
+    loadDevices,
     reset: resetRecorder,
     getStream,
     getUnuploadedChunks,
@@ -857,6 +860,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     devices,
     selectedDeviceId,
     setSelectedDeviceId,
+    loadDevices,
     lectureType,
     setLectureType,
     selectedCourse,

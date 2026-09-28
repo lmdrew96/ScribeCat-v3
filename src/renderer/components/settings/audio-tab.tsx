@@ -8,9 +8,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useRecordingContext } from '@/contexts/recording-context';
 import type { useStudySettings } from '@/hooks/use-productivity';
 import { cn } from '@/lib/utils';
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 type Settings = ReturnType<typeof useStudySettings>['settings'];
 type UpdateSettings = ReturnType<typeof useStudySettings>['updateSettings'];
@@ -20,43 +21,122 @@ interface AudioTabProps {
   updateSettings: UpdateSettings;
   showWaveform: boolean;
   setShowWaveform: (show: boolean) => void;
-  micLevel: number;
-  isTesting: boolean;
-  testMicrophone: () => void;
 }
+
+const MIC_TEST_MS = 3000;
+/** Speech averages well under half of full scale; this gain makes a normal voice fill most bars. */
+const MIC_TEST_GAIN = 300;
+
+const micTestErrorMessage = (error: unknown): string => {
+  const name = error instanceof Error ? error.name : '';
+  if (name === 'NotAllowedError')
+    return 'Microphone access is blocked. Allow it in your browser settings.';
+  if (name === 'NotFoundError' || name === 'OverconstrainedError')
+    return 'That microphone isn\u2019t connected. Pick another one.';
+  return 'Couldn\u2019t open the microphone.';
+};
 
 export function AudioTab({
   settings,
   updateSettings,
   showWaveform,
   setShowWaveform,
-  micLevel,
-  isTesting,
-  testMicrophone,
 }: AudioTabProps) {
   const id = useId();
+  const { devices, selectedDeviceId, setSelectedDeviceId, loadDevices, isRecording } =
+    useRecordingContext();
+  const [micLevel, setMicLevel] = useState(0);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
+  const stopTestRef = useRef<(() => void) | null>(null);
+
+  // Closing settings mid-test must release the mic, or the browser's recording indicator stays on.
+  useEffect(() => () => stopTestRef.current?.(), []);
+
+  // Chrome lists a 'default' pseudo-device; Safari and Firefox don't, so add one there.
+  const hasDefaultEntry = devices.some((device) => device.deviceId === 'default');
+
+  const testMicrophone = async (): Promise<void> => {
+    setTestError(null);
+    setIsTesting(true);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: selectedDeviceId === 'default' ? true : { deviceId: { exact: selectedDeviceId } },
+      });
+    } catch (error) {
+      setIsTesting(false);
+      setTestError(micTestErrorMessage(error));
+      return;
+    }
+    // Permission is granted now, so the list can show real mic names.
+    void loadDevices();
+
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    audioContext.createMediaStreamSource(stream).connect(analyser);
+    const bins = new Uint8Array(analyser.frequencyBinCount);
+
+    let frame = 0;
+    const tick = (): void => {
+      analyser.getByteFrequencyData(bins);
+      const average = bins.reduce((sum, value) => sum + value, 0) / bins.length;
+      setMicLevel(Math.min(100, (average / 255) * MIC_TEST_GAIN));
+      frame = requestAnimationFrame(tick);
+    };
+    tick();
+
+    const stop = (): void => {
+      stopTestRef.current = null;
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+      for (const track of stream.getTracks()) track.stop();
+      void audioContext.close();
+      setIsTesting(false);
+      setMicLevel(0);
+    };
+    const timer = setTimeout(stop, MIC_TEST_MS);
+    stopTestRef.current = stop;
+  };
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor={`${id}-device`} className="text-sm text-foreground">
           Input Device
         </Label>
-        <Select defaultValue="macbook">
+        <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId} disabled={isRecording}>
           <SelectTrigger id={`${id}-device`} className="bg-background border-border">
             <SelectValue placeholder="Select microphone" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="macbook">MacBook Pro Microphone</SelectItem>
-            <SelectItem value="airpods">AirPods Pro</SelectItem>
-            <SelectItem value="external">External USB Microphone</SelectItem>
+            {!hasDefaultEntry && <SelectItem value="default">System default</SelectItem>}
+            {devices.map((device) => (
+              <SelectItem key={device.deviceId} value={device.deviceId}>
+                {device.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+        <p className="text-xs text-muted-foreground">
+          {isRecording
+            ? 'Stop recording to switch microphones.'
+            : devices.length === 0
+              ? 'Run a mic test (or start a recording) to list your microphones.'
+              : 'Used for your next recording on this device.'}
+        </p>
       </div>
 
       <div className="space-y-2">
         <p className="text-sm leading-none font-medium text-foreground">Test Microphone</p>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" size="sm" onClick={testMicrophone} disabled={isTesting}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void testMicrophone()}
+            disabled={isTesting}
+          >
             {isTesting ? 'Listening...' : 'Test Mic'}
           </Button>
           <div className="flex h-6 flex-1 items-center gap-0.5 rounded glass-light px-2">
@@ -74,6 +154,7 @@ export function AudioTab({
             })}
           </div>
         </div>
+        {testError && <p className="text-xs text-destructive">{testError}</p>}
       </div>
 
       <div className="flex items-center justify-between">

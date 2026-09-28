@@ -10,6 +10,25 @@ import {
 } from '@/lib/recording-clock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/**
+ * The chosen mic, kept per browser rather than in Convex settings: device ids are
+ * scoped to one origin on one machine, so a synced id would be meaningless elsewhere.
+ */
+const MIC_DEVICE_KEY = 'scribecat-mic-device-id';
+
+const readSavedDeviceId = (): string => {
+  try {
+    return localStorage.getItem(MIC_DEVICE_KEY) ?? 'default';
+  } catch {
+    return 'default';
+  }
+};
+
+/** The saved device is unplugged, or its id rotated because site data was cleared. */
+const isMissingDeviceError = (error: unknown): boolean =>
+  error instanceof Error &&
+  (error.name === 'OverconstrainedError' || error.name === 'NotFoundError');
+
 export interface AudioDevice {
   deviceId: string;
   label: string;
@@ -32,7 +51,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [devices, setDevices] = useState<AudioDevice[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('default');
+  const [selectedDeviceId, setSelectedDeviceIdState] = useState<string>(readSavedDeviceId);
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
 
@@ -79,6 +98,15 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
 
   /** Same clock in milliseconds — what transcript segments are stamped with. */
   const getElapsedMs = useCallback(() => elapsedMs(clockRef.current, Date.now()), []);
+
+  const setSelectedDeviceId = useCallback((deviceId: string) => {
+    setSelectedDeviceIdState(deviceId);
+    try {
+      localStorage.setItem(MIC_DEVICE_KEY, deviceId);
+    } catch {
+      // Storage blocked — the choice still holds for this page load.
+    }
+  }, []);
 
   /**
    * Load available audio input devices
@@ -192,14 +220,26 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       }
 
       // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: selectedDeviceId === 'default' ? undefined : { exact: selectedDeviceId },
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      const openMic = (deviceId: string): Promise<MediaStream> =>
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            deviceId: deviceId === 'default' ? undefined : { exact: deviceId },
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+
+      let stream: MediaStream;
+      try {
+        stream = await openMic(selectedDeviceId);
+      } catch (error) {
+        if (selectedDeviceId === 'default' || !isMissingDeviceError(error)) throw error;
+        // The remembered mic is gone. Record on the default one rather than failing the lecture.
+        console.warn(`Saved microphone ${selectedDeviceId} is unavailable; using the default.`);
+        setSelectedDeviceId('default');
+        stream = await openMic('default');
+      }
 
       streamRef.current = stream;
 
@@ -267,7 +307,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
       console.error('Error starting recording:', error);
       optionsRef.current?.onError?.(error as Error);
     }
-  }, [selectedDeviceId, updateAudioLevel, loadDevices, syncRecordingTime]);
+  }, [selectedDeviceId, setSelectedDeviceId, updateAudioLevel, loadDevices, syncRecordingTime]);
 
   /**
    * Stop recording. Resolves after `onstop` fires and any final buffered
@@ -537,6 +577,7 @@ export function useAudioRecorder(options?: UseAudioRecorderOptions) {
     stopRecording,
     togglePause,
     setSelectedDeviceId,
+    loadDevices,
     reset,
     getStream,
     getUnuploadedChunks,
