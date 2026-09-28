@@ -9,11 +9,15 @@ import { registerSW } from 'virtual:pwa-register';
  *
  * DETECTION is decoupled from the service worker. Workbox only reaches the
  * `waiting` state that fires `onNeedRefresh` after it has precached the entire
- * changed manifest — 15 MB of it here — so a tab could sit on a stale build for
- * as long as that took. Instead we fetch a small `version.json` written at build
- * time and compare it against this bundle's own stamp, which answers in one
- * round trip. `onNeedRefresh` stays wired as a backstop for when that fetch is
- * unavailable.
+ * changed manifest — 15 MB of it here — and browsers only re-check the worker on
+ * navigation. Instead we fetch a small `version.json` written at build time and
+ * compare it against this bundle's own stamp, which answers in one round trip
+ * and kicks the new worker's install immediately. `onNeedRefresh` stays wired as
+ * a backstop for when that fetch is unavailable.
+ *
+ * The toast is held until that install parks in `waiting`, so Refresh is instant
+ * when clicked. Offering it earlier made Refresh sit silently for seconds while
+ * the download finished, which read as a broken button.
  *
  * APPLICATION is NOT decoupled, and must not be. While the old worker still
  * controls the page, a plain reload is served the old build straight back out
@@ -30,6 +34,11 @@ const UPDATE_CHECK_MS = 2 * 60_000;
 const VERSION_URL = '/version.json';
 /** How long Refresh waits for the new worker to finish installing before giving up. */
 const ACTIVATION_TIMEOUT_MS = 10_000;
+/**
+ * How long a detected update waits for its worker to install before the toast is
+ * shown anyway — a broken or blocked worker must not hide the update forever.
+ */
+const INSTALL_WAIT_MS = 60_000;
 /** focus and visibilitychange both fire for one window switch — collapse the pair. */
 const MIN_CHECK_GAP_MS = 5_000;
 const DISMISS_KEY = 'update-toast-dismissed';
@@ -42,6 +51,8 @@ let updateReady = false;
 let reloadBlocked = false;
 let applyUpdate: ((reloadPage?: boolean) => Promise<void>) | null = null;
 let swRegistration: ServiceWorkerRegistration | null = null;
+/** True while a detected update is waiting for its worker to install. */
+let awaitingInstall = false;
 const listeners = new Set<() => void>();
 
 const setUpdateReady = (value: boolean): void => {
@@ -198,9 +209,13 @@ const registerServiceWorker = (): void => {
             // Offline or CDN hiccup — try again next tick.
           });
 
-          if (deployed && deployed !== __BUILD_ID__ && !isDismissed()) {
-            setUpdateReady(true);
-          }
+          if (!deployed || deployed === __BUILD_ID__ || isDismissed()) return;
+          if (updateReady || awaitingInstall) return;
+
+          awaitingInstall = true;
+          await waitForWaitingWorker(registration, INSTALL_WAIT_MS);
+          awaitingInstall = false;
+          if (!isDismissed()) setUpdateReady(true);
         })();
       };
       check();

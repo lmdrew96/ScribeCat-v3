@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Agent Instructions
 copilot-instructions.md
+
+# Personal easter egg cheat sheet (kept local)
+docs/EASTER-EGGS.md

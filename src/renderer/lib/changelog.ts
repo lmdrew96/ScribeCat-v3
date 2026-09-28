@@ -33,6 +33,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.37.1',
+    date: '2026-09-27',
+    title: 'Instant update refresh',
+    changes: [
+      {
+        kind: 'fixed',
+        text: 'The "new version" notice now waits until the update has finished downloading, so Refresh works right away. If it ever needs a moment, it shows an "Updating" spinner instead of looking like nothing happened.',
+      },
+    ],
+  },
+  {
     version: '5.37.0',
     date: '2026-09-27',
     title: 'Themes with more color',
